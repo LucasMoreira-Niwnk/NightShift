@@ -1,0 +1,7 @@
+game/.godot/
+.local/
+builds/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

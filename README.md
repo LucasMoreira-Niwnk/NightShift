@@ -1,6 +1,6 @@
 # NIGHTSHIFT
 
-Protótipo de terror psicológico 3D em primeira pessoa para Windows, feito em Godot 4.0 com GDScript. Sem plugins externos ou APIs durante o jogo.
+Capítulo jogável de terror psicológico 3D em primeira pessoa para Windows, feito em Godot 4.0 com GDScript. Sem plugins externos ou APIs durante o jogo.
 
 ## Abrir e jogar
 
@@ -11,9 +11,11 @@ Protótipo de terror psicológico 3D em primeira pessoa para Windows, feito em G
 
 ### Capítulo 1 — O Primeiro Turno
 
-A partida começa na recepção do Vesper. Leia o envelope no balcão, entre na segurança e siga os objetivos no alto da tela. Pegue a lanterna na mesa para ver a mão e o item em primeira pessoa. A sequência contém oito cenas, três puzzles, anomalias, documentos e conclusão. Esc permite salvar/carregar checkpoint. J reabre o protocolo.
+A partida começa diante da entrada do Vesper. Abra a porta, leia o envelope no balcão, entre na segurança e siga os objetivos no alto da tela. Pegue a lanterna na mesa para ver a mão e o item em primeira pessoa. A sequência contém oito cenas, três puzzles, anomalias, documentos e conclusão. Esc permite salvar/carregar checkpoint e ajustar o áudio. J abre o diário com documentos e mensagens coletados.
 
-O cenário utiliza texturas PBR 1K do ambientCG, modelos glTF texturizados do Poly Haven e modelos GLB do Kenney Furniture Kit. Cadeira, mesas, rádio, cadernos, luminária de mesa e armário utilizam os modelos do Poly Haven. O braço em primeira pessoa utiliza o modelo rigado e texturizado WRAD Arms (CC0), com pose de pegada; a lanterna é um modelo cilíndrico da Innerscene (CC0). Monitor, telefone e silhuetas possuem geometria mais arredondada. A iluminação é mais escura, com sombras e pontos de luz localizados. Falas, telefone, passos e batidas estão representados em texto; áudio será adicionado depois. O roteiro de 30–35 minutos ainda não representa a duração medida desta versão.
+O primeiro ato agora inclui eventos de olhar e de retorno da ronda, entrada e escadaria, terminal inicialmente desligado, identificação dos elementos nas imagens, sons posicionais, interferências, impressora e escolha de investigar ou ignorar o telefone no encerramento. Veja a matriz de implementação e as limitações em [docs/ACT_1_ACCEPTANCE.md](docs/ACT_1_ACCEPTANCE.md).
+
+O cenário utiliza texturas PBR 1K do ambientCG, modelos glTF texturizados do Poly Haven e modelos GLB do Kenney Furniture Kit. Cadeira, mesas, rádio, cadernos, luminária de mesa e armário utilizam os modelos do Poly Haven. O braço em primeira pessoa utiliza o modelo rigado e texturizado WRAD Arms (CC0), com pose de pegada; a lanterna é um modelo cilíndrico da Innerscene (CC0). Monitor, telefone e silhuetas possuem geometria mais arredondada. A iluminação é mais escura, com sombras e pontos de luz localizados. Chuva, zumbido, passos, telefone, arrasto, batidas, rádio e impressora possuem efeitos sonoros; as falas permanecem legendadas, aguardando dublagem. O roteiro de 30–35 minutos ainda não representa a duração medida desta versão.
 
 Os objetos da mesa foram separados para evitar sobreposição entre teclado, mouse, rádio, lanterna e relatório. Papéis e livros apoiam-se no tampo; livros decorativos usam as alturas reais das prateleiras; o diagrama elétrico é montado verticalmente. O feixe da lanterna parte da lente e aponta para a mira, com balanço reduzido ao caminhar.
 
@@ -66,7 +68,7 @@ Para gerar um executável, instale os export templates da mesma versão 4.0.stab
 
 ## Escopo atual
 
-Capítulo 1 básico: recepção, segurança, corredor, arquivo, sala técnica, mão com lanterna, três câmeras, três puzzles, reportes, figuras, documentos, objetivos, checkpoints e tela final. Não inclui capítulos seguintes, áudio definitivo, modelos realistas ou polimento de ritmo.
+Capítulo 1: chegada, segurança, ronda, cadeira, técnica, figura, duplo e relatório final. Inclui ambiência/efeitos sonoros, diário e checkpoints. Dublagem, animações humanas detalhadas, mixagem e testes de ritmo com jogadores ainda estão pendentes; os capítulos seguintes não estão implementados.
 
 ## Trabalho em equipe
 

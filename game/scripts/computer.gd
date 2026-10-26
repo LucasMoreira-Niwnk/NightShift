@@ -25,6 +25,11 @@ var elapsed := 0.0
 var camera_names := ["01 / RECEPÇÃO", "02 / CORREDOR PRINCIPAL", "03 / ARQUIVO"]
 var camera_positions := [Vector3(5.5, 2.7, 11.4), Vector3(1.7, 2.7, 3.4), Vector3(7.6, 2.7, -9.5)]
 var camera_targets := [Vector3(-2, 1.1, 7.5), Vector3(0, 1.1, -11), Vector3(4, 0.8, -5.5)]
+var observation: OptionButton
+var interference: ColorRect
+var channel_screens: Array = []
+var stage_six_time := 0.0
+var monitor_glow: OmniLight3D
 
 func _ready() -> void:
 	name = "SecurityComputer"
@@ -42,6 +47,7 @@ func _ready() -> void:
 	select_camera(0)
 	build_monitor()
 	build_overlay()
+	set_monitor_power(false)
 
 func build_monitor() -> void:
 	var shape := BoxShape3D.new()
@@ -70,11 +76,29 @@ func build_monitor() -> void:
 	screen.material_override = material
 	add_child(screen)
 	var glow := OmniLight3D.new()
+	monitor_glow = glow
 	glow.position = Vector3(0, 0.5, 0.4)
 	glow.light_color = Color(0.3, 0.85, 0.7)
 	glow.light_energy = 0.45
 	glow.omni_range = 2
 	add_child(glow)
+	# Three physical surveillance displays share the selected viewport. Other
+	# channels retain their last inspected frame rather than rendering 3 worlds.
+	for index in range(3):
+		var image := MeshInstance3D.new()
+		var quad_screen := QuadMesh.new()
+		quad_screen.size = Vector2(0.61, 0.35)
+		image.mesh = quad_screen
+		image.position = Vector3(-0.65 + index * 0.65, 1.18, -0.05)
+		image.layers = 2
+		var bezel = preload("res://scripts/art.gd")
+		bezel.rounded_box(self, image.position - Vector3(0, 0, 0.04), Vector3(0.65, 0.4, 0.07), Color(0.035, 0.045, 0.04))
+		var surface := StandardMaterial3D.new()
+		surface.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		surface.albedo_color = Color(0.04, 0.06, 0.05)
+		image.material_override = surface
+		add_child(image)
+		channel_screens.append(surface)
 
 func part(location: Vector3, size: Vector3, color: Color) -> void:
 	preload("res://scripts/art.gd").rounded_box(self, location, size, color)
@@ -135,8 +159,13 @@ func build_overlay() -> void:
 	inspect_button = inspect
 	inspect.text = "Confirmar inspeção"
 	inspect.custom_minimum_size = Vector2(180, 40)
-	inspect.pressed.connect(func(): chapter.verify_camera(selected))
+	inspect.pressed.connect(func(): chapter.verify_camera(selected, observation.selected))
 	actions.add_child(inspect)
+	observation = OptionButton.new()
+	for text in ["Relógio visível", "Porta técnica fechada", "Cadeira diante da mesa"]:
+		observation.add_item(text)
+	observation.custom_minimum_size = Vector2(210, 40)
+	actions.add_child(observation)
 	report_category = OptionButton.new()
 	report_category.add_item("Objeto deslocado")
 	report_category.add_item("Presença não autorizada")
@@ -170,16 +199,45 @@ func build_overlay() -> void:
 	reflection.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	reflection.offset_top = 78
 	reflection.offset_bottom = -250
-	var silhouette := Polygon2D.new()
-	silhouette.polygon = PackedVector2Array([Vector2(515, 365), Vector2(535, 210), Vector2(575, 175), Vector2(570, 125), Vector2(590, 105), Vector2(620, 105), Vector2(640, 125), Vector2(635, 175), Vector2(675, 210), Vector2(700, 365)])
-	silhouette.color = Color(0.12, 0.19, 0.17)
-	reflection.add_child(silhouette)
+	var reflection_shader := Shader.new()
+	reflection_shader.code = """shader_type canvas_item;
+float person(vec2 p, vec2 center, float scale){
+ vec2 q=(p-center)/scale;
+ float head=1.0-smoothstep(0.94,1.1,length((q-vec2(0.0,-0.2))/vec2(0.045,0.092)));
+ float torso=1.0-smoothstep(0.9,1.08,length((q-vec2(0.0,0.12))/vec2(0.12,0.28)));
+ return max(head,torso);
+}
+void fragment(){
+ vec2 p=UV; p.x=(p.x-0.5)*1.77+0.5;
+ float operator=person(p,vec2(0.48,0.76),1.3);
+ float stranger=person(p,vec2(0.59,0.47),1.13);
+ float grain=fract(sin(dot(UV+TIME*0.01,vec2(12.98,78.23)))*43758.54);
+ vec3 glass=vec3(0.008,0.014,0.016)+grain*0.006;
+ glass+=stranger*vec3(0.035,0.05,0.044);
+ glass=mix(glass,vec3(0.016,0.028,0.026),operator*0.96);
+ float sheen=pow(max(0.0,1.0-length(UV-vec2(0.15,0.1))),6.0);
+ COLOR=vec4(glass+sheen*0.035,1.0);
+}"""
+	var reflection_material := ShaderMaterial.new()
+	reflection_material.shader = reflection_shader
+	reflection.material = reflection_material
 	reflection.hide()
 	var help := Label.new()
 	help.text = "NIGHTSHIFT SECURITY  •  AO VIVO  |  ← → alternar câmeras"
 	help.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	help.position = Vector2(30, -28)
 	overlay.add_child(help)
+	interference = ColorRect.new()
+	interference.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	interference.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	interference.offset_top = 78
+	interference.offset_bottom = -250
+	var shader := Shader.new()
+	shader.code = "shader_type canvas_item; uniform float strength = 0.0; void fragment(){ float line = step(0.88, fract(UV.y * 180.0 + TIME * 4.0)); float grain = fract(sin(dot(UV + TIME, vec2(12.9898,78.233))) * 43758.5453); COLOR = vec4(vec3(0.45 + grain * 0.3), strength * (line * 0.3 + grain * 0.5)); }"
+	var effect := ShaderMaterial.new()
+	effect.shader = shader
+	interference.material = effect
+	overlay.add_child(interference)
 	overlay.hide()
 
 func interaction_prompt() -> String:
@@ -189,6 +247,9 @@ func interact() -> void:
 	if active:
 		return
 	active = true
+	if not chapter.has_flag("terminal_booted"):
+		chapter.flags.terminal_booted = true
+		game.sound.play("switch", global_position)
 	game.set_player_control(false)
 	game.ui.get_child(0).hide()
 	set_monitor_power(true)
@@ -209,9 +270,18 @@ func close() -> void:
 
 func select_camera(index: int) -> void:
 	var previous := selected
+	if is_instance_valid(feed) and channel_screens.size() == 3 and monitor_power:
+		var frame := feed.get_texture().get_image()
+		if frame != null and not frame.is_empty():
+			channel_screens[previous].albedo_texture = ImageTexture.create_from_image(frame)
 	selected = posmod(index, camera_names.size())
+	if channel_screens.size() == 3 and monitor_power:
+		channel_screens[selected].albedo_texture = feed.get_texture()
+		channel_screens[selected].albedo_color = Color.WHITE
 	security_camera.position = camera_positions[selected]
 	security_camera.look_at(camera_targets[selected], Vector3.UP)
+	if chapter != null and chapter.stage == 6 and selected == 0 and chapter.has_flag("reflection_seen"):
+		show_empty_security()
 	if channel_label != null:
 		channel_label.text = "● AO VIVO   /   CAM " + camera_names[selected]
 	if active and chapter != null:
@@ -220,6 +290,10 @@ func select_camera(index: int) -> void:
 
 func update_status() -> void:
 	if status_label == null or chapter == null: return
+	inspect_button.visible = chapter.stage == 1
+	observation.visible = chapter.stage == 1
+	report_category.visible = chapter.stage != 1
+	report_button.visible = chapter.stage != 1
 	status_label.text = chapter.objective() + "\n" + game.ui.subtitle.text
 	if not chapter.history.is_empty():
 		status_label.text += "\nHistórico: " + " | ".join(chapter.history)
@@ -229,29 +303,54 @@ func toggle_zoom() -> void:
 
 func set_monitor_power(powered: bool) -> void:
 	monitor_power = powered
+	if monitor_glow != null: monitor_glow.visible = powered
 	if screen_material != null:
 		screen_material.albedo_texture = feed.get_texture() if powered else null
 		screen_material.albedo_color = Color.WHITE if powered else Color(0.015, 0.02, 0.02)
+	for surface in channel_screens:
+		surface.albedo_color = Color.WHITE if powered else Color(0.015, 0.02, 0.02)
+		surface.albedo_texture = null
+	if powered and channel_screens.size() == 3: channel_screens[selected].albedo_texture = feed.get_texture()
 
 func show_reflection() -> void:
 	if reflecting: return
 	reflecting = true
-	await get_tree().create_timer(2.0, false).timeout
-	if not active:
+	var generation: int = chapter.event_generation
+	await get_tree().create_timer(5.0, false).timeout
+	if generation != chapter.event_generation:
 		reflecting = false
+		return
+	if not active or selected != 0 or chapter.stage != 6:
+		reflecting = false
+		if chapter.stage == 6: chapter.flags.double_seen = false
 		return
 	reflection.show()
 	await get_tree().create_timer(1.3, false).timeout
+	if generation != chapter.event_generation: return
 	reflection.hide()
+	if active and selected == 0 and chapter.stage == 6:
+		chapter.flags.reflection_seen = true
+		show_empty_security()
+		chapter.save_game()
+	reflecting = false
+
+func show_empty_security() -> void:
 	security_camera.position = Vector3(-7.5, 2.7, 3.5)
 	security_camera.look_at(Vector3(-5, 1, 0))
-	reflecting = false
 
 func _process(delta: float) -> void:
 	elapsed += delta
+	if chapter.stage == 6: stage_six_time += delta
+	else: stage_six_time = 0
+	if interference != null:
+		var strength := 0.0
+		if chapter.stage >= 5 and selected == 1: strength = 0.45 if fmod(elapsed, 9) < 0.45 else 0.04
+		if chapter.stage == 6: strength = minf(0.6, stage_six_time / 65)
+		if signal_lost and selected == 1: strength = 0.75
+		interference.material.set_shader_parameter("strength", strength)
 	if active:
 		channel_label.text = "● AO VIVO   /   CAM " + camera_names[selected]
-		clock_label.text = "TURNO 01   |   00:%02d:%02d   |   SINAL OK" % [int(elapsed) / 60 % 60, int(elapsed) % 60]
+		clock_label.text = "14/11/2008   |   " + game.world.clocks[0].displayed_time + "   |   SINAL OK"
 		picture.modulate = Color.BLACK if signal_lost and selected == 1 else Color.WHITE
 		if signal_lost and selected == 1: clock_label.text = "SEM SINAL — MOVIMENTO DETECTADO NA SEGURANÇA"
 		update_status()

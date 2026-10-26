@@ -8,12 +8,15 @@ var game: Node
 var objects: Dictionary = {}
 var doors: Dictionary = {}
 var corridor_lights: Array = []
+var interior_lights: Array = []
 var chair: StaticBody3D
 var figure: Node3D
 var double: Node3D
 var clocks: Array = []
 var floor_plans: Array = []
 var materials: Dictionary = {}
+var phone_display: Label3D
+var chair_marks: Node3D
 
 func _ready() -> void:
 	for kind in ["tile", "wall", "metal", "wood", "ceiling"]:
@@ -26,7 +29,16 @@ func _ready() -> void:
 	# Outer walls and partitions. Each opening is 1.5 m wide and has a door.
 	wall(Vector3(-6, 1.5, 8), Vector3(0.2, 3, 8))
 	wall(Vector3(6, 1.5, 8), Vector3(0.2, 3, 8))
-	wall(Vector3(0, 1.5, 12), Vector3(12, 3, 0.2))
+	wall(Vector3(-3.375, 1.5, 12), Vector3(5.25, 3, 0.2))
+	wall(Vector3(3.375, 1.5, 12), Vector3(5.25, 3, 0.2))
+	wall(Vector3(0, 2.75, 12), Vector3(1.5, 0.5, 0.2))
+	room("Marquise", Vector3(0, 0, 14), Vector2(6, 4))
+	wall(Vector3(-3, 1.5, 14), Vector3(0.2, 3, 4))
+	wall(Vector3(3, 1.5, 14), Vector3(0.2, 3, 4))
+	wall(Vector3(0, 1.5, 16), Vector3(6, 3, 0.2))
+	make_door("entrance", Vector3(0, 0, 12), "entrada do Vesper")
+	doors.entrance.rotation.y = 0
+	add_sign("VESPER\nSETOR ADMINISTRATIVO", Vector3(0, 2.8, 12.15)).pixel_size = 0.0011
 	wall(Vector3(-4, 1.5, 4), Vector3(4, 3, 0.2))
 	# Security extends two metres beyond reception: seal its exposed rear edge.
 	wall(Vector3(-7, 1.5, 4), Vector3(2, 3, 0.2))
@@ -43,7 +55,15 @@ func _ready() -> void:
 	wall(Vector3(2, 1.5, -13), Vector3(0.2, 3, 6))
 	wall(Vector3(-2, 1.5, -4), Vector3(0.2, 3, 4))
 	wall(Vector3(-2, 1.5, -15), Vector3(0.2, 3, 2))
-	wall(Vector3(0, 1.5, -16), Vector3(4, 3, 0.2))
+	wall(Vector3(-1.6, 1.5, -16), Vector3(0.8, 3, 0.2))
+	wall(Vector3(1.6, 1.5, -16), Vector3(0.8, 3, 0.2))
+	room("Escadaria", Vector3(0, 0, -18), Vector2(4, 4))
+	wall(Vector3(-2, 1.5, -18), Vector3(0.2, 3, 4))
+	wall(Vector3(2, 1.5, -18), Vector3(0.2, 3, 4))
+	wall(Vector3(0, 1.5, -20), Vector3(4, 3, 0.2))
+	for index in range(9):
+		box(self, Vector3(0, index * 0.12, -16.5 - index * 0.34), Vector3(1.7, 0.24, 0.34), "metal")
+	add_sign("2º ANDAR\nACESSO INTERDITADO", Vector3(0, 2.4, -19.8)).pixel_size = 0.0015
 	partition(-2, -2, 4, 1)
 	partition(2, -10, -2, -5)
 	partition(-2, -14, -6, -10)
@@ -53,6 +73,10 @@ func _ready() -> void:
 	# Furniture and interactable evidence.
 	table(Vector3(-3.3, 0, 7.5), Vector2(3, 1.1))
 	table(Vector3(-6.5, 0, 0), Vector2(2.2, 1.3))
+	table(Vector3(-4.4, 0, -0.2), Vector2(1, 1))
+	Art.rounded_box(self, Vector3(-4.4, 1.23, -0.36), Vector3(0.72, 0.3, 0.45), Color(0.28, 0.29, 0.24), 0.04)
+	Art.rounded_box(self, Vector3(-4.4, 1.39, -0.36), Vector3(0.61, 0.035, 0.35), Color(0.12, 0.15, 0.13), 0.012)
+	Art.box(self, Vector3(-4.4, 1.16, -0.125), Vector3(0.5, 0.035, 0.02), Color(0.025, 0.035, 0.03))
 	table(Vector3(5.5, 0, -7.8), Vector2(2.4, 1.2))
 	item("envelope", "Ler envelope e recolher crachá/chave", Vector3(-3.2, 1.086, 7.5), Vector3(0.6, 0.08, 0.4), Color(0.8, 0.72, 0.48))
 	item("flashlight", "Pegar lanterna", Vector3(-5.75, 1.11, -0.32), Vector3(0.07, 0.06, 0.25), Color(0.55, 0.58, 0.3))
@@ -60,15 +84,27 @@ func _ready() -> void:
 	item("logbook", "Ler livro de registros", Vector3(5.8, 1.125, -7.7), Vector3(0.5, 0.09, 0.4), Color(0.38, 0.17, 0.12))
 	item("maintenance", "Ler registro de manutenção", Vector3(4.9, 1.105, -7.7), Vector3(0.35, 0.05, 0.4), Color(0.72, 0.75, 0.62))
 	item("emergency", "Inspecionar saída de emergência", Vector3(1.84, 1.1, -13.4), Vector3(0.12, 2.2, 1.3), Color(0.17, 0.36, 0.25))
-	item("stairs", "Examinar escada bloqueada", Vector3(0, 1, -15.8), Vector3(1.5, 2, 0.14), Color(0.26, 0.28, 0.27))
+	item("stairs", "Examinar escada bloqueada", Vector3(0, 1, -15.8), Vector3(2.4, 2, 0.14), Color(0.26, 0.28, 0.27), false)
+	for x in [-1.15, -0.75, -0.35, 0.05, 0.45, 0.85, 1.15]:
+		Art.box(objects.stairs, Vector3(x, 0.4, 0), Vector3(0.035, 2.8, 0.04), Color(0.09, 0.12, 0.1))
+	for y in [0.1, 1.0]:
+		Art.box(objects.stairs, Vector3(0, y, 0), Vector3(2.4, 0.04, 0.04), Color(0.1, 0.14, 0.11))
 	item("breakers", "Abrir quadro elétrico", Vector3(-7.72, 1.5, -11), Vector3(0.3, 1, 1.1), Color(0.45, 0.45, 0.3))
 	item("diagram", "Ler diagrama elétrico", Vector3(-7.75, 1.6, -9.6), Vector3(0.15, 0.6, 0.4), Color(0.8, 0.8, 0.65))
 	item("phone", "Examinar telefone", Vector3(-2.4, 1.18, 7.5), Vector3(0.34, 0.2, 0.3), Color(0.15, 0.16, 0.15))
-	item("report", "Ler relatório impresso", Vector3(-5.8, 1.086, 0.46), Vector3(0.36, 0.06, 0.28), Color(0.85, 0.86, 0.75))
+	phone_display = add_sign("SEM LINHA", Vector3(-2.4, 1.31, 7.55))
+	phone_display.pixel_size = 0.00045
+	phone_display.font_size = 24
+	item("report", "Ler relatório impresso", Vector3(-4.4, 1.086, 0.15), Vector3(0.36, 0.06, 0.28), Color(0.85, 0.86, 0.75))
 	objects.report.hide()
 	objects.report.collision_layer = 0
 	chair = item("chair", "Examinar cadeira e marcas no piso", Vector3(5.5, 0, -6.5), Vector3(0.7, 0.55, 0.7), Color(0.26, 0.16, 0.1), false)
 	Art.external(chair, "SchoolChair_01", Vector3.ZERO, Vector3(0.65, 1.2, 0.65), PI)
+	chair_marks = Node3D.new()
+	add_child(chair_marks)
+	for x in [3.05, 3.45]:
+		Art.box(chair_marks, Vector3(x, 0.008, -5.6), Vector3(0.025, 0.008, 1.45), Color(0.045, 0.035, 0.025))
+	chair_marks.hide()
 	for z in [-3.5, -6.5, -9.0]:
 		box(self, Vector3(7.4, 1, z), Vector3(0.9, 2, 1.1), "metal").hide()
 		Art.model(self, "bookcaseOpen", Vector3(7.4, 0, z), Vector3(1.1, 2.1, 0.85), -PI / 2)
@@ -87,6 +123,7 @@ func _ready() -> void:
 	task_light.light_energy = 0.55
 	task_light.omni_range = 2.0
 	add_child(task_light)
+	interior_lights.append(task_light)
 	Art.model(self, "pottedPlant", Vector3(4.8, 0, 10.8), Vector3(0.7, 1.5, 0.7))
 	box(self, Vector3(4.8, 0.3, 10.8), Vector3(0.5, 0.6, 0.5), "metal").hide()
 	Art.model(self, "trashcan", Vector3(-7.35, 0, 2.9), Vector3(0.38, 0.65, 0.38))
@@ -116,6 +153,15 @@ func _ready() -> void:
 	figure.hide()
 	double = humanoid(Color(0.19, 0.28, 0.24))
 	double.position = Vector3(0, 0, 8)
+	var badge := Art.box(double, Vector3(-0.13, 1.3, 0.14), Vector3(0.09, 0.12, 0.012), Color(0.75, 0.72, 0.6))
+	badge.layers = 4
+	var duplicate_envelope := Node3D.new()
+	double.add_child(duplicate_envelope)
+	duplicate_envelope.position = Vector3(0.4, 0.95, 0.1)
+	Art.paper(duplicate_envelope, Vector3(0.28, 0.02, 0.18), true)
+	for mesh in duplicate_envelope.find_children("*", "MeshInstance3D", true, false): mesh.layers = 4
+	duplicate_envelope.hide()
+	double.set_meta("envelope", duplicate_envelope)
 	double.hide()
 	var environment := WorldEnvironment.new()
 	environment.environment = Environment.new()
@@ -176,6 +222,7 @@ func room(label: String, center: Vector3, size: Vector2) -> void:
 	light.shadow_enabled = true
 	light.shadow_bias = 0.04
 	add_child(light)
+	interior_lights.append(light)
 	if label == "Corredor":
 		light.light_color = Color(0.46, 0.64, 0.66)
 		light.light_energy = 0.65
@@ -184,6 +231,7 @@ func room(label: String, center: Vector3, size: Vector2) -> void:
 			var extra := light.duplicate() as OmniLight3D
 			extra.position.z = z
 			add_child(extra)
+			interior_lights.append(extra)
 			corridor_lights.append(extra)
 	Art.model(self, "lampSquareCeiling", center + Vector3(0, 2.7, 0), Vector3(0.8, 0.3, 0.8))
 
@@ -293,6 +341,9 @@ func humanoid(color: Color) -> Node3D:
 func set_corridor_power(powered: bool) -> void:
 	for light in corridor_lights:
 		light.visible = powered
+
+func set_interior_power(powered: bool) -> void:
+	for light in interior_lights: light.visible = powered
 
 func in_security(point: Vector3) -> bool:
 	return point.x < -2.3 and point.x > -7.8 and point.z > -1.8 and point.z < 3.8

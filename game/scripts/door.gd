@@ -7,6 +7,8 @@ var collider: CollisionShape3D
 var access: Callable
 var display_name := "porta"
 var forced_locked := false
+var handle: Node3D
+var animation: Tween
 
 func interaction_prompt() -> String:
 	return "E — Fechar " + display_name if is_open else "E — Abrir " + display_name
@@ -16,6 +18,9 @@ func _ready() -> void:
 	pivot = Node3D.new()
 	pivot.position.x = -0.75
 	add_child(pivot)
+	handle = Node3D.new()
+	handle.position = Vector3(1.3, 1.16, 0)
+	pivot.add_child(handle)
 	var mesh := MeshInstance3D.new()
 	var box := BoxMesh.new()
 	box.size = Vector3(1.5, 2.5, 0.15)
@@ -34,7 +39,7 @@ func _ready() -> void:
 		for y in [0.65, 1.6]:
 			art.box(pivot, Vector3(0.75, y, side * 0.08), Vector3(1.15, 0.65, 0.025), Color(0.14, 0.19, 0.16))
 		art.box(pivot, Vector3(1.3, 1.15, side * 0.1), Vector3(0.1, 0.24, 0.025), Color(0.38, 0.4, 0.34))
-		art.box(pivot, Vector3(1.21, 1.16, side * 0.15), Vector3(0.24, 0.045, 0.06), Color(0.54, 0.54, 0.45))
+		art.box(handle, Vector3(-0.09, 0, side * 0.15), Vector3(0.24, 0.045, 0.06), Color(0.54, 0.54, 0.45))
 		art.box(pivot, Vector3(0.75, 2.15, side * 0.09), Vector3(0.95, 0.22, 0.025), Color(0.045, 0.07, 0.06))
 		var label := Label3D.new()
 		label.text = display_name.to_upper()
@@ -63,6 +68,9 @@ func interact() -> void:
 	set_open(not is_open)
 
 func restore_open(value: bool) -> void:
+	if animation != null and animation.is_valid(): animation.kill()
+	moving = false
+	handle.rotation.z = 0
 	is_open = value
 	set_collision_layer_value(1, not is_open)
 	set_collision_layer_value(2, true)
@@ -77,7 +85,7 @@ func set_open(value: bool) -> void:
 	# Disable physical obstruction, retaining ray detection on collision layer 2.
 	set_collision_layer_value(1, not is_open)
 	set_collision_layer_value(2, true)
-	var tween := create_tween()
-	tween.tween_property(pivot, "rotation:y", -PI / 2.0 if is_open else 0.0, 0.35)
-	await tween.finished
+	animation = create_tween()
+	animation.tween_property(pivot, "rotation:y", -PI / 2.0 if is_open else 0.0, 0.35)
+	await animation.finished
 	moving = false

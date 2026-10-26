@@ -22,6 +22,7 @@ func _ready() -> void:
 	camera = Camera3D.new()
 	camera.position.y = 1.6
 	camera.current = true
+	camera.cull_mask = 3
 	camera.near = 0.03
 	add_child(camera)
 	ray = RayCast3D.new()
@@ -47,6 +48,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			target.interact()
 
 func equip_flashlight(owned: bool) -> void:
+	if has_flashlight == owned: return
 	has_flashlight = owned
 	hand.visible = owned
 	flashlight.visible = owned

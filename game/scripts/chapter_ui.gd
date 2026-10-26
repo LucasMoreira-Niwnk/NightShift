@@ -81,7 +81,7 @@ func _ready() -> void:
 	inventory.add_child(inventory_label)
 	inventory_label.add_theme_font_size_override("font_size", 12)
 	inventory_label.modulate = Style.MUTED
-	var controls := label_at(root, Vector2.ZERO, "[WASD] Mover    [F] Lanterna    [J] Protocolo    [Esc] Menu", 12)
+	var controls := label_at(root, Vector2.ZERO, "[WASD] Mover    [F] Lanterna    [J] Diário    [Esc] Menu", 12)
 	controls.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	controls.offset_left = 24
 	controls.offset_top = -26
@@ -141,6 +141,27 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation", 12)
 	margin.add_child(column)
 	panel.hide()
+	if not OS.get_cmdline_user_args().has("--smoke-test"):
+		opening()
+
+func opening() -> void:
+	var shade := ColorRect.new()
+	shade.color = Color.BLACK
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var caption := Label.new()
+	caption.text = "14 de novembro de 2008 — 23h57\nEdifício Vesper, Setor Administrativo."
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	caption.add_theme_font_size_override("font_size", 24)
+	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shade.add_child(caption)
+	caption.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var tween := create_tween()
+	tween.tween_interval(0.8)
+	tween.tween_property(shade, "modulate:a", 0.0, 2.5)
+	tween.tween_callback(shade.queue_free)
 
 func hud_card(parent: Control) -> PanelContainer:
 	var card := PanelContainer.new()
@@ -153,7 +174,8 @@ func _process(delta: float) -> void:
 	if game.player == null or game.chapter == null: return
 	var point: Vector3 = game.player.position
 	var zone := "CORREDOR PRINCIPAL"
-	if point.z > 4: zone = "RECEPÇÃO"
+	if point.z > 12: zone = "ENTRADA / MARQUISE"
+	elif point.z > 4: zone = "RECEPÇÃO"
 	elif point.x < -2 and point.z > -2: zone = "SEGURANÇA"
 	elif point.x > 2: zone = "ARQUIVO"
 	elif point.x < -2 and point.z < -6: zone = "SALA TÉCNICA"
@@ -238,7 +260,25 @@ func document(heading: String, content: String, final: bool = false) -> void:
 	title(heading)
 	text_body(content)
 	final_document = final
-	button("Encerrar capítulo" if final else "Guardar / continuar [E ou Esc]", close_modal)
+	button("Guardar relatório / continuar [E ou Esc]" if final else "Guardar / continuar [E ou Esc]", close_modal)
+	if final:
+		button("Ignorar a ligação e permanecer na segurança", func():
+			game.chapter.flags.phone_ignored = true
+			close_modal())
+	open_modal()
+
+func show_journal() -> void:
+	clear_panel()
+	title("Daniel Reis — Diário do turno")
+	var data = preload("res://scripts/chapter_data.gd")
+	var entries := {"protocol": ["Protocolo", data.PROTOCOL], "recording": ["Gravação 001", data.SUPERVISOR], "logbook": ["Livro de registros", data.LOGBOOK], "maintenance": ["Manutenção", data.MAINTENANCE], "diagram": ["Diagrama", data.DIAGRAM], "report": ["Relatório", data.REPORT]}
+	text_body(game.chapter.objective() + "\n\nOcorrências: " + ("Nenhuma registrada." if game.chapter.history.is_empty() else "\n".join(game.chapter.history)))
+	button("Rever mensagens e diálogos", func(): document("Registro do turno", "\n\n".join(game.chapter.transcript)))
+	for id in game.chapter.documents:
+		if entries.has(id):
+			var entry: Array = entries[id]
+			button(entry[0], func(): document(entry[0], entry[1]))
+	button("Voltar ao turno [E / Esc]", close_modal)
 	open_modal()
 
 func show_floor_plan(texture: Texture2D) -> void:
@@ -266,14 +306,12 @@ func close_modal() -> void:
 	modal_shade.hide()
 	game.set_player_control(true)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	if final_document:
-		final_document = false
-		game.chapter.complete()
+	final_document = false
 
 func show_breakers() -> void:
 	clear_panel()
 	title("Quadro elétrico — Sala técnica")
-	text_body("Diagrama: A/B/C ligados. D desligado.\nO subsolo não deve ser energizado.")
+	text_body("Identifique os circuitos no diagrama ao lado do quadro.\nProteção do circuito D: não energizar o subsolo.")
 	breaker_buttons.clear()
 	for index in range(4):
 		var control := button("", func():
@@ -316,10 +354,25 @@ func toggle_pause() -> void:
 	button("Nova partida", func():
 		get_tree().paused = false
 		get_tree().reload_current_scene())
+	button("Áudio e legendas", show_audio_settings)
 	button("Sair do jogo", func(): get_tree().quit())
 	panel.show()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	game.set_player_control(false)
+
+func show_audio_settings() -> void:
+	clear_panel()
+	title("Áudio — legendas sempre ativas")
+	for bus_name in ["Ambiente", "Efeitos"]:
+		label_at(column, Vector2.ZERO, bus_name, 18)
+		var slider := HSlider.new()
+		slider.min_value = 0
+		slider.max_value = 1
+		slider.step = 0.01
+		slider.value = db_to_linear(AudioServer.get_bus_volume_db(AudioServer.get_bus_index(bus_name)))
+		slider.value_changed.connect(func(value: float): game.sound.set_volume(bus_name, value))
+		column.add_child(slider)
+	button("Continuar", toggle_pause)
 
 func show_ending() -> void:
 	ending = true

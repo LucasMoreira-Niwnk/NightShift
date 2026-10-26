@@ -24,12 +24,27 @@ func reachable(id: String, position: Vector3, height: float = 0.0) -> void:
 		print("RAY_DEBUG ", id, " collider=", game.player.ray.get_collider(), " player=", game.player.position)
 
 func run() -> void:
-	get_tree().create_timer(40).timeout.connect(func():
+	get_tree().create_timer(100).timeout.connect(func():
 		push_error("CHAPTER_TEST_TIMEOUT")
 		get_tree().quit(1))
 	var chapter: Node = game.chapter
 	await get_tree().create_timer(0.8).timeout
-	check(game.player.is_on_floor(), "Player settles on reception floor")
+	check(game.player.is_on_floor(), "Player settles on entrance floor")
+	check(game.player.position.z > 12, "Arrival begins outside reception")
+	check(not game.computer.monitor_power, "Terminal starts switched off")
+	check(game.sound.effects.ring.data.size() > 0 and game.sound.effects.rain.loop_end > 0, "Soundscape has playable PCM and looping ambience")
+	game.player.position = Vector3(0, 0.05, 14)
+	game.player.rotation.y = 0
+	Input.action_press("move_forward")
+	await get_tree().create_timer(0.6).timeout
+	Input.action_release("move_forward")
+	check(game.player.position.z > 12.35, "Closed entrance blocks walking")
+	game.world.doors.entrance.interact()
+	await get_tree().create_timer(0.4).timeout
+	Input.action_press("move_forward")
+	await get_tree().create_timer(0.8).timeout
+	Input.action_release("move_forward")
+	check(chapter.has_flag("C1_S1_ENTER"), "Entering building triggers arrival")
 	for asset in ["SchoolChair_01", "metal_office_desk", "vintage_radio_transceiver", "desk_lamp_arm_01", "drawer_cabinet", "binder_notebook"]:
 		check(game.world.find_child(asset + "_1kModel", true, false) != null, "External model is instantiated: " + asset)
 	for id in ["envelope", "flashlight", "recorder", "logbook", "maintenance", "phone"]:
@@ -75,6 +90,9 @@ func run() -> void:
 	await capture("chapter1-protocol")
 	dismiss()
 	check(chapter.has_flag("badge"), "Envelope awards badge/key")
+	check(chapter.documents.has("protocol"), "Protocol retained in journal")
+	check(chapter.has_flag("C1_S1_CLOCK"), "Clock and phone event is claimed once")
+	check(not game.director.claim("C1_S1_CLOCK"), "Unique event cannot replay")
 	# Exercise a doorway with the actual player controller and physics.
 	game.player.position = Vector3(0, 0.05, 1)
 	game.player.rotation.y = 0
@@ -128,9 +146,14 @@ func run() -> void:
 		await RenderingServer.frame_post_draw
 		var frame: Image = game.computer.feed.get_texture().get_image()
 		check(not frame.is_empty(), "CCTV renders camera " + str(index))
+		if index == 0:
+			chapter.verify_camera(0, 2)
+			check(chapter.verified.is_empty(), "Wrong visual identification rejected without penalty")
+		game.computer.observation.select(index)
 		game.computer.inspect_button.emit_signal("pressed")
 	check(chapter.stage == 2, "Three initial inspections advance patrol")
 	game.computer.close()
+	await capture("chapter1-console")
 	game.world.doors.archive.interact()
 	await get_tree().create_timer(0.4).timeout
 	game.player.position = Vector3(0, 0.05, -5)
@@ -158,8 +181,13 @@ func run() -> void:
 	game.computer.close()
 	await reachable("chair", Vector3(2.5, 0.05, -5), 0.55)
 	game.player.interaction_target().interact()
-	await get_tree().create_timer(1.6).timeout
+	await get_tree().create_timer(1.0).timeout
 	check(chapter.has_flag("chair_inspected"), "Chair inspection recorded")
+	check(not chapter.has_flag("chair_moved"), "Chair waits while directly observed")
+	check(chapter.save_game() and chapter.load_game(), "Checkpoint restores pending chair event")
+	game.player.camera.rotation.y += PI
+	await get_tree().create_timer(2.0).timeout
+	check(chapter.has_flag("chair_moved"), "Chair moves after player looks away")
 	game.player.position = Vector3(-6.5, 0.05, 1.8)
 	game.computer.interact()
 	check(chapter.stage == 4, "Technical room stage reached")
@@ -173,6 +201,8 @@ func run() -> void:
 	chapter.toggle_breaker(3)
 	check(not chapter.breakers[3], "Subsoil circuit resets on error")
 	check(not chapter.confirm_breakers(), "Incomplete breaker solution rejected")
+	chapter.interact("diagram")
+	dismiss()
 	await reachable("breakers", Vector3(-6.1, 0.05, -11))
 	game.player.interaction_target().interact()
 	await capture("chapter1-breakers")
@@ -181,10 +211,14 @@ func run() -> void:
 	check(chapter.has_flag("power"), "Power restored")
 	check(chapter.save_game(), "Checkpoint saved")
 	var saved_stage: int = chapter.stage
+	game.player.flashlight.visible = false
+	chapter.save_game()
 	chapter.stage = 0
 	chapter.flags = {}
 	check(chapter.load_game(), "Checkpoint loaded")
 	check(chapter.stage == saved_stage and chapter.has_flag("power") and game.player.has_flashlight, "Save restores flags/items/stage")
+	check(not game.player.flashlight.visible and chapter.documents.has("diagram"), "Save preserves torch switch and collected documents")
+	game.player.flashlight.visible = true
 	game.player.position = Vector3(-6.5, 0.05, 1.8)
 	game.computer.interact()
 	check(chapter.stage == 5, "Entity stage reached")
@@ -193,18 +227,36 @@ func run() -> void:
 	for index in range(3):
 		game.computer.select_camera(0)
 		game.computer.select_camera(1)
-	await get_tree().create_timer(3.8).timeout
+	await get_tree().create_timer(5.0).timeout
 	check(chapter.stage == 6, "Three switches advance doppelganger")
 	check(chapter.has_flag("double_seen"), "Double shown on CAM-01")
-	await get_tree().create_timer(2.1).timeout
+	game.computer.select_camera(2)
+	await get_tree().create_timer(5.1).timeout
+	check(not game.computer.reflecting and not chapter.has_flag("double_seen"), "Reflection waits for operator to return to CAM-01")
+	game.computer.select_camera(0)
+	await get_tree().create_timer(5.1).timeout
 	await capture("chapter1-reflection")
+	await get_tree().create_timer(1.4).timeout
+	check(chapter.has_flag("reflection_seen"), "Reflection completes before empty-security transmission")
+	game.computer.select_camera(2)
+	game.computer.select_camera(0)
+	check(game.computer.security_camera.position.is_equal_approx(Vector3(-7.5, 2.7, 3.5)), "CAM-01 retains impossible empty-security view after channel switch")
 	chapter.power_off_monitor()
 	check(chapter.stage == 7 and not game.computer.monitor_power, "Power-off unlocks final report")
-	await reachable("report", Vector3(-6.1, 0.05, 1.6))
+	await reachable("report", Vector3(-4.4, 0.05, 1.6))
 	game.player.interaction_target().interact()
 	check(game.ui.modal and chapter.has_flag("report_read"), "Report readable")
 	dismiss()
-	await get_tree().create_timer(1.8).timeout
+	check(chapter.stage == 7 and not game.ui.ending, "Reading report leaves time to investigate phone")
+	check(chapter.save_game() and chapter.load_game(), "Final phone sequence survives checkpoint load")
+	game.player.position = Vector3(-2.4, 0.05, 8.8)
+	await get_tree().create_timer(0.2).timeout
+	check(game.director.final_started and chapter.has_flag("phone_stopped"), "Ramal 000 stops on approach without answering")
+	check(chapter.load_game(), "Loading cancels an in-flight final dialogue")
+	chapter.flags.phone_ignored = true
+	await get_tree().create_timer(0.2).timeout
+	check(game.director.final_started, "Ignoring the call also advances the ending")
+	await get_tree().create_timer(13.5).timeout
 	check(chapter.stage == 8 and game.ui.ending, "Chapter completable from start to finish")
 	await capture("chapter1-ending")
 	if failures == 0: print("CHAPTER1_TEST_OK: eight scenes, three puzzles, FPV hand, CCTV, reports, checkpoints, ending")

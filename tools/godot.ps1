@@ -3,9 +3,20 @@ param(
     [string]$Mode = 'editor'
 )
 $ErrorActionPreference = 'Stop'
-$godotDirectory = 'C:\Users\hsaug\Downloads\Godot_v4.0-stable_win64.exe'
-$godotExecutable = Join-Path $godotDirectory 'Godot_v4.0-stable_win64_console.exe'
-if ($env:NIGHTSHIFT_GODOT) { $godotExecutable = $env:NIGHTSHIFT_GODOT }
+$workspaceDirectory = Split-Path $PSScriptRoot -Parent
+$godotExecutable = $env:NIGHTSHIFT_GODOT
+$localConfig = Join-Path $workspaceDirectory '.local\godot-path.txt'
+if (-not $godotExecutable -and (Test-Path -LiteralPath $localConfig -PathType Leaf)) {
+    $godotExecutable = (Get-Content -LiteralPath $localConfig -Raw).Trim()
+}
+if (-not $godotExecutable) {
+    $godotCommand = Get-Command godot -CommandType Application -ErrorAction SilentlyContinue
+    if ($godotCommand) { $godotExecutable = $godotCommand.Source }
+}
+if (-not $godotExecutable) {
+    # Preserve the existing portable installation, without tying it to a username.
+    $godotExecutable = Join-Path $env:USERPROFILE 'Downloads\Godot_v4.0-stable_win64.exe\Godot_v4.0-stable_win64_console.exe'
+}
 if (-not (Test-Path -LiteralPath $godotExecutable -PathType Leaf)) {
     throw 'Godot não encontrado. Defina NIGHTSHIFT_GODOT com o caminho completo do executável.'
 }

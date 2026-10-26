@@ -5,3 +5,11 @@ builds/
 *.tmp
 .DS_Store
 Thumbs.db
+**/.godot/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.vscode/
+.idea/

@@ -122,6 +122,16 @@ func run() -> void:
 	game.player.interaction_target().interact()
 	check(game.player.hand.visible and game.player.flashlight.visible, "FPV hand and flashlight equipped")
 	check(game.player.hand.skeleton != null, "Imported right-hand skeleton loaded")
+	var grip_skeleton: Skeleton3D = game.player.hand.skeleton
+	var index_knuckle := grip_skeleton.get_bone_global_pose(grip_skeleton.find_bone("finger_index1.r")).origin
+	var index_middle := grip_skeleton.get_bone_global_pose(grip_skeleton.find_bone("finger_index2.r")).origin
+	var index_distal := grip_skeleton.get_bone_global_pose(grip_skeleton.find_bone("finger_index3.r")).origin
+	# A curled finger defines the cross-section of the grip. The knuckle row
+	# alone is sloped because the four fingers have different lengths.
+	var curl_normal := (index_middle - index_knuckle).cross(index_distal - index_middle)
+	var grip_axis := (grip_skeleton.global_transform.basis * curl_normal).normalized()
+	var barrel_axis: Vector3 = game.player.hand.torch.global_transform.basis.x.normalized()
+	check(absf(grip_axis.dot(barrel_axis)) > 0.99, "Flashlight axis passes through the finger curl opening, rather than across the palm")
 	check(game.player.hand.lens_point != Vector3.ZERO, "Flashlight lens anchor found")
 	check(game.player.hand.light.position.distance_to(game.player.hand.lens_point) < 0.025, "Beam starts at the model lens")
 	check((-game.player.flashlight.global_transform.basis.z).dot(-game.player.camera.global_transform.basis.z) > 0.99, "Flashlight beam aligns with camera aim")

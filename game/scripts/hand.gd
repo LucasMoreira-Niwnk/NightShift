@@ -2,10 +2,12 @@ extends Node3D
 
 const Art = preload("res://scripts/art.gd")
 const PALM_AXIS := Vector3(0, 1, 0)
-const WRIST_ROLL := 1.5
+const WRIST_ROLL := 0.0
 const FINGER_CURL := [0.75, 1.1, 0.8]
-const THUMB_CURL := [-0.25, 0.7, 0.3]
-const GRIP_OFFSET := Vector3(-0.018, -0.03, -0.025)
+const THUMB_CURL := [-0.55, 0.75, 0.3]
+# The socket sits in the finger curl opening. Offset the model's bottom-centred
+# origin to put its shaft there, with the rear cap just behind the little finger.
+const GRIP_OFFSET := Vector3(0.003, -0.029, -0.065)
 var time := 0.0
 var walking := false
 var light: SpotLight3D

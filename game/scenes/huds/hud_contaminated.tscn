@@ -1,0 +1,201 @@
+[gd_scene load_steps=2 format=3 uid="uid://hud_contaminated_nightshift"]
+
+[ext_resource type="Script" path="res://scripts/huds/hud_contaminated.gd" id="1_contam"]
+
+[node name="HUDContaminated" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_contam")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.02, 0.03, 1)
+
+[node name="MainLayout" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Header" type="HBoxContainer" parent="MainLayout/VBox"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.25, 0.25, 1)
+theme_override_font_sizes/font_size = 20
+text = "V̷E̶S̸P̵E̶R̷ SECURITY NETWORK"
+
+[node name="Operator" type="Label" parent="MainLayout/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.35, 0.35, 1)
+theme_override_font_sizes/font_size = 14
+text = "OPERADOR: R̷E̶I̸S̵, DANIEL"
+
+[node name="VSeparator" type="VSeparator" parent="MainLayout/VBox/Header"]
+layout_mode = 2
+
+[node name="TimeLabel" type="Label" parent="MainLayout/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 16
+text = "0█:██:4█"
+
+[node name="FeedGrid" type="HBoxContainer" parent="MainLayout/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="Cam1" type="PanelContainer" parent="MainLayout/VBox/FeedGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout/VBox/FeedGrid/Cam1"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/VBox/FeedGrid/Cam1/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+text = "● CAM-01 — RECEPÇÃO"
+
+[node name="Center" type="Label" parent="MainLayout/VBox/FeedGrid/Cam1"]
+layout_mode = 2
+size_flags_vertical = 6
+theme_override_colors/font_color = Color(1, 0.4, 0.4, 0.9)
+text = "DANIEL ESTÁ AQUI
+[00:00:03 - GRAVAÇÃO]"
+horizontal_alignment = 1
+
+[node name="Cam2" type="PanelContainer" parent="MainLayout/VBox/FeedGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout/VBox/FeedGrid/Cam2"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/VBox/FeedGrid/Cam2/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+text = "● CAM-02 — CORREDOR"
+
+[node name="Center" type="Label" parent="MainLayout/VBox/FeedGrid/Cam2"]
+layout_mode = 2
+size_flags_vertical = 6
+theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 28
+text = "◼"
+horizontal_alignment = 1
+
+[node name="Footer" type="Label" parent="MainLayout/VBox/FeedGrid/Cam2"]
+layout_mode = 2
+size_flags_vertical = 8
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 11
+text = "PROXIMIDADE DETECTADA"
+horizontal_alignment = 2
+
+[node name="Cam3" type="PanelContainer" parent="MainLayout/VBox/FeedGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout/VBox/FeedGrid/Cam3"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/VBox/FeedGrid/Cam3/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 1, 0.5, 1)
+text = "● CAM-03 — Ȃ̷̧R̶̢̈Q̵̧̊U̷̧"
+
+[node name="Center" type="Label" parent="MainLayout/VBox/FeedGrid/Cam3"]
+layout_mode = 2
+size_flags_vertical = 6
+theme_override_colors/font_color = Color(0.3, 1, 0.6, 0.8)
+theme_override_font_sizes/font_size = 15
+text = "ELE ESTÁ
+APRENDENDO
+A SER VOCÊ"
+horizontal_alignment = 1
+
+[node name="MimesisBox" type="PanelContainer" parent="MainLayout/VBox"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout/VBox/MimesisBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Header" type="Label" parent="MainLayout/VBox/MimesisBox/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 12
+text = "M̷Ȩ̷̂M̵̧Ȩ̶Ş̸I̵̧Ş̷ — TRANSMISSÃO DIRETA"
+
+[node name="Message" type="Label" parent="MainLayout/VBox/MimesisBox/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.85, 1)
+theme_override_font_sizes/font_size = 16
+text = "DANIEL.
+ESTE É O SEU TERCEIRO TURNO.
+VOCÊ NÃO SE LEMBRA DOS OUTROS DOIS.
+NÃO DESLIGUE."
+
+[node name="StatusBar" type="HBoxContainer" parent="MainLayout/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Panel1" type="PanelContainer" parent="MainLayout/VBox/StatusBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout/VBox/StatusBar/Panel1"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/VBox/StatusBar/Panel1/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 12
+text = "INCIDENTES REGISTRADOS"
+
+[node name="Text" type="Label" parent="MainLayout/VBox/StatusBar/Panel1/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 13
+text = "#0044 — #0045 — #0046 — #0047 (TODOS IDÊNTICOS)"
+
+[node name="Panel2" type="PanelContainer" parent="MainLayout/VBox/StatusBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout/VBox/StatusBar/Panel2"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/VBox/StatusBar/Panel2/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 12
+text = "STATUS DE OPERADORES"
+
+[node name="Text" type="Label" parent="MainLayout/VBox/StatusBar/Panel2/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 13
+text = "HENRIQUE: AUSENTE | DANIEL: RECONSTITUIÇÃO"

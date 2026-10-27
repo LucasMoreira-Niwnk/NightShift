@@ -1,10 +1,10 @@
 extends Node3D
 
 const Art = preload("res://scripts/art.gd")
-const PALM_AXIS := Vector3(-0.985, 0.17, 0)
+const PALM_AXIS := Vector3(0, 1, 0)
 const WRIST_ROLL := 2.9
 const FINGER_CURL := [0.75, 1.1, 0.8]
-const GRIP_OFFSET := Vector3(0, -0.045, -0.025)
+const GRIP_OFFSET := Vector3(-0.018, -0.03, -0.025)
 var time := 0.0
 var walking := false
 var light: SpotLight3D
@@ -26,7 +26,7 @@ func _ready() -> void:
 	var wrist_rest := rig.global_transform.affine_inverse() * skeleton.global_transform * skeleton.get_bone_global_rest(wrist)
 	# Align the authored wrist, not the mesh bounds, to the first-person grip.
 	var palm_axis := PALM_AXIS.normalized()
-	# Overhand grip: knuckles above the barrel, fingertips closing underneath.
+	# Upright forearm entering from below; fingertips wrap around the barrel.
 	var grip_basis := Basis(palm_axis.cross(Vector3.FORWARD), palm_axis, Vector3.FORWARD).rotated(palm_axis, WRIST_ROLL).scaled(Vector3.ONE * 0.095)
 	rig.transform = Transform3D(grip_basis, Vector3.ZERO) * wrist_rest.affine_inverse()
 	for finger in ["index", "middle", "ring", "pinky"]:

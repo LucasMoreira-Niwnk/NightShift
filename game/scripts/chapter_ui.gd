@@ -49,7 +49,7 @@ func _ready() -> void:
 	var progress := HBoxContainer.new()
 	progress.add_theme_constant_override("separation", 6)
 	mission_column.add_child(progress)
-	for index in range(8):
+	for index in range(9):
 		var segment := ColorRect.new()
 		segment.custom_minimum_size = Vector2(0, 3)
 		segment.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -76,7 +76,7 @@ func _ready() -> void:
 	inventory.anchor_bottom = 1
 	inventory.offset_left = 24
 	inventory.offset_right = 270
-	inventory.offset_top = -76
+	inventory.offset_top = -96
 	inventory.offset_bottom = -40
 	inventory.add_child(inventory_label)
 	inventory_label.add_theme_font_size_override("font_size", 12)
@@ -179,6 +179,12 @@ func _process(delta: float) -> void:
 	elif point.x < -2 and point.z > -2: zone = "SEGURANÇA"
 	elif point.x > 2: zone = "ARQUIVO"
 	elif point.x < -2 and point.z < -6: zone = "SALA TÉCNICA"
+	if point.x < -10: zone = "ESCADA / PASSAGEM DE SERVIÇO"
+	elif point.z < -16 and point.z > -26: zone = "ESCADARIA PRINCIPAL"
+	elif point.y > 3.5:
+		zone = "2º / CORREDOR ADMINISTRATIVO"
+		if point.x < -2: zone = "2º / ADMINISTRAÇÃO" if point.z > -36 else "2º / SALA DE TI"
+		elif point.x > 2: zone = "2º / SALA DE REUNIÕES"
 	zone_label.text = zone
 	time_label.text = game.world.clocks[0].displayed_time
 	light_label.text = "LANTERNA / NÃO COLETADA"
@@ -188,6 +194,9 @@ func _process(delta: float) -> void:
 	if game.chapter.has_flag("badge"):
 		inventory_label.text = "CRACHÁ  ·  CHAVE"
 	if game.player.has_flashlight: inventory_label.text += "  ·  LANTERNA"
+	if game.chapter.has_flag("fuse20_owned"): inventory_label.text += "\nFUSÍVEL 20 A"
+	elif game.chapter.has_flag("fuse10_owned"): inventory_label.text += "\nFUSÍVEL 10 A"
+	elif game.chapter.has_flag("burnt_fuse_removed") and not game.chapter.has_flag("fuse_replaced"): inventory_label.text += "\nCARTUCHO QUEIMADO"
 	if not modal and not paused and not ending:
 		# o prompt agora vive no hud_minimal; o card antigo some para nao duplicar
 		reticle.hovering = not hint.text.is_empty()
@@ -207,10 +216,14 @@ func label_at(parent: Node, location: Vector2, text: String, font_size: int) -> 
 	return label
 
 func update_objective(stage: int, text: String) -> void:
-	chapter_label.text = "CAPÍTULO 1  /  %02d — %s" % [mini(stage + 1, 8), preload("res://scripts/chapter_data.gd").TITLES[stage].to_upper()]
+	var second := stage >= 9
+	var scene := stage - 9 if second else stage
+	var titles: Array = preload("res://scripts/chapter_two_data.gd").TITLES if second else preload("res://scripts/chapter_data.gd").TITLES
+	chapter_label.text = "CAPÍTULO %d  /  %02d — %s" % [2 if second else 1, mini(scene + 1, 9 if second else 8), titles[scene].to_upper()]
 	objective_label.text = text
 	for index in range(progress_segments.size()):
-		progress_segments[index].color = Style.ACCENT if index <= stage else Color(0.14, 0.2, 0.18)
+		progress_segments[index].visible = second or index < 8
+		progress_segments[index].color = Style.ACCENT if index <= scene else Color(0.14, 0.2, 0.18)
 
 func say(text: String) -> void:
 	subtitle.text = text
@@ -228,12 +241,13 @@ func clear_panel() -> void:
 func title(text: String) -> void:
 	label_at(column, Vector2.ZERO, text, 26)
 
-func button(text: String, callback: Callable) -> Button:
+func button(text: String, callback: Callable, parent: Node = null) -> Button:
 	var control := Button.new()
 	control.text = text
 	control.custom_minimum_size.y = 36
 	control.pressed.connect(callback)
-	column.add_child(control)
+	if parent == null: parent = column
+	parent.add_child(control)
 	return control
 
 func text_body(text: String) -> void:
@@ -273,22 +287,34 @@ func show_journal() -> void:
 	title("Daniel Reis — Diário do turno")
 	var data = preload("res://scripts/chapter_data.gd")
 	var entries := {"protocol": ["Protocolo", data.PROTOCOL], "recording": ["Gravação 001", data.SUPERVISOR], "logbook": ["Livro de registros", data.LOGBOOK], "maintenance": ["Manutenção", data.MAINTENANCE], "diagram": ["Diagrama", data.DIAGRAM], "report": ["Relatório", data.REPORT]}
-	text_body(game.chapter.objective() + "\n\nOcorrências: " + ("Nenhuma registrada." if game.chapter.history.is_empty() else "\n".join(game.chapter.history)))
-	button("Rever mensagens e diálogos", func(): document("Registro do turno", "\n\n".join(game.chapter.transcript)))
+	var extra = preload("res://scripts/chapter_two_data.gd")
+	entries.merge({"repair_note": ["Ordem de manutenção", extra.REPAIR_NOTE], "admin_notice": ["Aviso administrativo", extra.ADMIN_NOTICE], "network_log": ["Log de rede", extra.NETWORK_LOG], "meeting_minutes": ["Ata da reunião", extra.MINUTES], "access_log": ["Controle de acesso", extra.ACCESS], "henrique_photo": ["Henrique Almeida", extra.PHOTO], "failed_call": ["Ligação não completada", extra.CALL], "cam04_label": ["Etiqueta da CAM-04", "RACK 2B — PORTA 07"], "report2": ["Ocorrência 002", extra.report(game.chapter.has_flag("future_event_resisted"))]})
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 8)
+	scroll.add_child(list)
+	button("Rever mensagens e diálogos", func(): document("Registro do turno", "\n\n".join(game.chapter.transcript)), list)
+	button("Histórico de ocorrências", func(): document("Ocorrências", "\n".join(game.chapter.history)), list)
 	for id in game.chapter.documents:
 		if entries.has(id):
 			var entry: Array = entries[id]
-			button(entry[0], func(): document(entry[0], entry[1]))
+			button(entry[0], func(): document(entry[0], entry[1]), list)
 	button("Voltar ao turno [E / Esc]", close_modal)
 	open_modal()
 
-func show_floor_plan(texture: Texture2D) -> void:
+func show_floor_plan(texture: Texture2D, heading: String = "VESPER — Planta do térreo", legend: String = "") -> void:
 	clear_panel()
 	panel.anchor_left = 0.04
 	panel.anchor_right = 0.96
 	panel.anchor_top = 0.02
 	panel.anchor_bottom = 0.98
-	title("VESPER — Planta do térreo")
+	title(heading)
+	if not legend.is_empty():
+		var info := label_at(column, Vector2.ZERO, legend, 18)
+		info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var image := TextureRect.new()
 	image.texture = texture
 	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -305,14 +331,17 @@ func close_modal() -> void:
 	for child in panel.get_parent().get_children():
 		if child != panel and child is CanvasItem: child.show()
 	modal_shade.hide()
-	game.set_player_control(true)
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	game.set_player_control(not game.computer.active)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if game.computer.active else Input.MOUSE_MODE_CAPTURED
+	if game.computer.active: get_child(0).hide()
 	final_document = false
 
 func show_breakers() -> void:
 	clear_panel()
+	panel.anchor_top = 0.05
+	panel.anchor_bottom = 0.95
 	title("Quadro elétrico — Sala técnica")
-	text_body("Identifique os circuitos no diagrama ao lado do quadro.\nProteção do circuito D: não energizar o subsolo.")
+	text_body("F1: " + ("reposição instalada" if game.chapter.has_flag("fuse_replaced") else "cartucho ausente/queimado") + ".\nA sequência de partida consta na ordem de manutenção arquivada na administração.\nIsole o quadro antes de substituir o cartucho físico ao lado do painel.")
 	breaker_buttons.clear()
 	for index in range(4):
 		var control := button("", func():
@@ -320,8 +349,38 @@ func show_breakers() -> void:
 			update_breakers())
 		breaker_buttons.append(control)
 	update_breakers()
+	button("Isolar todos os circuitos / reiniciar sequência", func():
+		if game.chapter.has_flag("power"): return
+		game.chapter.breakers = [false, false, false, false]
+		game.chapter.flags.power_sequence = []
+		game.chapter.save_game()
+		update_breakers())
 	button("Confirmar circuitos", func(): game.chapter.confirm_breakers())
 	button("Sair [Esc]", close_modal)
+	open_modal()
+
+func show_network_patch() -> void:
+	clear_panel()
+	title("Patch panel — RACK 2B")
+	text_body("Selecione a porta que encaminha a CAM-04 ao gravador. Compare a etiqueta física no corredor com o log da TI.")
+	var grid := GridContainer.new()
+	grid.columns = 4
+	column.add_child(grid)
+	for port in range(1, 9):
+		button("PORTA %02d" % port, func(): game.chapter.act_two.restore_network(port), grid)
+	button("Voltar", close_modal)
+	open_modal()
+
+func show_participants() -> void:
+	clear_panel()
+	title("Reunião — participantes ausentes")
+	text_body("Quem consta na ata, mas não possui registro de entrada? Compare os documentos e a gravação da CAM-05 no diário/terminal.")
+	var grid := GridContainer.new()
+	grid.columns = 2
+	column.add_child(grid)
+	for index in range(6):
+		button(preload("res://scripts/chapter_two_data.gd").NAMES[index], func(): game.chapter.act_two.identify_participant(index), grid)
+	button("Voltar", close_modal)
 	open_modal()
 
 func update_breakers() -> void:
@@ -375,11 +434,27 @@ func show_audio_settings() -> void:
 		column.add_child(slider)
 	button("Continuar", toggle_pause)
 
-func show_ending() -> void:
+func reset_ending() -> void:
+	ending = false
+	paused = false
+	modal = false
+	get_tree().paused = false
+	for child in get_children():
+		if child.name == "EndingFade": child.queue_free()
+	panel.hide()
+	get_child(0).show()
+	for child in panel.get_parent().get_children():
+		if child != panel and child is CanvasItem: child.show()
+	modal_shade.hide()
+	game.set_player_control(true)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+func show_ending(chapter_number: int = 1) -> void:
 	ending = true
 	modal = false
 	game.set_player_control(false)
 	var fade := ColorRect.new()
+	fade.name = "EndingFade"
 	fade.color = Color(0, 0, 0, 0)
 	add_child(fade)
 	fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -390,8 +465,13 @@ func show_ending() -> void:
 	for child in panel.get_parent().get_children():
 		if child != panel and child is CanvasItem: child.hide()
 	clear_panel()
-	title("CAPÍTULO 1 CONCLUÍDO\nO Primeiro Turno")
-	text_body("01:00\n\nAugusto: 'Primeira hora concluída, Daniel.\nIsso aconteceu da última vez também.'\n\nPróximo capítulo: Registros Incompletos")
+	if chapter_number == 1:
+		title("CAPÍTULO 1 CONCLUÍDO\nO Primeiro Turno")
+		text_body("01:00\n\nAugusto: 'Isso aconteceu da última vez também.'\n\nA noite continua no segundo andar.")
+		button("Continuar — Registros Incompletos", func(): game.chapter.act_two.begin())
+	else:
+		title("CAPÍTULO 2 CONCLUÍDO\nRegistros Incompletos")
+		text_body("02:00\nPERFIL COMPORTAMENTAL: 68%\nREFERÊNCIA: HENRIQUE ALMEIDA\n\nAugusto: 'Estamos apenas observando.'\n\nPróximo capítulo: O Funcionário Ausente")
 	button("Jogar novamente", func(): get_tree().reload_current_scene())
 	button("Sair", func(): get_tree().quit())
 	panel.show()

@@ -9,6 +9,14 @@ Capítulo jogável de terror psicológico 3D em primeira pessoa para Windows, fe
 - Clique em `Jogar.cmd` para atualizar a branch atual, preparar o cache e iniciar o jogo.
 - WASD move, mouse olha, E interage com portas e computador. F liga/desliga a lanterna. Esc pausa e libera o mouse.
 
+### Expansão — segundo andar e Registros Incompletos
+
+O reparo da energia agora exige exploração: a ordem de manutenção está na administração do segundo andar e o fusível compatível na sala de TI. Retire o cartucho queimado com os circuitos isolados, instale a reposição e siga a sequência encontrada na nota. O aviso junto ao painel não contém a solução.
+
+Após concluir a primeira hora, escolha **Continuar — Registros Incompletos**. O capítulo 2 inclui nove cenas, CAM-04/CAM-05, diagnóstico de rede, gravações com pausa/avanço/zoom, decisão sobre a porta prevista, investigação de Henrique e uma saída alternativa pela administração/escada de serviço. As escadas são contínuas e transitáveis; o diário e os saves acompanham ambos os capítulos. Use Tab ou M no segundo andar para consultar a nova planta.
+
+Percurso, critérios, compatibilidade de saves e limites: [docs/CHAPTER_2.md](docs/CHAPTER_2.md). Para experimentar o reparo novo desde o início, use Nova partida; checkpoints antigos que já restauraram a energia continuam após essa tarefa.
+
 ### Capítulo 1 — O Primeiro Turno
 
 A partida começa diante da entrada do Vesper. Abra a porta, leia o envelope no balcão, entre na segurança e siga os objetivos no alto da tela. Pegue a lanterna na mesa para ver a mão e o item em primeira pessoa. A sequência contém oito cenas, três puzzles, anomalias, documentos e conclusão. Esc permite salvar/carregar checkpoint e ajustar o áudio. J abre o diário com documentos e mensagens coletados.
@@ -31,7 +39,7 @@ Há plantas do térreo emolduradas nas paredes da recepção e da segurança. Mi
 
 ### Computador e câmeras
 
-Aproxime-se do monitor na sala de segurança e pressione E. O terminal apresenta três câmeras ao vivo: recepção, corredor e arquivo. Troque com 1/2/3, setas ou pelos botões. Z alterna o zoom. Os botões confirmam a inspeção inicial, reportam a categoria escolhida e desligam o monitor. E, Esc ou Sair devolvem o controle do personagem. O primeiro Esc sai do computador; fora dele, Esc abre a pausa.
+Aproxime-se do monitor na sala de segurança e pressione E. Troque canais com 1–5, setas ou pelos botões. As três câmeras do térreo estão disponíveis inicialmente; CAM-04/CAM-05 são liberadas pelo reparo de rede no capítulo 2. Z alterna o zoom, inclusive nos arquivos. A interface oferece inspeção, reporte e, na segunda hora, reprodução, pausa, navegação temporal e investigação. E, Esc ou Sair devolvem o controle do personagem. O primeiro Esc sai do computador; fora dele, Esc abre a pausa.
 
 O monitor físico e a interface usam o mesmo SubViewport de 640×360: somente a câmera selecionada é renderizada. O mundo continua ativo durante o monitoramento, mas movimento e lanterna ficam bloqueados até sair do terminal. As texturas de piso, parede e madeira estão incluídas em `game/assets/textures/`; modelos em `game/assets/models/`. Todos funcionam offline, sem plugins. Créditos e licenças estão em `game/assets/ART_CREDITS.md`.
 
@@ -81,7 +89,7 @@ Para gerar um executável, instale os export templates da mesma versão 4.0.stab
 
 ## Escopo atual
 
-Capítulo 1: chegada, segurança, ronda, cadeira, técnica, figura, duplo e relatório final. Inclui ambiência/efeitos sonoros, diário e checkpoints. Dublagem, animações humanas detalhadas, mixagem e testes de ritmo com jogadores ainda estão pendentes; os capítulos seguintes não estão implementados.
+Capítulos 1 e 2 conectados pelo segundo andar: reparo com nota/fusível, três puzzles de investigação do segundo capítulo, cinco câmeras, arquivos reconstruídos e decisões persistentes. Dublagem, animações humanas detalhadas, mixagem e testes de ritmo com jogadores ainda estão pendentes; o capítulo 3 não está implementado.
 
 ## Trabalho em equipe
 

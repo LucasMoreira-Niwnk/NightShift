@@ -161,6 +161,9 @@ func _input(event: InputEvent) -> void:
 func toggle_tablet() -> void:
 	if tablet_hud == null or ui.modal or computer.active:
 		return
+	if player.position.y > 3.5:
+		chapter.act_two.show_map()
+		return
 	var is_open = not tablet_hud.visible
 	tablet_hud.visible = is_open
 	set_player_control(not is_open)

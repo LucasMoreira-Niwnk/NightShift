@@ -9,8 +9,11 @@ var display_name := "porta"
 var forced_locked := false
 var handle: Node3D
 var animation: Tween
+var override_action: Callable
+var custom_prompt := ""
 
 func interaction_prompt() -> String:
+	if not custom_prompt.is_empty(): return custom_prompt
 	return "E — Fechar " + display_name if is_open else "E — Abrir " + display_name
 
 func _ready() -> void:
@@ -59,6 +62,7 @@ func _ready() -> void:
 	add_child(collider)
 
 func interact() -> void:
+	if override_action.is_valid() and override_action.call(): return
 	if moving:
 		return
 	if forced_locked:

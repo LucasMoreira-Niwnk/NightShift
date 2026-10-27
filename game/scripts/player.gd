@@ -40,6 +40,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if has_flashlight and event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F:
 		flashlight.visible = not flashlight.visible
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		if OS.get_cmdline_user_args().has("--smoke-test"): return
 		rotate_y(-event.relative.x * SENSITIVITY)
 		camera.rotation.x = clampf(camera.rotation.x - event.relative.y * SENSITIVITY, -1.4, 1.4)
 	if event.is_action_pressed("interact"):

@@ -22,14 +22,22 @@ var overlay: Control
 var channel_label: Label
 var clock_label: Label
 var elapsed := 0.0
-var camera_names := ["01 / RECEPÇÃO", "02 / CORREDOR PRINCIPAL", "03 / ARQUIVO"]
-var camera_positions := [Vector3(5.5, 2.7, 11.4), Vector3(1.7, 2.7, 3.4), Vector3(7.6, 2.7, -9.5)]
-var camera_targets := [Vector3(-2, 1.1, 7.5), Vector3(0, 1.1, -11), Vector3(4, 0.8, -5.5)]
+var camera_names := ["01 / RECEPÇÃO", "02 / CORREDOR PRINCIPAL", "03 / ARQUIVO", "04 / 2º ANDAR", "05 / REUNIÕES"]
+var camera_positions := [Vector3(5.5, 2.7, 11.4), Vector3(1.7, 2.7, 3.4), Vector3(7.6, 2.7, -9.5), Vector3(1.5, 6.8, -28), Vector3(9.3, 6.9, -44)]
+var camera_targets := [Vector3(-2, 1.1, 7.5), Vector3(0, 1.1, -11), Vector3(4, 0.8, -5.5), Vector3(0, 5.3, -43), Vector3(5.5, 5.1, -38)]
 var observation: OptionButton
 var interference: ColorRect
 var channel_screens: Array = []
 var stage_six_time := 0.0
 var monitor_glow: OmniLight3D
+var recording: Node
+var chapter_actions: HBoxContainer
+var clip_button: Button
+var alert_button: Button
+var participants_button: Button
+var delete_button: Button
+var pause_clip: Button
+var clip_seek: HSlider
 
 func _ready() -> void:
 	name = "SecurityComputer"
@@ -47,6 +55,9 @@ func _ready() -> void:
 	select_camera(0)
 	build_monitor()
 	build_overlay()
+	recording = preload("res://scripts/recording_player.gd").new()
+	recording.game = game
+	add_child(recording)
 	set_monitor_power(false)
 
 func build_monitor() -> void:
@@ -145,10 +156,10 @@ func build_overlay() -> void:
 	buttons.position = Vector2(30, -230)
 	buttons.add_theme_constant_override("separation", 16)
 	overlay.add_child(buttons)
-	for index in range(3):
+	for index in range(5):
 		var button := Button.new()
 		button.text = "CAM %02d [%d]" % [index + 1, index + 1]
-		button.custom_minimum_size = Vector2(160, 42)
+		button.custom_minimum_size = Vector2(140, 42)
 		button.pressed.connect(select_camera.bind(index))
 		buttons.add_child(button)
 	var leave := Button.new()
@@ -201,6 +212,7 @@ func build_overlay() -> void:
 	status_label.offset_right = -30
 	status_label.offset_top = -124
 	status_label.offset_bottom = -32
+	status_label.add_theme_font_size_override("font_size", 15)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	reflection = ColorRect.new()
 	reflection.color = Color(0.005, 0.01, 0.012)
@@ -247,7 +259,32 @@ void fragment(){
 	effect.shader = shader
 	interference.material = effect
 	overlay.add_child(interference)
+	chapter_actions = HBoxContainer.new()
+	chapter_actions.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	chapter_actions.position = Vector2(30, -176)
+	chapter_actions.add_theme_constant_override("separation", 8)
+	overlay.add_child(chapter_actions)
+	alert_button = chapter_button("Confirmar alerta CAM-04", func(): chapter.act_two.acknowledge_alert())
+	clip_button = chapter_button("Reproduzir arquivo", func(): chapter.act_two.watch_recording(chapter.act_two.available_recording()))
+	participants_button = chapter_button("Investigar participantes", func(): game.ui.show_participants())
+	delete_button = chapter_button("Apagar arquivo", func(): chapter.act_two.delete_tomorrow())
+	chapter_button("Zoom [Z]", toggle_zoom)
+	pause_clip = chapter_button("Pausar / continuar", func(): recording.paused = not recording.paused)
+	clip_seek = HSlider.new()
+	clip_seek.custom_minimum_size = Vector2(160, 36)
+	clip_seek.max_value = 8
+	clip_seek.step = 0.05
+	clip_seek.value_changed.connect(func(value: float): recording.seek(value))
+	chapter_actions.add_child(clip_seek)
 	overlay.hide()
+
+func chapter_button(text: String, action: Callable) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.custom_minimum_size.y = 40
+	button.pressed.connect(action)
+	chapter_actions.add_child(button)
+	return button
 
 func interaction_prompt() -> String:
 	return "E — Usar computador / câmeras"
@@ -270,6 +307,7 @@ func interact() -> void:
 	update_status()
 
 func close() -> void:
+	if recording != null and recording.active: stop_recording()
 	active = false
 	overlay.hide()
 	reflection.hide()
@@ -278,15 +316,16 @@ func close() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func select_camera(index: int) -> void:
+	if recording != null and recording.active: stop_recording()
 	var previous := selected
 	if is_instance_valid(feed) and channel_screens.size() == 3 and monitor_power:
 		var frame := feed.get_texture().get_image()
 		if frame != null and not frame.is_empty():
-			channel_screens[previous].albedo_texture = ImageTexture.create_from_image(frame)
+			channel_screens[previous % 3].albedo_texture = ImageTexture.create_from_image(frame)
 	selected = posmod(index, camera_names.size())
 	if channel_screens.size() == 3 and monitor_power:
-		channel_screens[selected].albedo_texture = feed.get_texture()
-		channel_screens[selected].albedo_color = Color.WHITE
+		channel_screens[selected % 3].albedo_texture = feed.get_texture()
+		channel_screens[selected % 3].albedo_color = Color.WHITE
 	security_camera.position = camera_positions[selected]
 	security_camera.look_at(camera_targets[selected], Vector3.UP)
 	if chapter != null and chapter.stage == 6 and selected == 0 and chapter.has_flag("reflection_seen"):
@@ -299,6 +338,16 @@ func select_camera(index: int) -> void:
 
 func update_status() -> void:
 	if status_label == null or chapter == null: return
+	var second: bool = chapter.stage >= 9
+	chapter_actions.visible = second
+	actions_row.visible = not second
+	alert_button.visible = chapter.stage == 9
+	clip_button.visible = not chapter.act_two.available_recording().is_empty()
+	clip_button.text = {"future": "Buffer CAM-04 / 01:03", "meeting": "Arquivo CAM-05 / acessos", "tomorrow": "Arquivo 15/11 / 00:00"}.get(chapter.act_two.available_recording(), "Reproduzir arquivo")
+	participants_button.visible = chapter.stage == 14
+	delete_button.visible = chapter.stage == 16 and chapter.has_flag("tomorrow_recording_watched")
+	pause_clip.visible = recording != null and recording.active
+	clip_seek.visible = pause_clip.visible
 	inspect_button.visible = chapter.stage == 1
 	observation.visible = chapter.stage == 1
 	report_category.visible = chapter.stage != 1
@@ -308,7 +357,8 @@ func update_status() -> void:
 		status_label.text += "\nHistórico: " + " | ".join(chapter.history)
 
 func toggle_zoom() -> void:
-	security_camera.fov = 42 if security_camera.fov > 50 else 75
+	var target: Camera3D = recording.camera if recording != null and recording.active else security_camera
+	target.fov = 42 if target.fov > 50 else 75
 
 func set_monitor_power(powered: bool) -> void:
 	monitor_power = powered
@@ -319,7 +369,20 @@ func set_monitor_power(powered: bool) -> void:
 	for surface in channel_screens:
 		surface.albedo_color = Color.WHITE if powered else Color(0.015, 0.02, 0.02)
 		surface.albedo_texture = null
-	if powered and channel_screens.size() == 3: channel_screens[selected].albedo_texture = feed.get_texture()
+	if powered and channel_screens.size() == 3: channel_screens[selected % 3].albedo_texture = feed.get_texture()
+
+func play_recording(kind: String) -> void:
+	recording.play(kind)
+	feed.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	picture.texture = recording.viewport.get_texture()
+	screen_material.albedo_texture = picture.texture
+	update_status()
+
+func stop_recording() -> void:
+	recording.stop()
+	feed.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	picture.texture = feed.get_texture()
+	screen_material.albedo_texture = feed.get_texture()
 
 func show_reflection() -> void:
 	if reflecting: return
@@ -362,13 +425,21 @@ func _process(delta: float) -> void:
 		clock_label.text = "14/11/2008   |   " + game.world.clocks[0].displayed_time + "   |   SINAL OK"
 		picture.modulate = Color.BLACK if signal_lost and selected == 1 else Color.WHITE
 		if signal_lost and selected == 1: clock_label.text = "SEM SINAL — MOVIMENTO DETECTADO NA SEGURANÇA"
+		if selected >= 3 and not chapter.has_flag("cam04_restored"):
+			picture.modulate = Color.BLACK
+			clock_label.text = "OFFLINE — ÚLTIMA TRANSMISSÃO CAM-04: 01:03:17" if chapter.stage >= 9 else "SEM SINAL — SETOR ADMINISTRATIVO"
+		if recording != null and recording.active:
+			channel_label.text = "▶ ARQUIVO / RECONSTRUÇÃO DO BUFFER"
+			clock_label.text = recording.label()
+			picture.modulate = Color.WHITE
+			clip_seek.set_value_no_signal(recording.elapsed)
 		update_status()
 
 func _input(event: InputEvent) -> void:
 	if not active or not event is InputEventKey or not event.pressed or event.echo:
 		return
 	match event.physical_keycode:
-		KEY_1, KEY_2, KEY_3:
+		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5:
 			select_camera(event.physical_keycode - KEY_1)
 		KEY_LEFT:
 			select_camera(selected - 1)

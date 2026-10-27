@@ -24,10 +24,13 @@ func reachable(id: String, position: Vector3, height: float = 0.0) -> void:
 		print("RAY_DEBUG ", id, " collider=", game.player.ray.get_collider(), " player=", game.player.position)
 
 func run() -> void:
-	get_tree().create_timer(100).timeout.connect(func():
+	get_tree().create_timer(240).timeout.connect(func():
 		push_error("CHAPTER_TEST_TIMEOUT")
 		get_tree().quit(1))
 	var chapter: Node = game.chapter
+	var expansion = preload("res://scripts/chapter_two_tests.gd").new()
+	expansion.game = game
+	expansion.test = self
 	await get_tree().create_timer(0.8).timeout
 	check(game.player.is_on_floor(), "Player settles on entrance floor")
 	check(game.player.position.z > 12, "Arrival begins outside reception")
@@ -197,17 +200,8 @@ func run() -> void:
 	Input.action_press("move_left")
 	await get_tree().create_timer(0.95).timeout
 	Input.action_release("move_left")
-	check(game.player.position.x < -2.5, "Technical doorway can be traversed")
-	chapter.toggle_breaker(3)
-	check(not chapter.breakers[3], "Subsoil circuit resets on error")
-	check(not chapter.confirm_breakers(), "Incomplete breaker solution rejected")
-	chapter.interact("diagram")
-	dismiss()
-	await reachable("breakers", Vector3(-6.1, 0.05, -11))
-	game.player.interaction_target().interact()
-	await capture("chapter1-breakers")
-	game.ui.breaker_buttons[1].emit_signal("pressed")
-	check(chapter.confirm_breakers(), "A/B/C on and D off accepted")
+	check(game.player.position.x < -2.5, "Technical doorway can be traversed: " + str(game.player.position))
+	await expansion.repair_power()
 	check(chapter.has_flag("power"), "Power restored")
 	check(chapter.save_game(), "Checkpoint saved")
 	var saved_stage: int = chapter.stage
@@ -260,6 +254,8 @@ func run() -> void:
 	check(chapter.stage == 8 and game.ui.ending, "Chapter completable from start to finish")
 	await capture("chapter1-ending")
 	if failures == 0: print("CHAPTER1_TEST_OK: eight scenes, three puzzles, FPV hand, CCTV, reports, checkpoints, ending")
+	await expansion.run()
+	if failures == 0: print("CHAPTER2_TEST_OK: nine scenes, connected stairs, fuse quest, isolated recordings, both door choices, alternate route, checkpoints, ending")
 	get_tree().quit(0 if failures == 0 else 1)
 
 func capture(id: String) -> void:

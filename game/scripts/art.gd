@@ -47,7 +47,7 @@ static func wall_diagram(parent: Node3D, size: Vector3) -> void:
 		var y := 0.18 - index * 0.12
 		box(parent, Vector3(0.008, y, 0), Vector3(0.002, 0.006, 0.22), Color(0.13, 0.2, 0.16))
 		var label := Label3D.new()
-		label.text = ["A  ON", "B  ON", "C  ON", "D  OFF"][index]
+		label.text = ["ORDEM", "ARQUIVADA", "ADMIN", "2º ANDAR"][index]
 		label.position = Vector3(0.012, y + 0.025, 0)
 		label.rotation.y = PI / 2
 		label.font_size = 32

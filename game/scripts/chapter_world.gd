@@ -30,6 +30,8 @@ var floor_plans: Array = []
 var materials: Dictionary = {}
 var phone_display: Label3D
 var chair_marks: Node3D
+var upper: Node3D
+var fuse_visual: Node3D
 
 func _ready() -> void:
 	for kind in ["tile", "wall", "metal", "wood", "ceiling"]:
@@ -56,7 +58,7 @@ func _ready() -> void:
 	# Security extends two metres beyond reception: seal its exposed rear edge.
 	wall(Vector3(-7, 1.5, 4), Vector3(2, 3, 0.2))
 	wall(Vector3(4, 1.5, 4), Vector3(4, 3, 0.2))
-	wall(Vector3(-8, 1.5, 1), Vector3(0.2, 3, 6))
+	partition(-8, -2, 4, 1)
 	wall(Vector3(-5, 1.5, -2), Vector3(6, 3, 0.2))
 	wall(Vector3(-8, 1.5, -10), Vector3(0.2, 3, 8))
 	wall(Vector3(-5, 1.5, -6), Vector3(6, 3, 0.2))
@@ -70,13 +72,9 @@ func _ready() -> void:
 	wall(Vector3(-2, 1.5, -15), Vector3(0.2, 3, 2))
 	wall(Vector3(-1.6, 1.5, -16), Vector3(0.8, 3, 0.2))
 	wall(Vector3(1.6, 1.5, -16), Vector3(0.8, 3, 0.2))
-	room("Escadaria", Vector3(0, 0, -18), Vector2(4, 4))
-	wall(Vector3(-2, 1.5, -18), Vector3(0.2, 3, 4))
-	wall(Vector3(2, 1.5, -18), Vector3(0.2, 3, 4))
-	wall(Vector3(0, 1.5, -20), Vector3(4, 3, 0.2))
-	for index in range(9):
-		box(self, Vector3(0, index * 0.12, -16.5 - index * 0.34), Vector3(1.7, 0.24, 0.34), "metal")
-	add_sign("2º ANDAR\nACESSO INTERDITADO", Vector3(0, 2.4, -19.8)).pixel_size = 0.0015
+	make_door("stairs", Vector3(0, 0, -15.8), "acesso ao segundo andar")
+	doors.stairs.rotation.y = 0
+	make_door("service_exit", Vector3(-8, 0, 1), "saída de serviço")
 	partition(-2, -2, 4, 1)
 	partition(2, -10, -2, -5)
 	partition(-2, -14, -6, -10)
@@ -97,13 +95,10 @@ func _ready() -> void:
 	item("logbook", "Ler livro de registros", Vector3(5.8, 1.125, -7.7), Vector3(0.5, 0.09, 0.4), Color(0.38, 0.17, 0.12))
 	item("maintenance", "Ler registro de manutenção", Vector3(4.9, 1.105, -7.7), Vector3(0.35, 0.05, 0.4), Color(0.72, 0.75, 0.62))
 	item("emergency", "Inspecionar saída de emergência", Vector3(1.84, 1.1, -13.4), Vector3(0.12, 2.2, 1.3), Color(0.17, 0.36, 0.25))
-	item("stairs", "Examinar escada bloqueada", Vector3(0, 1, -15.8), Vector3(2.4, 2, 0.14), Color(0.26, 0.28, 0.27), false)
-	for x in [-1.15, -0.75, -0.35, 0.05, 0.45, 0.85, 1.15]:
-		Art.box(objects.stairs, Vector3(x, 0.4, 0), Vector3(0.035, 2.8, 0.04), Color(0.09, 0.12, 0.1))
-	for y in [0.1, 1.0]:
-		Art.box(objects.stairs, Vector3(0, y, 0), Vector3(2.4, 0.04, 0.04), Color(0.1, 0.14, 0.11))
 	item("breakers", "Abrir quadro elétrico", Vector3(-7.72, 1.5, -11), Vector3(0.3, 1, 1.1), Color(0.45, 0.45, 0.3))
-	item("diagram", "Ler diagrama elétrico", Vector3(-7.75, 1.6, -9.6), Vector3(0.15, 0.6, 0.4), Color(0.8, 0.8, 0.65))
+	item("diagram", "Ler aviso de manutenção", Vector3(-7.75, 1.6, -9.6), Vector3(0.15, 0.6, 0.4), Color(0.8, 0.8, 0.65))
+	var fuse := item("fuse_slot", "Examinar cartucho F1 / substituir fusível", Vector3(-7.48, 1.25, -10.65), Vector3(0.15, 0.2, 0.28), Color(0.08, 0.07, 0.05), false)
+	Art.rounded_box(fuse, Vector3.ZERO, Vector3(0.15, 0.2, 0.28), Color(0.08, 0.07, 0.05))
 	item("phone", "Examinar telefone", Vector3(-2.4, 1.18, 7.5), Vector3(0.34, 0.2, 0.3), Color(0.15, 0.16, 0.15))
 	phone_display = add_sign("SEM LINHA", Vector3(-2.4, 1.31, 7.55))
 	phone_display.pixel_size = 0.00045
@@ -186,6 +181,15 @@ func _ready() -> void:
 	environment.environment.ambient_light_color = Color(0.18, 0.26, 0.30)
 	environment.environment.ambient_light_energy = 0.04
 	add_child(environment)
+	upper = preload("res://scripts/second_floor.gd").new()
+	upper.game = game
+	upper.world = self
+	add_child(upper)
+	fuse_visual = Node3D.new()
+	objects.fuse_slot.add_child(fuse_visual)
+	fuse_visual.position.x = 0.09
+	fuse_visual.rotation.y = PI / 2
+	upper.fuse_model(fuse_visual, Color(0.13, 0.09, 0.065))
 
 func box(parent: Node3D, location: Vector3, size: Vector3, kind: String = "wall", collision: bool = true, color: Color = Color.WHITE) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
@@ -326,9 +330,10 @@ func add_sign(text: String, location: Vector3, angle: float = 0) -> Label3D:
 	add_child(label)
 	return label
 
-func humanoid(color: Color) -> Node3D:
+func humanoid(color: Color, parent: Node3D = null) -> Node3D:
 	var root := Node3D.new()
-	add_child(root)
+	if parent == null: parent = self
+	parent.add_child(root)
 	for data in [[Vector3(0, 1.15, 0), Vector3(0.48, 0.65, 0.25)], [Vector3(-0.15, 0.42, 0), Vector3(0.18, 0.85, 0.2)], [Vector3(0.15, 0.42, 0), Vector3(0.18, 0.85, 0.2)], [Vector3(-0.33, 1.05, 0), Vector3(0.16, 0.7, 0.2)], [Vector3(0.33, 1.05, 0), Vector3(0.16, 0.7, 0.2)]]:
 		var mesh := MeshInstance3D.new()
 		var capsule := CapsuleMesh.new()
@@ -377,7 +382,7 @@ func _process(delta: float) -> void:
 		entry.light.light_energy = entry.energy * (ROOM_DIP if beat else 1.0)
 
 func in_security(point: Vector3) -> bool:
-	return point.x < -2.3 and point.x > -7.8 and point.z > -1.8 and point.z < 3.8
+	return point.y < 1.0 and point.x < -2.3 and point.x > -7.8 and point.z > -1.8 and point.z < 3.8
 
 func add_clock(location: Vector3, angle: float = 0) -> void:
 	var clock := preload("res://scripts/wall_clock.gd").new()

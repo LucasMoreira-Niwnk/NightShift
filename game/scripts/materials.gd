@@ -121,39 +121,73 @@ static func noise_texture(frequency: float, octaves: int, width: int, height: in
 	if ramp != null: texture.color_ramp = ramp
 	return texture
 
-# Architectural variants reuse the bundled plaster/wood/tile PBR sources.
+# Photographic CC0 surfaces keep their actual cracks, chips and aggregate.
 static func architectural(kind: String) -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = preload("res://shaders/aged_architecture.gdshader")
 	var style := 0
-	var tint := Color(0.48, 0.46, 0.37)
-	var source := "PaintedPlaster017"
+	var tint := Color(0.88, 0.85, 0.74)
+	var source := "concrete_floor_worn_001"
+	var scale := 0.4
 	match kind:
-		"floor_reception": source = "Tiles074"
+		"floor_reception", "floor_archive", "upper_floor":
+			material.set_shader_parameter("base_color", load("res://assets/textures/Tiles074/Tiles074_1K-JPG_Color.jpg"))
+			material.set_shader_parameter("base_normal", load("res://assets/textures/Tiles074/Tiles074_1K-JPG_NormalGL.jpg"))
+			scale = 0.48
+			if kind == "floor_archive": tint = Color(0.8, 0.61, 0.44)
+			if kind == "upper_floor": material.set_shader_parameter("upper_layout", true)
 		"floor_security", "floor_it":
 			style = 1
-			tint = Color(0.23, 0.32, 0.29)
-		"floor_archive":
-			style = 0
-			tint = Color(0.38, 0.25, 0.17)
-		"floor_concrete":
-			style = 2
-			tint = Color(0.33, 0.35, 0.31)
-		"upper_floor": material.set_shader_parameter("upper_layout", true)
-		"wall_cream":
+			tint = Color(0.6, 0.76, 0.65)
+		"floor_concrete": style = 2
+		"wall_cream", "wall_green", "wall_concrete", "facade":
+			source = "worn_cracked_plaster"
 			style = 5
-			tint = Color(0.57, 0.53, 0.41)
-		"wall_green":
-			style = 5
-			tint = Color(0.31, 0.42, 0.36)
-		"wall_concrete":
-			style = 2
-			tint = Color(0.38, 0.4, 0.37)
-	material.set_shader_parameter("pattern", style)
-	material.set_shader_parameter("tint", tint)
-	material.set_shader_parameter("facade_faces", kind.begins_with("wall_"))
-	var prefix := "res://assets/textures/%s/%s_1K-JPG_" % [source, source]
-	material.set_shader_parameter("base_color", load(prefix + "Color.jpg"))
-	material.set_shader_parameter("rough_map", load(prefix + "Roughness.jpg"))
+			scale = 0.5
+			if kind == "wall_green": tint = Color(0.63, 0.76, 0.64)
+			material.set_shader_parameter("facade_faces", true)
+			material.set_shader_parameter("force_facade", kind == "facade")
+		"asphalt":
+			source = "worn_asphalt"
+			scale = 0.32
+			material.set_shader_parameter("outdoor_ground", true)
+		"pavers":
+			scale = 0.45
+			material.set_shader_parameter("outdoor_ground", true)
+	if not kind in ["floor_reception", "floor_archive", "upper_floor"]:
+		material.set_shader_parameter("base_color", decay_map(source,"diff"))
+		material.set_shader_parameter("base_normal", decay_map(source,"nor_gl"))
+	material.set_shader_parameter("rough_map", decay_map(source,"rough"))
+	material.set_shader_parameter("ao_map", decay_map(source,"ao"))
+	material.set_shader_parameter("facade_color", decay_map("worn_mossy_plasterwall","diff"))
+	material.set_shader_parameter("facade_normal", decay_map("worn_mossy_plasterwall","nor_gl"))
+	material.set_shader_parameter("broken_color", decay_map("damaged_plaster","diff"))
+	material.set_shader_parameter("broken_normal", decay_map("damaged_plaster","nor_gl"))
+	material.set_shader_parameter("dust_color", decay_map("concrete_floor_worn_001","diff"))
+	material.set_shader_parameter("mud_color", decay_map("brown_mud_leaves_01","diff"))
+	material.set_shader_parameter("mud_normal", decay_map("brown_mud_leaves_01","nor_gl"))
+	material.set_shader_parameter("wood_color", load("res://assets/textures/Wood051/Wood051_1K-JPG_Color.jpg"))
+	material.set_shader_parameter("wood_normal", load("res://assets/textures/Wood051/Wood051_1K-JPG_NormalGL.jpg"))
+	material.set_shader_parameter("pattern",style)
+	material.set_shader_parameter("tint",tint)
+	material.set_shader_parameter("texture_scale",scale)
 	material.resource_name = kind
+	return material
+
+static func decay_map(asset: String, map: String) -> Texture2D:
+	return load("res://assets/textures/decay/%s/%s.jpg" % [asset,map])
+
+static func photographic(asset: String, meters: float = 2.0) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_texture = decay_map(asset,"diff")
+	material.normal_enabled = true
+	material.normal_texture = decay_map(asset,"nor_gl")
+	material.normal_scale = 0.8
+	material.roughness_texture = decay_map(asset,"rough")
+	material.ao_enabled = true
+	material.ao_texture = decay_map(asset,"ao")
+	material.uv1_triplanar = true
+	material.uv1_world_triplanar = true
+	material.uv1_scale = Vector3.ONE / meters
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	return material

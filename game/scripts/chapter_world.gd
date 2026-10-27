@@ -43,7 +43,7 @@ func _ready() -> void:
 	dressing = preload("res://scripts/set_dressing.gd").new()
 	for kind in ["tile", "wall", "metal", "wood", "ceiling"]:
 		materials[kind] = Materials.surface(kind)
-	for kind in ["floor_reception", "floor_security", "floor_archive", "floor_concrete", "upper_floor", "wall_cream", "wall_green", "wall_concrete"]:
+	for kind in ["floor_reception", "floor_security", "floor_archive", "floor_concrete", "upper_floor", "wall_cream", "wall_green", "wall_concrete", "facade", "asphalt", "pavers"]:
 		materials[kind] = Materials.architectural(kind)
 	architecture = preload("res://scripts/building_exterior.gd").new()
 	architecture.world = self

@@ -51,3 +51,9 @@ Original unbranded cylindrical flashlight, with embedded materials. Used for bot
 ## Additional Vesper set dressing
 
 `set_dressing.gd` builds the archive shelves and individual bound books, curved foliage and planters, vehicle bodywork/wheels, CRT housings/cabling, and exterior decay directly as project geometry. `aged_architecture.gdshader` adds room-specific joints, color variation and wear using the bundled ambientCG texture sources credited above. No additional third-party model pack or runtime dependency is required for these additions.
+
+## Poly Haven photographic decay textures — CC0
+
+Six additional texture sets supply actual cracked plaster, damaged plaster/exposed masonry, mossy facade, worn concrete, weathered asphalt and muddy leaf litter: `concrete_floor_worn_001`, `worn_cracked_plaster`, `damaged_plaster`, `worn_mossy_plasterwall`, `worn_asphalt`, `brown_mud_leaves_01`.
+
+Diffuse maps are 2K; OpenGL normal, roughness and AO maps are 1K. Contributors, source pages, source download URLs and checksums are recorded in `textures/decay/README.md` and `textures/decay/manifest.json`. License: https://polyhaven.com/license (CC0-1.0). Files are bundled locally; gameplay does not access the network.

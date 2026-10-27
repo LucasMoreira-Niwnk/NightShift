@@ -10,7 +10,7 @@ func _ready() -> void:
 	service_stair()
 
 func box(point: Vector3, size: Vector3, kind: String = "metal", collision: bool = true) -> MeshInstance3D:
-	return world.box(self, point, size, kind, collision)
+	return world.box(self, point, size, "wall_concrete" if kind == "wall" else kind, collision)
 
 func landing(center: Vector3, size: Vector2) -> void:
 	# Concrete soffit and a thin finish keep floor tiles off the underside.

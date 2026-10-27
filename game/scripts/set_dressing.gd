@@ -286,3 +286,32 @@ func decay(parent: Node3D) -> void:
 	# Maintenance notice and exposed roofline utilities show neglect, not a ruin.
 	block(root,Vector3(-4.8,1.45,12.15),Vector3(0.7,0.45,0.02),Color(0.58,0.52,0.35))
 	label(root,"IMÓVEL INTERDITADO\nACESSO SÓ À MANUTENÇÃO\n11 / 2008",Vector3(-4.8,1.45,12.17),0.00065)
+
+func abandoned_site(parent: Node3D) -> void:
+	var root := Node3D.new()
+	root.name = "FoundationNeglect"
+	parent.add_child(root)
+	var stone: StandardMaterial3D = Materials.photographic("concrete_floor_worn_001",1.2)
+	var brick: StandardMaterial3D = Materials.photographic("damaged_plaster",1.0)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20081114
+	# Keep the entrance, maintenance route and all door clearances free.
+	for side in [-1.0,1.0]:
+		for z in [-13.0,-9.5,-6.0,-2.5,1.0,4.5,8.0,11.0]:
+			plant(root,Vector3(side*(14.6 if side<0 and z<3 else 8.45),0,z),rng.randf_range(0.35,0.65),int(abs(z)*30)+19,false)
+		for z in [16.0,20.5,26.5]:
+			plant(root,Vector3(side*9.2,-0.02,z),0.55,int(z*20),false)
+		for center in [Vector3(side*7.6,0.02,12.6),Vector3(side*9.0,0.01,21.3),Vector3(side*20.5,-0.01,25.2)]:
+			for index in range(18):
+				var mesh := MeshInstance3D.new()
+				var piece := PrismMesh.new()
+				piece.size = Vector3(rng.randf_range(0.08,0.28),rng.randf_range(0.035,0.15),rng.randf_range(0.09,0.24))
+				mesh.mesh = piece
+				mesh.position = center + Vector3(rng.randf_range(-0.55,0.55),piece.size.y/2,rng.randf_range(-0.45,0.45))
+				mesh.rotation = Vector3(rng.randf_range(-0.2,0.2),rng.randf()*TAU,rng.randf_range(-0.1,0.1))
+				mesh.material_override = stone if index%3 else brick
+				root.add_child(mesh)
+		# Discarded warped timber by the service perimeter, outside the main walk.
+		for index in range(3):
+			var board := block(root,Vector3(side*13.8,0.045+index*0.022,25+index*0.18),Vector3(1.4,0.05,0.16),Color(0.24,0.19,0.115),false,true)
+			board.rotation.y = index*0.23+side*0.4

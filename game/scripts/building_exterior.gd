@@ -3,6 +3,7 @@ extends Node3D
 const Art = preload("res://scripts/art.gd")
 var world: Node3D
 var window_count := 0
+var building_shell := false
 var glass: StandardMaterial3D
 
 func _ready() -> void:
@@ -14,7 +15,7 @@ func _ready() -> void:
 	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 func box(point: Vector3, size: Vector3, color: Color, collision: bool = true) -> MeshInstance3D:
-	return world.box(self, point, size, "exterior", collision, color)
+	return world.box(self, point, size, "facade" if building_shell else "exterior", collision, color)
 
 # Walls are built around apertures; the transparent pane owns its own collider.
 func window_wall(parent: Node3D, center: Vector3, size: Vector3, openings: Array, width: float) -> void:
@@ -63,6 +64,7 @@ func wall_piece(parent: Node3D, point: Vector3, size: Vector3, length: float, he
 	world.box(parent, point, Vector3(length, height, size.z) if size.x > size.z else Vector3(size.x, height, length), "wall_cream")
 
 func build() -> void:
+	building_shell = true
 	# Structural shell connects the occupied rooms into one two-storey volume.
 	world.box(self, Vector3(0, -0.3, -2), Vector3(16.4, 0.4, 28.4), "wall")
 	for x in [-8, 8]:
@@ -93,24 +95,16 @@ func build() -> void:
 	sign.pixel_size = 0.007
 	sign.modulate = Color(0.53, 0.68, 0.61)
 	world.add_sign("SETOR ADMINISTRATIVO / ACESSO RESTRITO", Vector3(0, 5.8, 12.3)).pixel_size = 0.0013
+	building_shell = false
 	world.dressing.decay(self)
+	world.dressing.abandoned_site(self)
 	grounds()
 	street()
 	weather()
 
 func grounds() -> void:
-	var asphalt := box(Vector3(0, -0.18, 0), Vector3(62, 0.3, 80), Color(0.035, 0.043, 0.044))
-	var material := StandardMaterial3D.new()
-	var ramp := Gradient.new()
-	ramp.set_color(0, Color(0.025, 0.031, 0.032))
-	ramp.set_color(1, Color(0.11, 0.12, 0.115))
-	material.albedo_texture = preload("res://scripts/materials.gd").noise_texture(0.28, 3, 256, 256, ramp)
-	material.uv1_triplanar = true
-	material.uv1_world_triplanar = true
-	material.uv1_scale = Vector3.ONE * 0.6
-	material.roughness = 0.68
-	asphalt.material_override = material
-	box(Vector3(0, -0.055, 17), Vector3(18, 0.1, 10), Color(0.18, 0.21, 0.2))
+	world.box(self, Vector3(0, -0.18, 0), Vector3(62, 0.3, 80), "asphalt")
+	world.box(self, Vector3(0, -0.055, 17), Vector3(18, 0.1, 10), "pavers")
 	for x in range(-8, 9):
 		Art.box(self, Vector3(x, 0.001, 17), Vector3(0.018, 0.012, 10), Color(0.09, 0.12, 0.11))
 	for z in range(13, 23): Art.box(self, Vector3(0, 0.003, z), Vector3(18, 0.014, 0.018), Color(0.09, 0.12, 0.11))
@@ -119,7 +113,12 @@ func grounds() -> void:
 		box(Vector3(x, 0.65, 14.5), Vector3(1.65, 0.03, 2.35), Color(0.055, 0.07, 0.045), false)
 		for index in range(6): world.dressing.plant(self, Vector3(x + (index % 2) * 0.5 - 0.25, 0.66, 13.8 + (index / 2) * 0.65), 0.65, index + 22, false)
 	for x in [-23.0, -19.0, 14.0, 18.0, 22.0]:
-		for offset in [-1.65, 1.65]: Art.box(self, Vector3(x + offset, 0.008, 20), Vector3(0.08, 0.016, 5.5), Color(0.48, 0.47, 0.34))
+		for offset in [-1.65, 1.65]:
+			var marking := Art.box(self, Vector3(x + offset, 0.008, 20), Vector3(0.08, 0.016, 5.5), Color.WHITE)
+			var paint := ShaderMaterial.new()
+			paint.shader = preload("res://shaders/weathered_road_paint.gdshader")
+			paint.set_shader_parameter("dirt",preload("res://scripts/materials.gd").decay_map("worn_asphalt","ao"))
+			marking.material_override = paint
 		box(Vector3(x, 0.075, 17.5), Vector3(2.5, 0.15, 0.18), Color(0.24, 0.26, 0.23))
 	car(Vector3(-19, 0, 20), Color(0.19, 0.24, 0.22))
 	car(Vector3(18, 0, 20), Color(0.12, 0.14, 0.18))

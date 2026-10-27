@@ -47,9 +47,13 @@ func _ready() -> void:
 	light = SpotLight3D.new()
 	light.position = lens_point + Vector3(0, 0, -0.008)
 	light.light_color = Color(1, 0.94, 0.8)
-	light.light_energy = 3
+	light.light_energy = 3.0
 	light.spot_range = 18
-	light.spot_angle = 29
+	# Facho de 20 graus: cai exponencialmente com a distancia e tambem do eixo
+	# ate a borda do cone, onde chega a zero.
+	light.spot_angle = 20
+	light.spot_attenuation = 2.0
+	light.spot_angle_attenuation = 2.0
 	light.visible = false
 	add_child(light)
 	light.look_at(get_parent().to_global(Vector3(0, 0, -15)), Vector3.UP)

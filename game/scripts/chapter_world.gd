@@ -9,6 +9,15 @@ var objects: Dictionary = {}
 var doors: Dictionary = {}
 var corridor_lights: Array = []
 var interior_lights: Array = []
+
+# Reator velho das lampadas do corredor: '-' apagado, '*' aceso. Gagueja em
+# rajadas curtas e passa trechos longos no escuro.
+const CORRIDOR_RHYTHM := "---*---*-*---**--*-*--------*----"
+const RHYTHM_STEP := 0.12
+
+var corridor_powered := false
+var interior_powered := true
+var rhythm_time := 0.0
 var chair: StaticBody3D
 var figure: Node3D
 var double: Node3D
@@ -227,7 +236,8 @@ func room(label: String, center: Vector3, size: Vector2) -> void:
 	interior_lights.append(light)
 	if label == "Corredor":
 		light.light_color = Color(0.46, 0.64, 0.66)
-		light.light_energy = 0.65
+		light.light_energy = 0.3
+		light.omni_range = 4.2
 		corridor_lights.append(light)
 		for z in [1.0, -12.0]:
 			var extra := light.duplicate() as OmniLight3D
@@ -341,11 +351,20 @@ func humanoid(color: Color) -> Node3D:
 	return root
 
 func set_corridor_power(powered: bool) -> void:
-	for light in corridor_lights:
-		light.visible = powered
+	corridor_powered = powered
+	if not powered:
+		for light in corridor_lights: light.visible = false
 
 func set_interior_power(powered: bool) -> void:
+	interior_powered = powered
 	for light in interior_lights: light.visible = powered
+
+func _process(delta: float) -> void:
+	if corridor_lights.is_empty(): return
+	rhythm_time += delta
+	var step := int(rhythm_time / RHYTHM_STEP) % CORRIDOR_RHYTHM.length()
+	var on := corridor_powered and interior_powered and CORRIDOR_RHYTHM[step] == "*"
+	for light in corridor_lights: light.visible = on
 
 func in_security(point: Vector3) -> bool:
 	return point.x < -2.3 and point.x > -7.8 and point.z > -1.8 and point.z < 3.8

@@ -7,6 +7,7 @@ var computer: StaticBody3D
 var ui: CanvasLayer
 var sound: Node
 var director: Node
+var shadows: Node3D
 
 var tablet_hud: Control = null
 var hud_minimal: Control = null
@@ -43,6 +44,10 @@ func _ready() -> void:
 	sound.game = self
 	sound.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(sound)
+	shadows = preload("res://scripts/cast_shadows.gd").new()
+	shadows.game = self
+	shadows.process_mode = Node.PROCESS_MODE_PAUSABLE
+	add_child(shadows)
 	director = preload("res://scripts/event_director.gd").new()
 	director.game = self
 	director.process_mode = Node.PROCESS_MODE_PAUSABLE

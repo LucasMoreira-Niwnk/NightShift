@@ -182,7 +182,7 @@ func _process(delta: float) -> void:
 	zone_label.text = zone
 	time_label.text = game.world.clocks[0].displayed_time
 	light_label.text = "LANTERNA / NÃO COLETADA"
-	if game.player.has_flashlight:
+	if game.player.has_flashlight and game.player.flashlight:
 		light_label.text = "LANTERNA / " + ("LIGADA" if game.player.flashlight.visible else "DESLIGADA")
 	inventory_label.text = "SEM EQUIPAMENTO"
 	if game.chapter.has_flag("badge"):

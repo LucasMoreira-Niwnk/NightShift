@@ -3,12 +3,24 @@ param(
     [string]$Mode = 'editor'
 )
 $ErrorActionPreference = 'Stop'
-$godotDirectory = 'C:\Users\hsaug\Downloads\Godot_v4.0-stable_win64.exe'
-$godotExecutable = Join-Path $godotDirectory 'Godot_v4.0-stable_win64_console.exe'
-if ($env:NIGHTSHIFT_GODOT) { $godotExecutable = $env:NIGHTSHIFT_GODOT }
-if (-not (Test-Path -LiteralPath $godotExecutable -PathType Leaf)) {
+
+$godotExecutable = $null
+$candidates = @(
+    $env:NIGHTSHIFT_GODOT,
+    (Join-Path $env:USERPROFILE 'Downloads\Godot_v4.0-stable_win64.exe\Godot_v4.0-stable_win64_console.exe'),
+    (Join-Path $env:USERPROFILE 'Downloads\Godot_v4.0-stable_win64.exe\Godot_v4.0-stable_win64.exe'),
+    'C:\Users\hsaug\Downloads\Godot_v4.0-stable_win64.exe\Godot_v4.0-stable_win64_console.exe'
+)
+foreach ($c in $candidates) {
+    if ($c -and (Test-Path -LiteralPath $c -PathType Leaf)) {
+        $godotExecutable = $c
+        break
+    }
+}
+if (-not $godotExecutable) {
     throw 'Godot não encontrado. Defina NIGHTSHIFT_GODOT com o caminho completo do executável.'
 }
+
 $projectDirectory = Join-Path (Split-Path $PSScriptRoot -Parent) 'game'
 # Keep editor settings and runtime data local to this workspace.
 $localData = Join-Path (Split-Path $PSScriptRoot -Parent) '.local'

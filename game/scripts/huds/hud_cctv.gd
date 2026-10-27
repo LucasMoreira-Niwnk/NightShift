@@ -20,9 +20,9 @@ signal camera_switched(cam_index: int)
 signal ramal_called()
 
 @onready var clock_label: Label = $MainLayout/VBox/Header/ClockLabel
-@onready var cam1: CameraFeed = $MainLayout/VBox/FeedGrid/Cam1
-@onready var cam2: CameraFeed = $MainLayout/VBox/FeedGrid/Cam2
-@onready var cam3: CameraFeed = $MainLayout/VBox/FeedGrid/Cam3
+@onready var cam1: PanelContainer = $MainLayout/VBox/FeedGrid/Cam1
+@onready var cam2: PanelContainer = $MainLayout/VBox/FeedGrid/Cam2
+@onready var cam3: PanelContainer = $MainLayout/VBox/FeedGrid/Cam3
 @onready var incident_label: Label = $MainLayout/VBox/StatusBar/IncidentPanel/VBox/IncidentText
 @onready var btn_ramal: Button = $MainLayout/VBox/ActionBar/BtnRamal
 

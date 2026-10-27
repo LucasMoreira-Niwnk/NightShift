@@ -12,7 +12,7 @@
 ##   (AO VIVO, INSTÁVEL, SEM SINAL), disparar distorções em câmeras específicas,
 ##   e capturar cliques do jogador ao inspecionar uma sala.
 ## ==============================================================================
-class_name CameraFeed
+class_name SecurityCameraFeed
 extends PanelContainer
 
 signal feed_clicked(feed_name: String)

@@ -71,8 +71,11 @@ func build() -> void:
 			box(Vector3(x, 1.5, -12), Vector3(0.2, 3, 4), Color(0.22, 0.25, 0.23))
 			box(Vector3(x, 1.5, 3), Vector3(0.2, 3, 2), Color(0.22, 0.25, 0.23))
 	for x in [-5.5, 5.5]: box(Vector3(x, 1.5, -16), Vector3(5, 3, 0.2), Color(0.22, 0.25, 0.23))
-	for y in [3.55, 7.45]:
-		box(Vector3(0, y, -2), Vector3(16.6, 0.25, 28.6), Color(0.12, 0.16, 0.16))
+	# Facade cornice is a perimeter trim, not a plate through the stairwell.
+	for x in [-8.15, 8.15]: box(Vector3(x, 3.55, -2), Vector3(0.3, 0.25, 28.6), Color(0.12, 0.16, 0.16))
+	box(Vector3(0, 3.55, 12.15), Vector3(16.6, 0.25, 0.3), Color(0.12, 0.16, 0.16))
+	for x in [-5.65, 5.65]: box(Vector3(x, 3.55, -16.15), Vector3(5.3, 0.25, 0.3), Color(0.12, 0.16, 0.16))
+	box(Vector3(0, 7.45, -2), Vector3(16.6, 0.25, 28.6), Color(0.12, 0.16, 0.16))
 	# Roof parapets and flashings.
 	for x in [-8.15, 8.15]: box(Vector3(x, 7.85, -2), Vector3(0.2, 0.7, 28.5), Color(0.24, 0.26, 0.23))
 	for z in [-16.15, 12.15]: box(Vector3(0, 7.85, z), Vector3(16.5, 0.7, 0.2), Color(0.24, 0.26, 0.23))

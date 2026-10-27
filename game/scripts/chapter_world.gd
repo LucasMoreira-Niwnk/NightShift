@@ -72,8 +72,6 @@ func _ready() -> void:
 	wall(Vector3(2, 1.5, -13), Vector3(0.2, 3, 6))
 	wall(Vector3(-2, 1.5, -4), Vector3(0.2, 3, 4))
 	wall(Vector3(-2, 1.5, -15), Vector3(0.2, 3, 2))
-	wall(Vector3(-1.6, 1.5, -16), Vector3(0.8, 3, 0.2))
-	wall(Vector3(1.6, 1.5, -16), Vector3(0.8, 3, 0.2))
 	make_door("stairs", Vector3(0, 0, -15.8), "acesso ao segundo andar")
 	doors.stairs.rotation.y = 0
 	make_door("service_exit", Vector3(-8, 0, 1), "saída de serviço")

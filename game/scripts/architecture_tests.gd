@@ -12,6 +12,20 @@ func run(game: Node, test: Node) -> void:
 	var space: PhysicsDirectSpaceState3D = game.world.get_world_3d().direct_space_state
 	var floor_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(4, 6, -5), Vector3(4, 3.9, -5)))
 	test.check(not floor_hit.is_empty() and absf(floor_hit.position.y - 4.2) < 0.02, "Upper floor has physical support above archive")
+	# Regressions for the visible slots around the staircase doorway and slabs.
+	for x in [-2.6, -1.0, 1.0, 2.6]:
+		for y in [0.5, 1.7, 3.1, 3.8]:
+			var jamb := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(x, y, -16.5), Vector3(x, y, -15.2)))
+			test.check(not jamb.is_empty(), "Stair doorway jamb closes former slot: " + str(Vector2(x, y)))
+	for y in [2.8, 3.55, 3.95]:
+		var lintel := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(0, y, -16.5), Vector3(0, y, -15.2)))
+		test.check(not lintel.is_empty(), "Ground doorway lintel seals ceiling plenum: " + str(y))
+	var upper_lintel := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(0, 7, -14.7), Vector3(0, 7, -13.3)))
+	test.check(not upper_lintel.is_empty(), "Upper doorway has a solid lintel")
+	for z in [-14.05, -13.95, -12.0]:
+		test.check(top_surfaces(game.world, Vector3(0, 4.2, z)) == 1, "Landing and upstairs floor meet without coplanar tile overlays: " + str(z))
+	var soffit := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(0, 3.8, -16.7), Vector3(0, 4.3, -16.7)))
+	test.check(not soffit.is_empty() and absf(soffit.position.y - 4.04) < 0.01, "Upper landing has a continuous structural soffit")
 	var pane_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(7, 1.7, 6.2), Vector3(9, 1.7, 6.2)))
 	test.check(not pane_hit.is_empty() and absf(pane_hit.position.x - 8) < 0.03, "Window panes physically close the facade apertures")
 	var exterior_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(0, 1.7, 17), Vector3(0, 1.7, 23)))
@@ -37,3 +51,12 @@ func run(game: Node, test: Node) -> void:
 	test.check(game.chapter.load_game(), "Current architecture checkpoint restores unchanged")
 	test.check(game.player.position.distance_to(Vector3(original.position[0], original.position[1], original.position[2])) < 0.01, "Current checkpoint is not transformed a second time")
 	if test.failures == 0: print("ARCHITECTURE_TEST_OK: stacked floors, facade glass, exterior access, checkpoint migration")
+
+func top_surfaces(world: Node3D, point: Vector3) -> int:
+	var count := 0
+	for mesh in world.find_children("*", "MeshInstance3D", true, false):
+		if not mesh.mesh is BoxMesh or not mesh.visible: continue
+		var bounds: AABB = mesh.global_transform * mesh.get_aabb()
+		if absf(bounds.end.y - point.y) < 0.002 and point.x > bounds.position.x and point.x < bounds.end.x and point.z > bounds.position.z and point.z < bounds.end.z:
+			count += 1
+	return count

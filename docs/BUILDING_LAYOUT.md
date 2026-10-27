@@ -8,6 +8,8 @@ A escada principal, ao norte do corredor, sobe 2,1 m no primeiro lance, retorna 
 
 A escada de serviço fica a oeste da administração e usa o mesmo retorno de dois lances. A passagem térrea segue sob o lance superior e o patamar, com altura livre para a cápsula do jogador, até a porta lateral da segurança. O bloqueio narrativo da escada principal continua obrigando essa rota no capítulo 2.
 
+O encontro da escada com os corredores tem paredes laterais e vergas completas, fechando também o espaço entre o forro do térreo e a laje superior. O patamar termina na borda do piso do andar, sem superfícies coplanares sobrepostas. Seu acabamento de ladrilho fica somente em cima, sobre uma face inferior de concreto/forro. O friso entre pavimentos acompanha o perímetro da fachada e não atravessa a escadaria.
+
 ## Exterior e aberturas
 
 A antiga parede ao fundo da marquise foi retirada. O terreno externo tem base e perímetro com colisão, estacionamento, carros, bancos, canteiros, árvores, postes, sinalização e fundos urbanos. Marquise e pilares definem o acesso. A fachada possui frisos entre pavimentos, peitoris, drenagem, tubulações, platibanda e unidades no telhado. Grades repetidas usam MultiMesh.
@@ -22,7 +24,7 @@ Saves novos incluem `map_revision: 2`. Saves sem esse campo mantêm flags, docum
 
 ## Verificação
 
-O modo `check` verifica a sintaxe dos scripts no Godot 4.0. O modo `test` percorre os dois capítulos, incluindo subida e descida dos dois lances principais, reparo de energia, rede, gravações isoladas, bloqueio da escada, retorno pela escada de serviço e finais. A suíte de arquitetura verifica a projeção dos objetos no novo piso, suporte da laje, colisão de vidro, acesso externo e migração de checkpoints.
+O modo `check` verifica a sintaxe dos scripts no Godot 4.0. O modo `test` percorre os dois capítulos, incluindo subida e descida dos dois lances principais, reparo de energia, rede, gravações isoladas, bloqueio da escada, retorno pela escada de serviço e finais. A suíte de arquitetura verifica a projeção dos objetos no novo piso, suporte da laje, fechamento lateral/superior das portas da escada, ausência de pisos sobrepostos na transição, face inferior do patamar, colisão de vidro, acesso externo e migração de checkpoints.
 
 Os trechos de circulação usam o controlador real. Os testes reposicionam o jogador entre objetivos; não equivalem a uma partida manual contínua. Capturas são desenhadas explicitamente pelo renderizador; o modo de teste desliga o desenho automático para evitar que janelas minimizadas interrompam a suíte. O modo normal de jogo mantém renderização contínua.
 

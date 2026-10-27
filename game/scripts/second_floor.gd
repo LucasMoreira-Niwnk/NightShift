@@ -32,6 +32,7 @@ func _ready() -> void:
 	partition(2, -50, -26, -38)
 	partition(-10, -35, -27, -31)
 	for x in [-5.46875, 5.46875]: wall(Vector3(x, 1.5, -26), Vector3(9.0625, 3, 0.2))
+	block(Vector3(0, 2.8, -26), Vector3(1.875, 0.4, 0.2))
 	door("upper_gate", Vector3(0, 0, -26), "palier / escadaria", 0)
 	door("administration", Vector3(-2, 0, -31), "administração")
 	door("it", Vector3(-2, 0, -42), "sala de TI")
@@ -96,7 +97,7 @@ func _ready() -> void:
 	for entry in [["ADMINISTRAÇÃO", Vector3(-4.5, 2.5, -34.8)], ["TI / COMPONENTES", Vector3(-6.5, 2.5, -46.8)], ["SALA DE REUNIÕES", Vector3(6, 2.5, -44.8)], ["2º ANDAR\nADMINISTRAÇÃO →  |  ← REUNIÕES\nTI — FUNDO À DIREITA", Vector3(0, 2.5, -27.0)]]:
 		add_label(entry[0], entry[1], 0, 0.0015)
 	# Continuous slabs and facade close unused service voids between rooms.
-	block(Vector3(0, -0.2, -38), Vector3(20, 0.3, 24), "tile")
+	block(Vector3(0, -0.15, -38), Vector3(20, 0.3, 24), "tile")
 	block(Vector3(0, 3.1, -38), Vector3(20, 0.2, 24), "ceiling")
 	world.architecture.window_wall(self, Vector3(0, 1.5, 10), Vector3(16, 3, 0.2), [-5.5, -2.2, 2.2, 5.5], 2.0)
 	for x in [-8, 8]:
@@ -119,8 +120,7 @@ func partition(x: float, start: float, end: float, opening: float) -> void:
 	block(Vector3(x, 2.8, opening), Vector3(0.2, 0.4, 1.5))
 
 func room(point: Vector3, size: Vector2) -> void:
-	block(point - Vector3.UP * 0.15, Vector3(size.x, 0.3, size.y), "tile")
-	block(point + Vector3.UP * 3.1, Vector3(size.x, 0.2, size.y), "ceiling")
+	# One continuous slab/ceiling is shared by all rooms; no coplanar overlays.
 	var light := OmniLight3D.new()
 	light.position = Layout.upper_point(point + Vector3(0, 2.65, 0))
 	light.light_color = Color(0.59, 0.73, 0.68)

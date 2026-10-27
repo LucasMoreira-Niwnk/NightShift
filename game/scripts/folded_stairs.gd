@@ -13,7 +13,9 @@ func box(point: Vector3, size: Vector3, kind: String = "metal", collision: bool 
 	return world.box(self, point, size, kind, collision)
 
 func landing(center: Vector3, size: Vector2) -> void:
-	box(center - Vector3.UP * 0.08, Vector3(size.x, 0.16, size.y), "tile")
+	# Concrete soffit and a thin finish keep floor tiles off the underside.
+	box(center - Vector3.UP * 0.09, Vector3(size.x, 0.14, size.y), "ceiling")
+	box(center - Vector3.UP * 0.01, Vector3(size.x, 0.02, size.y), "tile")
 	for x in [-size.x * 0.5 + 0.1, size.x * 0.5 - 0.1]:
 		Art.box(self, center + Vector3(x, 0.008, 0), Vector3(0.08, 0.015, size.y - 0.1), Color(0.65, 0.48, 0.15))
 
@@ -84,14 +86,19 @@ func light(point: Vector3, caption: String) -> void:
 	lamp.shadow_enabled = true
 	add_child(lamp)
 	Art.box(self, point + Vector3(0, 0.1, 0), Vector3(0.7, 0.08, 0.22), Color(0.5, 0.6, 0.53))
-	var label: Label3D = world.add_sign(caption, point - Vector3(0, 0.35, 0))
-	label.pixel_size = 0.0012
+	var sign_point := point - Vector3(0, 0.35, 0)
+	Art.box(self, sign_point, Vector3(1.65, 0.3, 0.06), Color(0.045, 0.09, 0.075))
+	for side in [-1.0, 1.0]:
+		var label: Label3D = world.add_sign(caption, sign_point + Vector3(0, 0, side * 0.04), PI if side < 0 else 0.0)
+		label.pixel_size = 0.0012
 
 func main_stair() -> void:
 	landing(Vector3(0, 0, -17), Vector2(5.8, 2.4))
 	landing(Vector3(0, 2.1, -23.35), Vector2(5.8, 1.7))
-	landing(Vector3(0, 4.2, -15.9), Vector2(5.8, 4.2))
-	for x in [-2.1, 2.1]: box(Vector3(x, 1.5, -15.8), Vector3(1.8, 3, 0.2), "wall")
+	landing(Vector3(0, 4.2, -16), Vector2(5.8, 4.0))
+	# Seal the full storey/plenum around the 1.5 m doorway, up to the soffit.
+	for x in [-1.85, 1.85]: box(Vector3(x, 2.02, -15.8), Vector3(2.2, 4.04, 0.2), "wall")
+	box(Vector3(0, 3.32, -15.8), Vector3(1.5, 1.44, 0.2), "wall")
 	flight(-1.4, -18, -22.5, 0, 2.1)
 	flight(1.4, -22.5, -18, 2.1, 4.2)
 	for x in [-2.95, 2.95]:

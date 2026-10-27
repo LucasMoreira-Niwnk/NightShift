@@ -3,6 +3,7 @@ extends Node
 # Original procedural sound design. Streams are cached; no downloads at runtime.
 var effects: Dictionary = {}
 var ambience: AudioStreamPlayer
+var infrasound: AudioStreamPlayer
 var rain: AudioStreamPlayer
 var game: Node
 var step_distance := 0.0
@@ -16,6 +17,7 @@ func _ready() -> void:
 	for id in ["rain", "hum", "step", "ring", "drag", "knock", "static", "printer", "switch", "engine"]:
 		effects[id] = synthesize(id)
 	ambience = loop_player("hum", -30)
+	infrasound = infrasound_player()
 	rain = loop_player("rain", -18)
 	last_position = game.player.position
 	play("engine", Vector3.ZERO, -14, false)
@@ -25,6 +27,25 @@ func _ready() -> void:
 			AudioServer.set_bus_volume_db(AudioServer.get_bus_index(bus), float(settings.get_value("volume", bus, 0)))
 	await get_tree().create_timer(1.5, false).timeout
 	play("knock", Vector3.ZERO, -18, false)
+
+# Leito de infrassom do primeiro ato, em 15% do volume master.
+const INFRASOUND_LEVEL := 0.15
+
+func infrasound_player() -> AudioStreamPlayer:
+	var stream = load("res://assets/audio/infrasound.wav")
+	if stream == null: return null
+	# loop_end precisa vir antes de loop_mode: com loop_end zerado o playback
+	# para no primeiro frame. O fim real sai do tamanho dos dados (16 bits).
+	if stream.loop_end <= 0:
+		stream.loop_end = stream.data.size() / 2 / (2 if stream.stereo else 1)
+	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	var player := AudioStreamPlayer.new()
+	player.stream = stream
+	player.bus = "Ambiente"
+	player.volume_db = linear_to_db(INFRASOUND_LEVEL)
+	add_child(player)
+	player.play()
+	return player
 
 func synthesize(id: String) -> AudioStreamWAV:
 	var duration := 0.22

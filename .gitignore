@@ -13,3 +13,7 @@ Thumbs.db
 *.key
 .vscode/
 .idea/
+
+# Material de trabalho fora do projeto Godot
+/Rhuan analizes/
+graphify-out/

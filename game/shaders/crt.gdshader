@@ -16,6 +16,8 @@ uniform float brightness : hint_range(0.5, 1.5) = 1.0;
 uniform float flicker_intensity : hint_range(0.0, 0.1) = 0.03;
 uniform vec4 tint_color : source_color = vec4(0.0, 1.0, 0.5, 1.0);
 uniform bool use_tint = false;
+// Overlay de tela cheia: amostra o que ja foi desenhado, nao a TEXTURE do ColorRect
+uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap;
 
 vec2 curve_uv(vec2 uv) {
 	uv = uv * 2.0 - 1.0;
@@ -28,20 +30,18 @@ vec2 curve_uv(vec2 uv) {
 void fragment() {
 	vec2 curved_uv = curve_uv(UV);
 
-	// Out of bounds check
-	if (curved_uv.x < 0.0 || curved_uv.x > 1.0 || curved_uv.y < 0.0 || curved_uv.y > 1.0) {
-		COLOR = vec4(0.0, 0.0, 0.0, 1.0);
-		return;
-	}
+	// Fora da curvatura o tubo fica preto (sem 'return': proibido em fragment())
+	bool outside = curved_uv.x < 0.0 || curved_uv.x > 1.0 || curved_uv.y < 0.0 || curved_uv.y > 1.0;
+	curved_uv = clamp(curved_uv, vec2(0.0), vec2(1.0));
 
 	// Chromatic aberration
 	float offset = chromatic_aberration * 0.001;
-	float r = texture(TEXTURE, vec2(curved_uv.x + offset, curved_uv.y)).r;
-	float g = texture(TEXTURE, curved_uv).g;
-	float b = texture(TEXTURE, vec2(curved_uv.x - offset, curved_uv.y)).b;
-	float a = texture(TEXTURE, curved_uv).a;
+	float r = texture(screen_tex, vec2(curved_uv.x + offset, curved_uv.y)).r;
+	float g = texture(screen_tex, curved_uv).g;
+	float b = texture(screen_tex, vec2(curved_uv.x - offset, curved_uv.y)).b;
 
-	vec4 col = vec4(r, g, b, a);
+	vec4 col = vec4(r, g, b, 1.0);
+	if (outside) { col = vec4(0.0, 0.0, 0.0, 1.0); }
 
 	// Tint
 	if (use_tint) {

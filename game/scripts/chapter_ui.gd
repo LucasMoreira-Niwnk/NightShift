@@ -81,7 +81,7 @@ func _ready() -> void:
 	inventory.add_child(inventory_label)
 	inventory_label.add_theme_font_size_override("font_size", 12)
 	inventory_label.modulate = Style.MUTED
-	var controls := label_at(root, Vector2.ZERO, "[WASD] Mover    [F] Lanterna    [J] Diário    [Esc] Menu", 12)
+	var controls := label_at(root, Vector2.ZERO, "[WASD] Mover    [F] Lanterna    [Tab] Tablet / Mapa    [F1] HUDs    [J] Diário    [Esc] Menu", 11)
 	controls.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	controls.offset_left = 24
 	controls.offset_top = -26
@@ -189,8 +189,9 @@ func _process(delta: float) -> void:
 		inventory_label.text = "CRACHÁ  ·  CHAVE"
 	if game.player.has_flashlight: inventory_label.text += "  ·  LANTERNA"
 	if not modal and not paused and not ending:
-		prompt_card.visible = not hint.text.is_empty()
-		reticle.hovering = prompt_card.visible
+		# o prompt agora vive no hud_minimal; o card antigo some para nao duplicar
+		reticle.hovering = not hint.text.is_empty()
+		prompt_card.visible = reticle.hovering and game.hud_minimal == null
 		caption_card.visible = not subtitle.text.is_empty() and message_age < 16
 		caption_card.modulate.a = clampf((16 - message_age) / 2.0, 0, 1)
 

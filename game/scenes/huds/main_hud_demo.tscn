@@ -12,7 +12,7 @@ grow_vertical = 2
 script = ExtResource("1_demo")
 
 [node name="HUDLayer" type="CanvasLayer" parent="."]
-layer = 1
+layer = 31
 
 [node name="HUDContainer" type="Control" parent="HUDLayer"]
 layout_mode = 3
@@ -23,7 +23,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="ShaderLayer" type="CanvasLayer" parent="."]
-layer = 2
+layer = 32
 
 [node name="PostProcessRect" type="ColorRect" parent="ShaderLayer"]
 anchors_preset = 15
@@ -42,7 +42,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="UIControls" type="CanvasLayer" parent="."]
-layer = 10
+layer = 33
 
 [node name="VBox" type="VBoxContainer" parent="UIControls"]
 anchors_preset = 12

@@ -123,6 +123,15 @@ func build_overlay() -> void:
 	picture.offset_top = 78
 	picture.offset_bottom = -250
 	overlay.add_child(picture)
+	var monitor_scan := ColorRect.new()
+	monitor_scan.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	monitor_scan.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var scan_sh = load("res://shaders/scanlines.gdshader")
+	if scan_sh:
+		var scan_mat := ShaderMaterial.new()
+		scan_mat.shader = scan_sh
+		monitor_scan.material = scan_mat
+	picture.add_child(monitor_scan)
 	channel_label = Label.new()
 	channel_label.position = Vector2(30, 22)
 	channel_label.add_theme_font_size_override("font_size", 25)

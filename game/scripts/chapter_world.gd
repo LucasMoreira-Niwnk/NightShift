@@ -166,10 +166,12 @@ func _ready() -> void:
 	var environment := WorldEnvironment.new()
 	environment.environment = Environment.new()
 	environment.environment.background_mode = Environment.BG_COLOR
-	environment.environment.background_color = Color(0.015, 0.02, 0.025)
+	environment.environment.background_color = Color(0.006, 0.008, 0.011)
 	environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.environment.ambient_light_color = Color(0.32, 0.42, 0.43)
-	environment.environment.ambient_light_energy = 0.09
+	# ponytail: SSAO nao existe no renderizador Compatibility (4.0); o escuro vem
+	# do ambiente fraco e frio, que afunda quinas e vaos sem luz direta
+	environment.environment.ambient_light_color = Color(0.18, 0.26, 0.30)
+	environment.environment.ambient_light_energy = 0.04
 	add_child(environment)
 
 func box(parent: Node3D, location: Vector3, size: Vector3, kind: String = "wall", collision: bool = true, color: Color = Color.WHITE) -> MeshInstance3D:

@@ -5,21 +5,29 @@ var filesystem: EditorFileSystem
 var quiet_time := 0.0
 var finished := false
 var scan_finished := false
+var preparing := false
 
 func _enter_tree() -> void:
 	set_process(false)
-	if not OS.get_cmdline_user_args().has("--nightshift-prepare"): return
+	preparing = OS.get_cmdline_user_args().has("--nightshift-prepare")
+	if not preparing: return
 	filesystem = get_editor_interface().get_resource_filesystem()
 	filesystem.filesystem_changed.connect(mark_changed)
 	filesystem.resources_reimported.connect(func(_paths: PackedStringArray): mark_changed())
 	set_process(true)
+
+func _exit_tree() -> void:
+	preparing = false
+	set_process(false)
 
 func mark_changed() -> void:
 	scan_finished = true
 	quiet_time = 0
 
 func _process(delta: float) -> void:
-	if finished: return
+	# Godot may enable processing automatically for a tool script after entering
+	# the tree. Normal editor sessions never initialize the launch-only scanner.
+	if not preparing or finished or not is_instance_valid(filesystem): return
 	if filesystem.is_scanning():
 		quiet_time = 0
 		return

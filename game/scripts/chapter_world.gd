@@ -156,7 +156,8 @@ func _ready() -> void:
 	add_sign("ARQUIVO", Vector3(5, 2.6, -9.8))
 	add_sign("SEGURANÇA", Vector3(-5, 2.6, -1.8))
 	add_sign("SALA TÉCNICA", Vector3(-5, 2.6, -13.8))
-	figure = humanoid(Color(0.035, 0.04, 0.04))
+	figure = preload("res://scripts/memesis.gd").new()
+	add_child(figure)
 	figure.position = Vector3(0, 0, -13)
 	figure.hide()
 	double = humanoid(Color(0.19, 0.28, 0.24))
@@ -180,6 +181,18 @@ func _ready() -> void:
 	# do ambiente fraco e frio, que afunda quinas e vaos sem luz direta
 	environment.environment.ambient_light_color = Color(0.18, 0.26, 0.30)
 	environment.environment.ambient_light_energy = 0.04
+	# Sem isto nenhum FogVolume desenha, nem no Forward+: o Mêmesis (memesis.gd)
+	# e um corpo de nevoa, e e esta chave que liga o sistema que o renderiza.
+	# Em gl_compatibility a propriedade existe mas nao faz nada.
+	environment.environment.volumetric_fog_enabled = true
+	environment.environment.volumetric_fog_density = 0.0
+	# Glow so para a franja do Memesis sangrar um pouco no ar. O limiar alto e
+	# o que segura o resto da cena de fora: as lampadas do predio ficam abaixo
+	# dele, e so a franja, empurrada acima de 1.0 pelo shader, acende o bloom.
+	environment.environment.glow_enabled = true
+	environment.environment.glow_hdr_threshold = 1.1
+	environment.environment.glow_intensity = 0.55
+	environment.environment.glow_bloom = 0.05
 	add_child(environment)
 	staircases = preload("res://scripts/folded_stairs.gd").new()
 	staircases.world = self

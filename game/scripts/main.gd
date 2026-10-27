@@ -153,6 +153,12 @@ func _input(event: InputEvent) -> void:
 		elif event.physical_keycode == KEY_F1:
 			toggle_hud_demo()
 			get_viewport().set_input_as_handled()
+		elif event.physical_keycode == KEY_F3:
+			# Teste de arte: planta o Mêmesis na frente de quem joga, para olhar
+			# o vulto de perto sem esperar a etapa 5 do capítulo.
+			if world != null and world.figure != null and player != null:
+				world.figure.chamar_para_frente(player.camera)
+			get_viewport().set_input_as_handled()
 		elif event.physical_keycode == KEY_F2:
 			if crt_overlay_layer:
 				crt_overlay_layer.visible = !crt_overlay_layer.visible

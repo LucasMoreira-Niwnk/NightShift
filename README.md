@@ -35,7 +35,7 @@ Aproxime-se do monitor na sala de segurança e pressione E. O terminal apresenta
 
 O monitor físico e a interface usam o mesmo SubViewport de 640×360: somente a câmera selecionada é renderizada. O mundo continua ativo durante o monitoramento, mas movimento e lanterna ficam bloqueados até sair do terminal. As texturas de piso, parede e madeira estão incluídas em `game/assets/textures/`; modelos em `game/assets/models/`. Todos funcionam offline, sem plugins. Créditos e licenças estão em `game/assets/ART_CREDITS.md`.
 
-Após atualizar os arquivos, aguarde a importação de texturas/modelos no editor antes de pressionar F5. Materiais usam cor, normal OpenGL e rugosidade com mapeamento em escala de mundo. O renderizador continua em Compatibility para Godot 4.0.
+Após atualizar os arquivos, aguarde a importação de texturas/modelos no editor antes de pressionar F5. Materiais usam cor, normal OpenGL e rugosidade com mapeamento em escala de mundo. O renderizador é Forward+ (Vulkan), exigido pelo FogVolume do Mêmesis.
 
 ### Abrir pelo PowerShell
 
@@ -49,7 +49,7 @@ Para jogar diretamente, use o mesmo comando trocando `-Mode editor` por `-Mode r
 
 Cada desenvolvedor configura seu próprio executável, sem alterar o script compartilhado. O atalho procura, nesta ordem: variável `NIGHTSHIFT_GODOT`, arquivo local `.local/godot-path.txt`, comando `godot` no PATH e a instalação portátil Godot 4.0 na pasta Downloads do usuário. Veja o passo a passo em `CONTRIBUTING.md`.
 
-O renderizador Compatibility foi escolhido para reduzir exigências de GPU. Godot 4.0 é a versão local confirmada; uma atualização da engine deve ser validada em uma tarefa separada.
+O renderizador era Compatibility, escolhido para reduzir exigências de GPU, e migrou para Forward+ porque o corpo do Mêmesis é um FogVolume, que só existe nesse backend. A troca passa a exigir GPU com Vulkan. O preset mobile segue em `gl_compatibility`, onde o vulto não aparece. Godot 4.0 é a versão local confirmada; uma atualização da engine deve ser validada em uma tarefa separada.
 
 Os atalhos mantêm configurações e dados do editor na pasta local `.local/`, ignorada pelo Git. As variáveis APPDATA/LOCALAPPDATA são ajustadas somente no processo iniciado pelo atalho. A importação direta de `.blend` está desativada; modelos podem ser importados como `.glb` sem instalar Blender.
 

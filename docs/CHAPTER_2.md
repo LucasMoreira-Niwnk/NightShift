@@ -27,7 +27,7 @@ Nota, fusível, cartucho retirado, instalação e sequência são persistidos. U
 | 12 | Na TI, cruzar a etiqueta com o patch panel 2B e selecionar a porta 07. Erros permitem nova tentativa. |
 | 13 | Reproduzir o buffer 01:03 enquanto o relógio ainda marca 01:02. Ao sair da TI, E na porta permite segurá-la; afastar-se permite a batida prevista. A escolha é salva. |
 | 14 | Cruzar ata, controle de acesso e arquivo CAM-05. Henrique consta na ata, mas não entrou. A sexta cadeira se move somente no feed; a cadeira física permanece parada. |
-| 15 | Iluminação de emergência e escadaria principal bloqueada. A planta indica a saída oeste da administração. Voz de Daniel e sombra na janela; mensagem da escada desaparece ao olhar de novo após atravessar. |
+| 15 | Apagão de todas as luminárias do edifício e escadaria principal bloqueada; lanterna e terminal em bateria. A planta indica a saída oeste da administração. Voz de Daniel e sombra na janela; mensagem da escada desaparece ao olhar de novo após atravessar. |
 | 16 | Descer pela escada de serviço, entrar na segurança pela passagem lateral, assistir ao arquivo de 15/11 e tentar apagá-lo. O arquivo protegido revela MÍMESIS. |
 | 17 | Ler a ocorrência 002, cujo texto distingue a decisão da porta, e ouvir a resposta de Augusto. |
 | 18 | 02:00; perfil comportamental 68%, referência Henrique, imagem impossível na CAM-04 e encerramento. O capítulo 3 permanece fora do escopo. |

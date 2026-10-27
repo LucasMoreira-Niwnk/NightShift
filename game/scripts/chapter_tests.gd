@@ -203,6 +203,9 @@ func run() -> void:
 	game.computer.interact()
 	check(chapter.stage == 4, "Technical room stage reached")
 	game.computer.close()
+	await check_blackout("chapter one breaker failure")
+	check(chapter.save_game() and chapter.load_game(), "Blackout checkpoint restores")
+	await check_blackout("loaded breaker failure")
 	check(game.world.doors.technical.is_open, "Technical door opened by event")
 	game.player.position = Vector3(0, 0.05, -10)
 	Input.action_press("move_left")
@@ -211,6 +214,8 @@ func run() -> void:
 	check(game.player.position.x < -2.5, "Technical doorway can be traversed: " + str(game.player.position))
 	await expansion.repair_power()
 	check(chapter.has_flag("power"), "Power restored")
+	check(game.world.interior_powered and game.world.staircases.get_child_count() > 0, "Fuse repair restores the building mains")
+	check(game.world.building_lights.any(func(entry): return entry.light.visible), "Fixtures return after successful repair")
 	check(chapter.save_game(), "Checkpoint saved")
 	var saved_stage: int = chapter.stage
 	game.player.flashlight.visible = false
@@ -272,3 +277,14 @@ func capture(id: String) -> void:
 	await get_tree().process_frame
 	RenderingServer.force_draw(false)
 	game.get_viewport().get_texture().get_image().save_png("res://../.local/" + id + ".png")
+
+func check_blackout(context: String) -> void:
+	await get_tree().process_frame
+	check(not game.world.interior_powered, "Building mains off: " + context)
+	check(game.world.building_lights.size() >= 24, "Registry covers rooms, upper storey, stairwells and property lights")
+	for entry in game.world.building_lights:
+		check(not entry.light.visible, "Fixture stays off during " + context + ": " + str(entry.light.get_path()))
+	for entry in game.world.powered_materials:
+		check(not entry.material.emission_enabled, "Luminaire emission stays off: " + context)
+	check(not game.computer.monitor_glow.visible, "Terminal UPS does not relight room during blackout")
+	check(game.player.has_flashlight and game.player.flashlight.visible, "Player retains battery flashlight during blackout")

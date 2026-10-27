@@ -287,6 +287,7 @@ func confirm_breakers() -> bool:
 		say("Sequência de partida inválida. Isole o quadro e consulte novamente a nota arquivada no diário.")
 		return false
 	flags.power = true
+	game.world.set_interior_power(true)
 	game.world.set_corridor_power(true)
 	game.world.doors.technical.restore_open(false)
 	say("[Três batidas na porta técnica. O corredor está vazio.]\nRádio: 'Não devia ter ligado a luz.'")
@@ -302,7 +303,7 @@ func flicker() -> void:
 	game.sound.play("static", Vector3.ZERO, -18, false)
 	await get_tree().create_timer(3.0, false).timeout
 	if generation != event_generation: return
-	game.world.set_interior_power(true)
+	game.world.set_interior_power(mains_available())
 	game.world.set_corridor_power(stage != 4 or has_flag("power"))
 
 func threat() -> void:
@@ -350,7 +351,7 @@ func entity_position() -> Vector3:
 	return [Vector3(0, 0, -13), Vector3(0.2, 0, -7), Vector3(0.6, 0, -2), Vector3(1.45, 0.9, 2.6)][clampi(entity_steps, 0, 3)]
 
 func apply_world() -> void:
-	game.world.set_interior_power(true)
+	game.world.set_interior_power(mains_available())
 	game.player.equip_flashlight(has_flag("flashlight"))
 	game.world.objects.flashlight.visible = not has_flag("flashlight")
 	game.world.objects.flashlight.collision_layer = 0 if has_flag("flashlight") else 1
@@ -463,3 +464,6 @@ func load_game() -> bool:
 	if stage == 8: game.ui.show_ending()
 	if stage == 18: game.ui.show_ending(2)
 	return true
+
+func mains_available() -> bool:
+	return not ((stage == 4 and not has_flag("power")) or stage == 15)

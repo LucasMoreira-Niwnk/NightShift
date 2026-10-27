@@ -81,7 +81,6 @@ func _ready() -> void:
 	map_image.rotation.y = -PI / 2
 	var map_material := StandardMaterial3D.new()
 	map_material.albedo_texture = load("res://assets/signage/second_floor.svg")
-	map_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	map_material.albedo_color = Color(0.72, 0.72, 0.68)
 	map_image.material_override = map_material
 	world.objects.emergency_map.add_child(map_image)
@@ -97,7 +96,7 @@ func _ready() -> void:
 	for entry in [["ADMINISTRAÇÃO", Vector3(-4.5, 2.5, -34.8)], ["TI / COMPONENTES", Vector3(-6.5, 2.5, -46.8)], ["SALA DE REUNIÕES", Vector3(6, 2.5, -44.8)], ["2º ANDAR\nADMINISTRAÇÃO →  |  ← REUNIÕES\nTI — FUNDO À DIREITA", Vector3(0, 2.5, -27.0)]]:
 		add_label(entry[0], entry[1], 0, 0.0015)
 	# Continuous slabs and facade close unused service voids between rooms.
-	block(Vector3(0, -0.15, -38), Vector3(20, 0.3, 24), "tile")
+	block(Vector3(0, -0.15, -38), Vector3(20, 0.3, 24), "upper_floor")
 	block(Vector3(0, 3.1, -38), Vector3(20, 0.2, 24), "ceiling")
 	world.architecture.window_wall(self, Vector3(0, 1.5, 10), Vector3(16, 3, 0.2), [-5.5, -2.2, 2.2, 5.5], 2.0)
 	for x in [-8, 8]:
@@ -111,7 +110,7 @@ func block(point: Vector3, size: Vector3, kind: String = "wall", collision: bool
 	return world.box(self, Layout.upper_point(point), Vector3(size.x * 0.8, size.y, size.z), kind, collision)
 
 func wall(point: Vector3, size: Vector3) -> void:
-	block(point, size)
+	block(point, size, "wall_cream" if point.z > -36 else "wall_green")
 	Art.box(self, Layout.upper_point(Vector3(point.x, 0.5, point.z)), Vector3(size.x * 0.8 + 0.015, 1, size.z + 0.015), Color(0.13, 0.2, 0.18))
 
 func partition(x: float, start: float, end: float, opening: float) -> void:
@@ -182,8 +181,8 @@ func service_route() -> void:
 
 func apply_state() -> void:
 	var blackout: bool = game.chapter.stage == 15
-	for light in lights: light.visible = not blackout
-	for light in emergency_lights: light.visible = blackout
+	for light in lights: light.visible = world.interior_powered and not blackout
+	for light in emergency_lights: light.visible = false
 	warning.visible = not game.chapter.has_flag("service_message_gone")
 	if world.fuse_visual != null:
 		world.fuse_visual.visible = not game.chapter.has_flag("burnt_fuse_removed") or game.chapter.has_flag("fuse_replaced")

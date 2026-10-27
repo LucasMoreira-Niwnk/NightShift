@@ -110,6 +110,7 @@ func build_monitor() -> void:
 		image.material_override = surface
 		add_child(image)
 		channel_screens.append(surface)
+	game.world.dressing.terminal(self)
 
 func part(location: Vector3, size: Vector3, color: Color) -> void:
 	preload("res://scripts/art.gd").rounded_box(self, location, size, color)
@@ -362,7 +363,7 @@ func toggle_zoom() -> void:
 
 func set_monitor_power(powered: bool) -> void:
 	monitor_power = powered
-	if monitor_glow != null: monitor_glow.visible = powered
+	if monitor_glow != null: monitor_glow.visible = powered and game.world.interior_powered
 	if screen_material != null:
 		screen_material.albedo_texture = feed.get_texture() if powered else null
 		screen_material.albedo_color = Color.WHITE if powered else Color(0.015, 0.02, 0.02)

@@ -25,6 +25,14 @@ A chegada começa no estacionamento externo. Há marquise aberta, fachada dos do
 
 Checkpoints anteriores recebem migração de posição para o novo piso ou um patamar seguro da escada, mantendo objetivos e inventário. Para ver a nova chegada, use **Nova partida**. A planta de emergência também foi atualizada. Detalhes técnicos e cobertura: [docs/BUILDING_LAYOUT.md](docs/BUILDING_LAYOUT.md).
 
+### Arte e apagão do edifício
+
+O arquivo tem estantes metálicas com travessas, ferrugem, livros individuais de volumes/cores variados e etiquetas. O terminal mantém os feeds e ganhou gabinete CRT profundo, grelhas, parafusos, suporte dos três monitores, cabos, torre e nobreak. A vegetação usa folhas curvas, caules e partes secas; os sedãs têm vidros inclinados, pilares, portas, retrovisores, rodas, frisos e ferrugem. Tábuas em alguns vãos, trepadeiras, folhas caídas e fissuras no asfalto reforçam o abandono externo.
+
+Pisos e paredes variam por ambiente: lajota clara na recepção/corredores, vinílico gasto na segurança/TI, piso terroso no arquivo, concreto na técnica/escadas e tábuas na administração/reuniões. Os materiais reutilizam as texturas locais com padrões e desgaste procedurais; não há novas dependências de execução.
+
+Na falha do disjuntor do capítulo 1 e no apagão do capítulo 2, as luminárias dos dois pisos, escadas e terreno, incluindo as lâmpadas emissivas, se apagam. A lanterna continua a bateria. O terminal preserva CCTV/documentos pelo nobreak, mas seu halo de luz também apaga. A iluminação natural e o fenômeno Mêmesis seguem independentes da rede elétrica. O reparo completo do fusível/disjuntores restaura a alimentação; checkpoints preservam a condição de apagão.
+
 ### Capítulo 1 — O Primeiro Turno
 
 A partida começa diante da entrada do Vesper. Abra a porta, leia o envelope no balcão, entre na segurança e siga os objetivos no alto da tela. Pegue a lanterna na mesa para ver a mão e o item em primeira pessoa. A sequência contém oito cenas, três puzzles, anomalias, documentos e conclusão. Esc permite salvar/carregar checkpoint e ajustar o áudio. J abre o diário com documentos e mensagens coletados.

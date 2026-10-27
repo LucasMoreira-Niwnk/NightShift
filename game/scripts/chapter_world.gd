@@ -10,6 +10,8 @@ var doors: Dictionary = {}
 var corridor_lights: Array = []
 var interior_lights: Array = []
 var room_lights: Array = []
+var building_lights: Array = []
+var powered_materials: Array = []
 
 # Reator velho das lampadas do corredor: '-' apagado, '*' aceso. Gagueja em
 # rajadas curtas e passa trechos longos no escuro.
@@ -28,6 +30,7 @@ var double: Node3D
 var clocks: Array = []
 var floor_plans: Array = []
 var materials: Dictionary = {}
+var dressing: RefCounted
 var phone_display: Label3D
 var chair_marks: Node3D
 var architecture: Node3D
@@ -37,8 +40,11 @@ var fuse_visual: Node3D
 var camera_mounts: Array = []
 
 func _ready() -> void:
+	dressing = preload("res://scripts/set_dressing.gd").new()
 	for kind in ["tile", "wall", "metal", "wood", "ceiling"]:
 		materials[kind] = Materials.surface(kind)
+	for kind in ["floor_reception", "floor_security", "floor_archive", "floor_concrete", "upper_floor", "wall_cream", "wall_green", "wall_concrete"]:
+		materials[kind] = Materials.architectural(kind)
 	architecture = preload("res://scripts/building_exterior.gd").new()
 	architecture.world = self
 	add_child(architecture)
@@ -115,10 +121,7 @@ func _ready() -> void:
 	chair_marks.hide()
 	for z in [-3.5, -6.5, -9.0]:
 		box(self, Vector3(7.4, 1, z), Vector3(0.9, 2, 1.1), "metal").hide()
-		Art.model(self, "bookcaseOpen", Vector3(7.4, 0, z), Vector3(1.1, 2.1, 0.85), -PI / 2)
-		# Source shelf top surfaces are at 0.13 / 0.37 / 0.61 in a 0.88 m model.
-		for height in [0.13, 0.37, 0.61]:
-			Art.model(self, "books", Vector3(7.3, height * 2.1 / 0.88 + 0.003, z), Vector3(0.56, 0.32, 0.32), -PI / 2)
+		dressing.shelf(self, Vector3(7.4, 0, z), -PI / 2, int(abs(z) * 10))
 	# Rolled back from the console so a standing operator has a clear view.
 	Art.model(self, "chairDesk", Vector3(-6.1, 0, 2.65), Vector3(0.6, 1.1, 0.6), PI)
 	box(self, Vector3(-6.1, 0.35, 2.65), Vector3(0.55, 0.7, 0.55), "metal").hide()
@@ -132,7 +135,7 @@ func _ready() -> void:
 	task_light.omni_range = 2.0
 	add_child(task_light)
 	interior_lights.append(task_light)
-	Art.model(self, "pottedPlant", Vector3(4.8, 0, 10.8), Vector3(0.7, 1.5, 0.7))
+	dressing.plant(self, Vector3(4.8, 0, 10.8), 1.0, 12)
 	box(self, Vector3(4.8, 0.3, 10.8), Vector3(0.5, 0.6, 0.5), "metal").hide()
 	Art.model(self, "trashcan", Vector3(-7.35, 0, 2.9), Vector3(0.38, 0.65, 0.38))
 	Art.model(self, "coatRackStanding", Vector3(4.8, 0, 5), Vector3(0.6, 1.8, 0.6))
@@ -208,6 +211,7 @@ func _ready() -> void:
 	upper.fuse_model(fuse_visual, Color(0.13, 0.09, 0.065))
 	preload("res://scripts/security_camera_layout.gd").install(self)
 	architecture.build()
+	capture_building_power()
 
 func box(parent: Node3D, location: Vector3, size: Vector3, kind: String = "wall", collision: bool = true, color: Color = Color.WHITE) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
@@ -234,7 +238,8 @@ func box(parent: Node3D, location: Vector3, size: Vector3, kind: String = "wall"
 	return mesh
 
 func wall(location: Vector3, size: Vector3) -> void:
-	box(self, location, size)
+	var kind := "wall_cream" if location.z > 4 else ("wall_concrete" if location.x < -2 and location.z < -6 else "wall_green")
+	box(self, location, size, kind)
 	if size.y > 2.9:
 		var lower := Vector3(size.x + 0.012, 1.05, size.z + 0.012)
 		var panel := Materials.surface("wall")
@@ -249,7 +254,8 @@ func partition(x: float, start: float, end: float, opening: float) -> void:
 	wall(Vector3(x, 2.75, opening), Vector3(0.2, 0.5, 1.5))
 
 func room(label: String, center: Vector3, size: Vector2) -> void:
-	box(self, center + Vector3(0, -0.15, 0), Vector3(size.x, 0.3, size.y), "tile")
+	var floor_kind := {"Recepção": "floor_reception", "Segurança": "floor_security", "Arquivo": "floor_archive", "Sala técnica": "floor_concrete", "Marquise": "floor_concrete", "Corredor": "floor_reception"}
+	box(self, center + Vector3(0, -0.15, 0), Vector3(size.x, 0.3, size.y), floor_kind[label])
 	box(self, center + Vector3(0, 3.1, 0), Vector3(size.x, 0.2, size.y), "ceiling")
 	var light := OmniLight3D.new()
 	light.position = center + Vector3(0, 2.6, 0)
@@ -342,6 +348,7 @@ func add_sign(text: String, location: Vector3, angle: float = 0) -> Label3D:
 	label.text = text
 	label.position = location
 	label.rotation.y = angle
+	label.shaded = true
 	label.font_size = 48
 	label.pixel_size = 0.003
 	label.outline_size = 0
@@ -387,7 +394,10 @@ func set_corridor_power(powered: bool) -> void:
 
 func set_interior_power(powered: bool) -> void:
 	interior_powered = powered
-	for light in interior_lights: light.visible = powered
+	for entry in building_lights: entry.light.visible = powered and entry.enabled
+	for entry in powered_materials: entry.material.emission_enabled = powered
+	if game.computer != null and game.computer.monitor_glow != null:
+		game.computer.monitor_glow.visible = powered and game.computer.monitor_power
 
 func _process(delta: float) -> void:
 	if corridor_lights.is_empty(): return
@@ -430,7 +440,6 @@ func add_floor_plan(location: Vector3, angle: float, id: String) -> void:
 	var material := StandardMaterial3D.new()
 	material.albedo_texture = texture
 	material.albedo_color = Color(0.75, 0.75, 0.7)
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	image.material_override = material
 	board.add_child(image)
 	var collision := CollisionShape3D.new()
@@ -446,3 +455,18 @@ func is_outdoors(point: Vector3) -> bool:
 	if absf(point.x) < 3.05 and point.z > -24.4 and point.z < -14: return false
 	if point.x > -14.5 and point.x < -8 and point.z > -10.7 and point.z < 3.2: return false
 	return true
+
+func capture_building_power() -> void:
+	# Capture fixtures once, after both floors, stairs and exterior are built.
+	# Moonlight and the colleague's autonomous Mêmesis are not mains fixtures.
+	for lamp in find_children("*", "Light3D", true, false):
+		if lamp is DirectionalLight3D or figure.is_ancestor_of(lamp): continue
+		building_lights.append({"light": lamp, "enabled": lamp.visible})
+	var known: Dictionary = {}
+	for mesh in find_children("*", "MeshInstance3D", true, false):
+		if figure.is_ancestor_of(mesh) or mesh.mesh == null: continue
+		for index in range(mesh.mesh.get_surface_count()):
+			var material: Material = mesh.get_active_material(index)
+			if material is StandardMaterial3D and material.emission_enabled and not known.has(material.get_instance_id()):
+				known[material.get_instance_id()] = true
+				powered_materials.append({"material": material})

@@ -56,6 +56,7 @@ func _ready() -> void:
 		art.box(handle, Vector3(-0.09, 0, side * 0.15), Vector3(0.24, 0.045, 0.06), Color(0.54, 0.54, 0.45))
 		art.box(pivot, Vector3(0.75, 2.15, side * 0.09), Vector3(0.95, 0.22, 0.025), Color(0.045, 0.07, 0.06))
 		var label := Label3D.new()
+		label.shaded = true
 		label.text = display_name.to_upper()
 		label.position = Vector3(0.75, 2.15, side * 0.11)
 		label.rotation.y = PI if side < 0 else 0.0

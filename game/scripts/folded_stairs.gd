@@ -15,7 +15,7 @@ func box(point: Vector3, size: Vector3, kind: String = "metal", collision: bool 
 func landing(center: Vector3, size: Vector2) -> void:
 	# Concrete soffit and a thin finish keep floor tiles off the underside.
 	box(center - Vector3.UP * 0.09, Vector3(size.x, 0.14, size.y), "ceiling")
-	box(center - Vector3.UP * 0.01, Vector3(size.x, 0.02, size.y), "tile")
+	box(center - Vector3.UP * 0.01, Vector3(size.x, 0.02, size.y), "floor_concrete")
 	for x in [-size.x * 0.5 + 0.1, size.x * 0.5 - 0.1]:
 		Art.box(self, center + Vector3(x, 0.008, 0), Vector3(0.08, 0.015, size.y - 0.1), Color(0.65, 0.48, 0.15))
 

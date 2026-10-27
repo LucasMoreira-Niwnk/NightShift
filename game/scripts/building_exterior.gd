@@ -60,7 +60,7 @@ func window_wall(parent: Node3D, center: Vector3, size: Vector3, openings: Array
 
 func wall_piece(parent: Node3D, point: Vector3, size: Vector3, length: float, height: float) -> void:
 	if height <= 0 or length <= 0: return
-	world.box(parent, point, Vector3(length, height, size.z) if size.x > size.z else Vector3(size.x, height, length), "wall")
+	world.box(parent, point, Vector3(length, height, size.z) if size.x > size.z else Vector3(size.x, height, length), "wall_cream")
 
 func build() -> void:
 	# Structural shell connects the occupied rooms into one two-storey volume.
@@ -93,6 +93,7 @@ func build() -> void:
 	sign.pixel_size = 0.007
 	sign.modulate = Color(0.53, 0.68, 0.61)
 	world.add_sign("SETOR ADMINISTRATIVO / ACESSO RESTRITO", Vector3(0, 5.8, 12.3)).pixel_size = 0.0013
+	world.dressing.decay(self)
 	grounds()
 	street()
 	weather()
@@ -116,7 +117,7 @@ func grounds() -> void:
 	for x in [-6.5, 6.5]:
 		box(Vector3(x, 0.32, 14.5), Vector3(1.9, 0.64, 2.6), Color(0.19, 0.22, 0.2))
 		box(Vector3(x, 0.65, 14.5), Vector3(1.65, 0.03, 2.35), Color(0.055, 0.07, 0.045), false)
-		for index in range(6): Art.model(self, "pottedPlant", Vector3(x + (index % 2) * 0.5 - 0.25, 0.66, 13.8 + (index / 2) * 0.65), Vector3(0.55, 0.8, 0.55))
+		for index in range(6): world.dressing.plant(self, Vector3(x + (index % 2) * 0.5 - 0.25, 0.66, 13.8 + (index / 2) * 0.65), 0.65, index + 22, false)
 	for x in [-23.0, -19.0, 14.0, 18.0, 22.0]:
 		for offset in [-1.65, 1.65]: Art.box(self, Vector3(x + offset, 0.008, 20), Vector3(0.08, 0.016, 5.5), Color(0.48, 0.47, 0.34))
 		box(Vector3(x, 0.075, 17.5), Vector3(2.5, 0.15, 0.18), Color(0.24, 0.26, 0.23))
@@ -135,30 +136,7 @@ func grounds() -> void:
 		Art.box(self, Vector3(x, 0.7, 17), Vector3(0.16, 0.05, 0.16), Color(0.65, 0.62, 0.4))
 
 func car(point: Vector3, color: Color) -> void:
-	var root := Node3D.new()
-	add_child(root)
-	root.position = point
-	Art.rounded_box(root, Vector3(0, 0.65, 0), Vector3(1.85, 0.6, 4.2), color, 0.16)
-	Art.rounded_box(root, Vector3(0, 1.15, -0.25), Vector3(1.6, 0.65, 2.15), Color(0.055, 0.09, 0.1), 0.2)
-	Art.rounded_box(root, Vector3(0, 1.5, -0.25), Vector3(1.55, 0.12, 1.7), color, 0.05)
-	for x in [-0.83, 0.83]:
-		for z in [-1.3, 1.3]:
-			var tire := MeshInstance3D.new()
-			var cylinder := CylinderMesh.new()
-			cylinder.top_radius = 0.34
-			cylinder.bottom_radius = 0.34
-			cylinder.height = 0.19
-			tire.mesh = cylinder
-			tire.rotation.z = PI / 2
-			tire.position = Vector3(x, 0.36, z)
-			var mat := StandardMaterial3D.new()
-			mat.albedo_color = Color(0.025, 0.03, 0.03)
-			tire.material_override = mat
-			root.add_child(tire)
-	for x in [-0.6, 0.6]:
-		Art.rounded_box(root, Vector3(x, 0.72, 2.11), Vector3(0.38, 0.16, 0.04), Color(0.65, 0.65, 0.48), 0.035)
-		Art.rounded_box(root, Vector3(x, 0.72, -2.11), Vector3(0.38, 0.16, 0.04), Color(0.35, 0.03, 0.025), 0.035)
-	Art.box(root, Vector3(0, 0.5, 2.12), Vector3(0.55, 0.14, 0.02), Color(0.6, 0.62, 0.54))
+	world.dressing.vehicle(self, point, color, int(abs(point.x) * 10))
 	world.box(self, point + Vector3.UP * 0.65, Vector3(1.9, 1.3, 4.2), "metal").hide()
 
 func fence(point: Vector3, length: float, angle: float) -> void:
@@ -195,18 +173,7 @@ func lamp(point: Vector3) -> void:
 	add_child(light)
 
 func tree(point: Vector3) -> void:
-	world.staircases.pipe(point, point + Vector3.UP * 5.5, 0.24, Color(0.12, 0.13, 0.1))
-	for i in range(4):
-		var canopy := MeshInstance3D.new()
-		var sphere := SphereMesh.new()
-		sphere.radius = 1.4 + (i % 2) * 0.3
-		sphere.height = 2.3
-		canopy.mesh = sphere
-		canopy.position = point + Vector3(sin(i * 2.4), 4.8 + i * 0.4, cos(i * 2.4))
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = Color(0.025, 0.065 + i * 0.006, 0.043)
-		canopy.material_override = mat
-		add_child(canopy)
+	world.dressing.tree(self, point, int(abs(point.z) * 10))
 
 func street() -> void:
 	for index in range(7):

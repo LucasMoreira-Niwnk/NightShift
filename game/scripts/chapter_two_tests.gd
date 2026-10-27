@@ -169,6 +169,7 @@ func run() -> void:
 	test.check(act.identify_participant(5), "Henrique identified from six names and five entries")
 	test.dismiss()
 	game.computer.close()
+	await test.check_blackout("chapter two blackout")
 	test.check(chapter.stage == 15 and chapter.documents.has("henrique_photo"), "Henrique evidence starts alternate-route blackout")
 	game.player.position = Vector3(0, 4.25, -12.5)
 	await walk("move_forward", 0.7)

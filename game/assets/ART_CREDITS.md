@@ -47,3 +47,7 @@ Imported rigged, textured FPS hand and forearm. The project derives a right-arm-
 Source: https://www.innerscene.com/tools/library/3d-parts/led-flashlight-torch-aluminium-tail-switch-b30191c2
 
 Original unbranded cylindrical flashlight, with embedded materials. Used for both the collectible and first-person item. License and source details: `models/flashlight/README.md`.
+
+## Additional Vesper set dressing
+
+`set_dressing.gd` builds the archive shelves and individual bound books, curved foliage and planters, vehicle bodywork/wheels, CRT housings/cabling, and exterior decay directly as project geometry. `aged_architecture.gdshader` adds room-specific joints, color variation and wear using the bundled ambientCG texture sources credited above. No additional third-party model pack or runtime dependency is required for these additions.

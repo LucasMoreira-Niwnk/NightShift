@@ -120,3 +120,40 @@ static func noise_texture(frequency: float, octaves: int, width: int, height: in
 	texture.noise = noise
 	if ramp != null: texture.color_ramp = ramp
 	return texture
+
+# Architectural variants reuse the bundled plaster/wood/tile PBR sources.
+static func architectural(kind: String) -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://shaders/aged_architecture.gdshader")
+	var style := 0
+	var tint := Color(0.48, 0.46, 0.37)
+	var source := "PaintedPlaster017"
+	match kind:
+		"floor_reception": source = "Tiles074"
+		"floor_security", "floor_it":
+			style = 1
+			tint = Color(0.23, 0.32, 0.29)
+		"floor_archive":
+			style = 0
+			tint = Color(0.38, 0.25, 0.17)
+		"floor_concrete":
+			style = 2
+			tint = Color(0.33, 0.35, 0.31)
+		"upper_floor": material.set_shader_parameter("upper_layout", true)
+		"wall_cream":
+			style = 5
+			tint = Color(0.57, 0.53, 0.41)
+		"wall_green":
+			style = 5
+			tint = Color(0.31, 0.42, 0.36)
+		"wall_concrete":
+			style = 2
+			tint = Color(0.38, 0.4, 0.37)
+	material.set_shader_parameter("pattern", style)
+	material.set_shader_parameter("tint", tint)
+	material.set_shader_parameter("facade_faces", kind.begins_with("wall_"))
+	var prefix := "res://assets/textures/%s/%s_1K-JPG_" % [source, source]
+	material.set_shader_parameter("base_color", load(prefix + "Color.jpg"))
+	material.set_shader_parameter("rough_map", load(prefix + "Roughness.jpg"))
+	material.resource_name = kind
+	return material

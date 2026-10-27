@@ -175,7 +175,7 @@ func identify_participant(index: int) -> bool:
 	chapter.event_tweens.append(tween)
 	tween.tween_property(ghost, "position:z", 0.35, 2.0)
 	chapter.collect_document("henrique_photo", "Henrique Almeida — fotografia", Data.PHOTO)
-	chapter.say("Augusto: 'Onde você ouviu esse nome? Daniel, saia do segundo andar. Agora.'\n[A alimentação da escadaria cai. Na CAM-05, a sexta cadeira recua; na sala, ela não se move.]")
+	chapter.say("Augusto: 'Onde você ouviu esse nome? Daniel, saia do segundo andar. Agora.'\n[A alimentação de todo o edifício cai. Na CAM-05, a sexta cadeira recua; na sala, ela não se move.]")
 	chapter.save_game()
 	return true
 

@@ -59,7 +59,9 @@ const CCTV_LAYER := 4                 # camada que só a câmera de segurança v
 const OLHO_NU := 1                    # camada que a câmera do jogador vê
 
 var _coluna: FogVolume
+var _haze: ShaderMaterial
 var _faiscas: CPUParticles3D
+var _brilho: OmniLight3D
 var _alvo := 0
 var _parado := 0.0
 
@@ -79,9 +81,11 @@ func _ready() -> void:
 	haze.set_shader_parameter("core_density", NUCLEO_DENSIDADE)
 	haze.set_shader_parameter("core_radius", NUCLEO_RAIO)
 	haze.set_shader_parameter("edge_radius", BORDA_RAIO)
+	_haze = haze
 	_coluna.material = haze
 	add_child(_coluna)
 	add_faiscas()
+	add_brilho()
 	if str(ProjectSettings.get_setting("rendering/renderer/rendering_method")) == "gl_compatibility":
 		push_warning("Mêmesis: FogVolume exige Forward+; em gl_compatibility o vulto não aparece.")
 	if RONDA_TESTE:
@@ -89,8 +93,34 @@ func _ready() -> void:
 		show()
 
 func _process(delta: float) -> void:
+	seguir_ambiente()
 	if RONDA_TESTE:
 		rondar(delta)
+
+## A franja do halo é tingida pela luz ambiente da sala, então o vulto puxa a
+## cor do lugar onde está. Lido todo quadro de propósito: o capítulo troca a
+## iluminação por etapa, e assim o Mêmesis acompanha sem ninguém avisar.
+func seguir_ambiente() -> void:
+	if _haze == null:
+		return
+	# O Environment nasce depois do vulto em chapter_world._ready, então não dá
+	# para capturá-lo uma vez no _ready: aqui ele já existe.
+	var mundo := get_viewport().find_world_3d()
+	if mundo == null or mundo.environment == null:
+		return
+	var ambiente: Environment = mundo.environment
+	var cor := ambiente.ambient_light_color
+	# Só o matiz interessa; o brilho entra separado, senão a energia de 0.04 da
+	# sala apagaria a franja inteira antes de ela aparecer.
+	var pico: float = maxf(cor.r, maxf(cor.g, cor.b))
+	if pico > 0.001:
+		cor = Color(cor.r / pico, cor.g / pico, cor.b / pico)
+	_haze.set_shader_parameter("ambient_tint", Vector3(cor.r, cor.g, cor.b))
+	_haze.set_shader_parameter("ambient_level", ambiente.ambient_light_energy)
+	if _brilho != null:
+		# A luz segue o mesmo matiz da franja: o que o vulto joga na parede é a
+		# cor que ele roubou da sala, não uma segunda cor concorrendo com ela.
+		_brilho.light_color = cor
 
 ## Fagulhas que escapam do miolo, cada uma com a aberração cromática do sopro.
 ## Reaproveita shaders/memesis.gdshader, que já faz exatamente isso e tinha
@@ -130,6 +160,19 @@ func add_faiscas() -> void:
 	_faiscas.material_override = skin
 	_faiscas.layers = OLHO_NU | CCTV_LAYER
 	add_child(_faiscas)
+
+## A franja só acende a névoa; para alcançar parede e chão é preciso uma luz de
+## verdade. Fraca e de alcance curto: é um clarão que denuncia o vulto virando a
+## esquina, não um lampião que ilumina a sala.
+func add_brilho() -> void:
+	_brilho = OmniLight3D.new()
+	_brilho.position = Vector3(0.0, ALTURA * 0.45, 0.0)
+	_brilho.light_energy = 0.38
+	_brilho.omni_range = 2.8
+	# Sem sombra de propósito: o vulto não tem corpo sólido para projetar, e a
+	# sombra de uma luz dentro da névoa só criaria listras no chão.
+	_brilho.shadow_enabled = false
+	add_child(_brilho)
 
 func fade_curve() -> Curve:
 	var curve := Curve.new()

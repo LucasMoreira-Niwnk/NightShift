@@ -191,6 +191,13 @@ func _ready() -> void:
 	# Em gl_compatibility a propriedade existe mas nao faz nada.
 	environment.environment.volumetric_fog_enabled = true
 	environment.environment.volumetric_fog_density = 0.0
+	# Glow so para a franja do Memesis sangrar um pouco no ar. O limiar alto e
+	# o que segura o resto da cena de fora: as lampadas do predio ficam abaixo
+	# dele, e so a franja, empurrada acima de 1.0 pelo shader, acende o bloom.
+	environment.environment.glow_enabled = true
+	environment.environment.glow_hdr_threshold = 1.1
+	environment.environment.glow_intensity = 0.55
+	environment.environment.glow_bloom = 0.05
 	add_child(environment)
 
 func box(parent: Node3D, location: Vector3, size: Vector3, kind: String = "wall", collision: bool = true, color: Color = Color.WHITE) -> MeshInstance3D:

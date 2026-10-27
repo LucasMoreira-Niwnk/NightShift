@@ -25,6 +25,10 @@ window/size/window_height_override=720
 
 import/blender/enabled=false
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/launch_import/plugin.cfg")
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

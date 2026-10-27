@@ -6,7 +6,7 @@ Capítulo jogável de terror psicológico 3D em primeira pessoa para Windows, fe
 
 - Clique em `Abrir Editor.cmd` para abrir o projeto diretamente no Godot.
 - No editor, pressione F6 para executar a cena aberta ou F5 para o projeto.
-- Clique em `Jogar.cmd` para executar o protótipo diretamente.
+- Clique em `Jogar.cmd` para atualizar a branch atual, preparar o cache e iniciar o jogo.
 - WASD move, mouse olha, E interage com portas e computador. F liga/desliga a lanterna. Esc pausa e libera o mouse.
 
 ### Capítulo 1 — O Primeiro Turno
@@ -36,6 +36,19 @@ Aproxime-se do monitor na sala de segurança e pressione E. O terminal apresenta
 O monitor físico e a interface usam o mesmo SubViewport de 640×360: somente a câmera selecionada é renderizada. O mundo continua ativo durante o monitoramento, mas movimento e lanterna ficam bloqueados até sair do terminal. As texturas de piso, parede e madeira estão incluídas em `game/assets/textures/`; modelos em `game/assets/models/`. Todos funcionam offline, sem plugins. Créditos e licenças estão em `game/assets/ART_CREDITS.md`.
 
 Após atualizar os arquivos, aguarde a importação de texturas/modelos no editor antes de pressionar F5. Materiais usam cor, normal OpenGL e rugosidade com mapeamento em escala de mundo. O renderizador continua em Compatibility para Godot 4.0.
+
+Arquivos `.import` guardam as configurações compartilhadas; o cache dentro de `game/.godot/` é gerado em cada computador e não é versionado. Atualizações das configurações de compressão também exigem reimportar texturas já existentes. O atalho prepara esse cache automaticamente. Como alternativa, abra `Abrir Editor.cmd` e aguarde a importação terminar antes de pressionar F5.
+
+O atalho `Jogar.cmd` executa `git pull --ff-only` na branch atual e depois abre o importador do Godot em segundo plano. O jogo só inicia quando a varredura termina e os arquivos importados são validados. O cache é incremental: não é apagado a cada início. Os modos `check` e `test` também preparam as importações, sem atualizar o Git.
+
+Se houver alterações locais, o atalho preserva o trabalho, avisa que pulou a atualização do Git e joga a versão local. Ele não troca de branch, não faz stash/reset e não cria commits. Sem upstream ou sem Git, também utiliza a versão local com aviso. Falha de rede, autenticação ou histórico divergente interrompe a atualização; use `-Offline` para optar explicitamente pela versão local. Para preparar sem abrir o jogo, use `-Mode prepare`.
+
+```powershell
+# Jogar a versão local, atualizando apenas o cache:
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\godot.ps1 -Mode run -Offline
+```
+
+Falhas na preparação permanecem visíveis na janela do atalho. Os logs estão em `.local/launch-import.log` e `.local/launch-import-errors.log`. O helper em `game/addons/launch_import/` só executa a preparação quando iniciado pelo launcher; no editor normal fica inativo. Ele usa o [EditorFileSystem do Godot 4.0](https://docs.godotengine.org/en/4.0/classes/class_editorfilesystem.html).
 
 ### Abrir pelo PowerShell
 

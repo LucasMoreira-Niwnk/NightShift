@@ -24,6 +24,7 @@ var interior_powered := true
 var rhythm_time := 0.0
 var chair: StaticBody3D
 var figure: Node3D
+var figure_volume: Node3D
 var double: Node3D
 var clocks: Array = []
 var floor_plans: Array = []
@@ -160,6 +161,12 @@ func _ready() -> void:
 	add_child(figure)
 	figure.position = Vector3(0, 0, -13)
 	figure.hide()
+	# Segundo vulto, so para comparacao: a foto refeita em nevoa volumetrica.
+	# O F5 o traz; o capitulo nao sabe que ele existe.
+	figure_volume = preload("res://scripts/memesis_corpo.gd").new()
+	add_child(figure_volume)
+	figure_volume.position = Vector3(0, 0, -13)
+	figure_volume.hide()
 	double = humanoid(Color(0.19, 0.28, 0.24))
 	double.position = Vector3(0, 0, 8)
 	var badge := Art.box(double, Vector3(-0.13, 1.3, 0.14), Vector3(0.09, 0.12, 0.012), Color(0.75, 0.72, 0.6))

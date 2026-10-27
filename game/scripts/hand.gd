@@ -12,7 +12,7 @@ var rig: Node3D
 var skeleton: Skeleton3D
 var torch: Node3D
 var lens_point := Vector3.ZERO
-var base := Vector3(0.42, -0.28, -0.6)
+var base := Vector3(0.22, -0.14, -0.34)
 
 func _ready() -> void:
 	position = base

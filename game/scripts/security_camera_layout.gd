@@ -1,8 +1,8 @@
 extends RefCounted
 
 # One reference for the physical lenses, live feeds and recorded viewpoints.
-const POSITIONS := [Vector3(5.5, 2.7, 11.4), Vector3(1.7, 2.7, 3.4), Vector3(7.6, 2.7, -9.5), Vector3(1.5, 6.8, -28), Vector3(9.3, 6.9, -44)]
-const TARGETS := [Vector3(-2, 1.1, 7.5), Vector3(0, 1.1, -11), Vector3(4, 0.8, -5.5), Vector3(0, 5.3, -43), Vector3(5.5, 5.1, -38)]
+const POSITIONS := [Vector3(5.5, 2.7, 11.4), Vector3(1.7, 2.7, 3.4), Vector3(7.6, 2.7, -9.5), Vector3(1.2, 6.8, -12), Vector3(7.44, 6.9, 4)]
+const TARGETS := [Vector3(-2, 1.1, 7.5), Vector3(0, 1.1, -11), Vector3(4, 0.8, -5.5), Vector3(0, 5.3, 3), Vector3(4.4, 5.1, -2)]
 const Art = preload("res://scripts/art.gd")
 
 static func install(world: Node3D) -> void:

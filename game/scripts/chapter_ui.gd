@@ -174,17 +174,17 @@ func _process(delta: float) -> void:
 	if game.player == null or game.chapter == null: return
 	var point: Vector3 = game.player.position
 	var zone := "CORREDOR PRINCIPAL"
-	if point.z > 12: zone = "ENTRADA / MARQUISE"
+	if game.world.is_outdoors(point): zone = "EXTERIOR / ESTACIONAMENTO"
 	elif point.z > 4: zone = "RECEPÇÃO"
 	elif point.x < -2 and point.z > -2: zone = "SEGURANÇA"
 	elif point.x > 2: zone = "ARQUIVO"
 	elif point.x < -2 and point.z < -6: zone = "SALA TÉCNICA"
-	if point.x < -10: zone = "ESCADA / PASSAGEM DE SERVIÇO"
-	elif point.z < -16 and point.z > -26: zone = "ESCADARIA PRINCIPAL"
+	if game.world.staircases.is_service(point): zone = "ESCADA / PASSAGEM DE SERVIÇO"
+	elif game.world.staircases.is_main(point): zone = "ESCADARIA PRINCIPAL"
 	elif point.y > 3.5:
 		zone = "2º / CORREDOR ADMINISTRATIVO"
-		if point.x < -2: zone = "2º / ADMINISTRAÇÃO" if point.z > -36 else "2º / SALA DE TI"
-		elif point.x > 2: zone = "2º / SALA DE REUNIÕES"
+		if point.x < -1.6: zone = "2º / ADMINISTRAÇÃO" if point.z < -4 else "2º / SALA DE TI"
+		elif point.x > 1.6: zone = "2º / SALA DE REUNIÕES"
 	zone_label.text = zone
 	time_label.text = game.world.clocks[0].displayed_time
 	light_label.text = "LANTERNA / NÃO COLETADA"

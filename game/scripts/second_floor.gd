@@ -1,5 +1,6 @@
 extends Node3D
 
+const Layout = preload("res://scripts/building_layout.gd")
 const HEIGHT := 4.2
 const Art = preload("res://scripts/art.gd")
 var game: Node
@@ -13,10 +14,6 @@ var window_shadow: MeshInstance3D
 func _ready() -> void:
 	name = "SecondFloor"
 	position.y = HEIGHT
-	# An accessible ramp under the visible steps avoids requiring a jump or teleport.
-	stair_flight(0, -16, -26)
-	for x in [-1.5, 1.5]: wall(Vector3(x, -0.55, -21), Vector3(0.2, 7.3, 10))
-	block(Vector3(0, 3.1, -21), Vector3(3.2, 0.2, 10), "ceiling")
 	room(Vector3(0, 0, -38), Vector2(4, 24))
 	room(Vector3(-6, 0, -31), Vector2(8, 8))
 	room(Vector3(-6, 0, -42), Vector2(8, 10))
@@ -27,22 +24,22 @@ func _ready() -> void:
 	wall(Vector3(-6, 1.5, -37), Vector3(8, 3, 0.2))
 	wall(Vector3(-6, 1.5, -47), Vector3(8, 3, 0.2))
 	wall(Vector3(-10, 1.5, -42), Vector3(0.2, 3, 10))
-	wall(Vector3(10, 1.5, -38), Vector3(0.2, 3, 14))
+	world.architecture.window_wall(self, Layout.upper_point(Vector3(10, 1.5, -38)), Vector3(0.2, 3, 14), [-4.8, -1.6, 1.6, 4.8], 2.1)
 	wall(Vector3(6, 1.5, -31), Vector3(8, 3, 0.2))
 	wall(Vector3(6, 1.5, -45), Vector3(8, 3, 0.2))
 	partition(-2, -50, -36, -42)
 	partition(-2, -36, -26, -31)
 	partition(2, -50, -26, -38)
 	partition(-10, -35, -27, -31)
-	for x in [-1.375, 1.375]: wall(Vector3(x, 1.5, -26.4), Vector3(1.25, 3, 0.2))
-	door("upper_gate", Vector3(0, 0, -26.4), "palier / escadaria", 0)
+	for x in [-5.46875, 5.46875]: wall(Vector3(x, 1.5, -26), Vector3(9.0625, 3, 0.2))
+	door("upper_gate", Vector3(0, 0, -26), "palier / escadaria", 0)
 	door("administration", Vector3(-2, 0, -31), "administração")
 	door("it", Vector3(-2, 0, -42), "sala de TI")
 	door("meeting", Vector3(2, 0, -38), "sala de reuniões")
 	door("service_upper", Vector3(-10, 0, -31), "escada de serviço")
-	world.table(Vector3(-6.8, HEIGHT, -33), Vector2(2.5, 1.2))
-	world.table(Vector3(-6.5, HEIGHT, -44.5), Vector2(3, 1.3))
-	world.table(Vector3(6, HEIGHT, -38.5), Vector2(3.2, 1.5))
+	world.table(Layout.upper_point(Vector3(-6.8, HEIGHT, -33)), Vector2(2.5, 1.2))
+	world.table(Layout.upper_point(Vector3(-6.5, HEIGHT, -44.5)), Vector2(3, 1.3))
+	world.table(Layout.upper_point(Vector3(6, HEIGHT, -38.5)), Vector2(3.2, 1.5))
 	paper("repair_note", "Ler ordem de manutenção", Vector3(-6.6, 1.1, -33), true)
 	paper("admin_notice", "Ler aviso administrativo", Vector3(-7.3, 1.1, -33))
 	paper("network_log", "Ler log de rede", Vector3(-6.8, 1.1, -44.3))
@@ -59,11 +56,12 @@ func _ready() -> void:
 		Art.box(panel, Vector3(0.16, -0.45 + (index / 4) * 0.4, -0.5 + (index % 4) * 0.32), Vector3(0.03, 0.13, 0.18), Color(0.12, 0.3, 0.23))
 	add_label("RACK 2B — PATCH PANEL", Vector3(-9.45, 2.45, -42), PI / 2, 0.0012)
 	var diagnostic := item("it_terminal", "Usar terminal de diagnóstico / gravações", Vector3(-7.2, 1.45, -44.7), Vector3(0.8, 0.65, 0.2))
+	diagnostic.rotation.y = PI
 	Art.rounded_box(diagnostic, Vector3.ZERO, Vector3(0.8, 0.65, 0.2), Color(0.035, 0.055, 0.05))
 	Art.box(diagnostic, Vector3(0, 0, 0.11), Vector3(0.7, 0.5, 0.015), Color(0.1, 0.3, 0.22))
 	for index in range(6):
 		var point := Vector3(4.8 + (index % 3) * 1.2, 0, -37.3 if index < 3 else -39.7)
-		var chair := Art.external(self, "SchoolChair_01", point, Vector3(0.65, 1.2, 0.65), PI if index < 3 else 0.0)
+		var chair := Art.external(self, "SchoolChair_01", Layout.upper_point(point), Vector3(0.65, 1.2, 0.65), 0.0 if index < 3 else PI)
 		block(point + Vector3(0, 0.45, 0), Vector3(0.55, 0.9, 0.55), "metal").hide()
 		if index == 5:
 			mesh_layers(chair, 2)
@@ -90,20 +88,30 @@ func _ready() -> void:
 	var responding := item("knock_door", "Bater na porta fechada", Vector3(-1.85, 1.2, -36), Vector3(0.15, 2.4, 1.4))
 	Art.rounded_box(responding, Vector3.ZERO, Vector3(0.15, 2.4, 1.4), Color(0.16, 0.2, 0.17))
 	var voice := item("voice_door", "Examinar porta com janela", Vector3(-6, 1.2, -34.82), Vector3(1.5, 2.4, 0.12))
+	voice.rotation.y = PI
 	Art.rounded_box(voice, Vector3.ZERO, Vector3(1.5, 2.4, 0.12), Color(0.1, 0.17, 0.15))
 	Art.box(voice, Vector3(0, 0.6, 0.07), Vector3(0.85, 0.5, 0.025), Color(0.26, 0.32, 0.29))
 	window_shadow = Art.box(voice, Vector3(-0.35, 0.6, 0.09), Vector3(0.17, 0.4, 0.01), Color(0.01, 0.018, 0.015))
 	window_shadow.hide()
-	for entry in [["ADMINISTRAÇÃO", Vector3(-4.5, 2.5, -34.8)], ["TI / COMPONENTES", Vector3(-6.5, 2.5, -46.8)], ["SALA DE REUNIÕES", Vector3(6, 2.5, -44.8)], ["2º ANDAR\nADMINISTRAÇÃO ←  |  REUNIÕES →\nTI — FUNDO À ESQUERDA", Vector3(0, 2.5, -27.0)]]:
+	for entry in [["ADMINISTRAÇÃO", Vector3(-4.5, 2.5, -34.8)], ["TI / COMPONENTES", Vector3(-6.5, 2.5, -46.8)], ["SALA DE REUNIÕES", Vector3(6, 2.5, -44.8)], ["2º ANDAR\nADMINISTRAÇÃO →  |  ← REUNIÕES\nTI — FUNDO À DIREITA", Vector3(0, 2.5, -27.0)]]:
 		add_label(entry[0], entry[1], 0, 0.0015)
+	# Continuous slabs and facade close unused service voids between rooms.
+	block(Vector3(0, -0.2, -38), Vector3(20, 0.3, 24), "tile")
+	block(Vector3(0, 3.1, -38), Vector3(20, 0.2, 24), "ceiling")
+	world.architecture.window_wall(self, Vector3(0, 1.5, 10), Vector3(16, 3, 0.2), [-5.5, -2.2, 2.2, 5.5], 2.0)
+	for x in [-8, 8]:
+		world.box(self, Vector3(x, 1.5, 8.5), Vector3(0.2, 3, 3), "wall")
+	world.box(self, Vector3(8, 1.5, 6), Vector3(0.2, 3, 2), "wall")
+	world.box(self, Vector3(8, 1.5, -11.5), Vector3(0.2, 3, 5), "wall")
+	world.box(self, Vector3(-8, 1.5, -13.5), Vector3(0.2, 3, 1), "wall")
 	service_route()
 
 func block(point: Vector3, size: Vector3, kind: String = "wall", collision: bool = true) -> MeshInstance3D:
-	return world.box(self, point, size, kind, collision)
+	return world.box(self, Layout.upper_point(point), Vector3(size.x * 0.8, size.y, size.z), kind, collision)
 
 func wall(point: Vector3, size: Vector3) -> void:
 	block(point, size)
-	Art.box(self, Vector3(point.x, 0.5, point.z), Vector3(size.x + 0.015, 1, size.z + 0.015), Color(0.13, 0.2, 0.18))
+	Art.box(self, Layout.upper_point(Vector3(point.x, 0.5, point.z)), Vector3(size.x * 0.8 + 0.015, 1, size.z + 0.015), Color(0.13, 0.2, 0.18))
 
 func partition(x: float, start: float, end: float, opening: float) -> void:
 	wall(Vector3(x, 1.5, (start + opening - 0.75) / 2), Vector3(0.2, 3, opening - 0.75 - start))
@@ -114,7 +122,7 @@ func room(point: Vector3, size: Vector2) -> void:
 	block(point - Vector3.UP * 0.15, Vector3(size.x, 0.3, size.y), "tile")
 	block(point + Vector3.UP * 3.1, Vector3(size.x, 0.2, size.y), "ceiling")
 	var light := OmniLight3D.new()
-	light.position = point + Vector3(0, 2.65, 0)
+	light.position = Layout.upper_point(point + Vector3(0, 2.65, 0))
 	light.light_color = Color(0.59, 0.73, 0.68)
 	light.light_energy = 0.9
 	light.omni_range = 6.3
@@ -122,9 +130,9 @@ func room(point: Vector3, size: Vector2) -> void:
 	add_child(light)
 	lights.append(light)
 	world.interior_lights.append(light)
-	Art.model(self, "lampSquareCeiling", point + Vector3.UP * 2.8, Vector3(0.8, 0.2, 0.8))
+	Art.model(self, "lampSquareCeiling", Layout.upper_point(point + Vector3.UP * 2.8), Vector3(0.8, 0.2, 0.8))
 	var emergency := OmniLight3D.new()
-	emergency.position = point + Vector3.UP * 2.4
+	emergency.position = Layout.upper_point(point + Vector3.UP * 2.4)
 	emergency.light_color = Color(1, 0.1, 0.04)
 	emergency.light_energy = 0.4
 	emergency.omni_range = 6.5
@@ -132,36 +140,19 @@ func room(point: Vector3, size: Vector2) -> void:
 	add_child(emergency)
 	emergency_lights.append(emergency)
 
-func stair_flight(x: float, bottom_z: float, top_z: float) -> void:
-	var run := bottom_z - top_z
-	var angle := atan2(HEIGHT, run)
-	var ramp := StaticBody3D.new()
-	var collider := CollisionShape3D.new()
-	var shape := BoxShape3D.new()
-	shape.size = Vector3(2.4, 0.2, sqrt(run * run + HEIGHT * HEIGHT))
-	collider.shape = shape
-	ramp.add_child(collider)
-	ramp.position = Vector3(x, -HEIGHT / 2 - 0.1 * cos(angle), (bottom_z + top_z) / 2 - 0.1 * sin(angle))
-	ramp.rotation.x = angle
-	add_child(ramp)
-	for index in range(24):
-		var top := -HEIGHT + (index + 1) * HEIGHT / 24
-		block(Vector3(x, top - 0.12, bottom_z - (index + 0.5) * run / 24), Vector3(2.4, 0.24, run / 24), "metal", false)
-		Art.box(self, Vector3(x, top + 0.005, bottom_z - (index + 1) * run / 24 + 0.025), Vector3(2.35, 0.015, 0.045), Color(0.48, 0.43, 0.22))
-
 func door(id: String, point: Vector3, label: String, angle: float = PI / 2) -> void:
-	world.make_door(id, point + Vector3.UP * HEIGHT, label)
+	world.make_door(id, Layout.upper_point(point) + Vector3.UP * HEIGHT, label)
 	world.doors[id].rotation.y = angle
 
 func item(id: String, prompt: String, point: Vector3, size: Vector3) -> StaticBody3D:
-	return world.item(id, prompt, point + Vector3.UP * HEIGHT, size, Color.WHITE, false)
+	return world.item(id, prompt, Layout.upper_point(point) + Vector3.UP * HEIGHT, size, Color.WHITE, false)
 
 func paper(id: String, prompt: String, point: Vector3, envelope: bool = false) -> void:
 	var body := item(id, prompt, point, Vector3(0.4, 0.055, 0.3))
 	Art.paper(body, Vector3(0.4, 0.055, 0.3), envelope)
 
 func add_label(text: String, point: Vector3, angle: float, scale: float) -> Label3D:
-	var label: Label3D = world.add_sign(text, point + Vector3.UP * HEIGHT, angle)
+	var label: Label3D = world.add_sign(text, Layout.upper_point(point) + Vector3.UP * HEIGHT, PI - angle)
 	label.pixel_size = scale
 	return label
 
@@ -187,24 +178,7 @@ func mesh_layers(node: Node, layers: int) -> void:
 	for child in node.get_children(): mesh_layers(child, layers)
 
 func service_route() -> void:
-	# Second flight descends outside the original building footprint.
-	stair_flight(-12, -19, -29)
-	block(Vector3(-12, -0.15, -31), Vector3(4, 0.3, 4), "tile")
-	block(Vector3(-12, 3.1, -26), Vector3(4, 0.2, 14), "ceiling")
-	for x in [-14, -10]: block(Vector3(x, -0.55, -24), Vector3(0.2, 7.3, 10))
-	block(Vector3(-14, 1.5, -31), Vector3(0.2, 3, 4))
-	block(Vector3(-12, 1.5, -33), Vector3(4, 3, 0.2))
-	# Ground-floor service corridor and a side entrance into security.
-	for entry in [[Vector3(-12, -HEIGHT - 0.15, -9), Vector3(4, 0.3, 20), "tile"], [Vector3(-11, -HEIGHT - 0.15, 1), Vector3(6, 0.3, 4), "tile"], [Vector3(-12, -HEIGHT + 3.1, -9), Vector3(4, 0.2, 20), "ceiling"], [Vector3(-11, -HEIGHT + 3.1, 1), Vector3(6, 0.2, 4), "ceiling"], [Vector3(-14, -HEIGHT + 1.5, -8), Vector3(0.2, 3, 22), "wall"], [Vector3(-10, -HEIGHT + 1.5, -10), Vector3(0.2, 3, 18), "wall"], [Vector3(-11, -HEIGHT + 1.5, 3), Vector3(6, 3, 0.2), "wall"], [Vector3(-9, -HEIGHT + 1.5, -1), Vector3(2, 3, 0.2), "wall"]]:
-		block(entry[0], entry[1], entry[2])
-	warning = add_label("VOCÊ SEMPRE VOLTA\nPELO MESMO CAMINHO.", Vector3(-12, 1.7, -32.85), 0, 0.0019)
-	for point in [Vector3(0, -1.2, -21), Vector3(-12, -1.2, -24), Vector3(-12, -HEIGHT + 2.5, -12), Vector3(-11, -HEIGHT + 2.5, 1)]:
-		var light := OmniLight3D.new()
-		light.position = point
-		light.omni_range = 7
-		light.light_energy = 0.5
-		light.light_color = Color(0.65, 0.45, 0.22)
-		add_child(light)
+	warning = world.staircases.warning
 
 func apply_state() -> void:
 	var blackout: bool = game.chapter.stage == 15
@@ -216,5 +190,5 @@ func apply_state() -> void:
 		world.fuse_visual.get_child(0).material_override.albedo_color = Color(0.8, 0.76, 0.57) if game.chapter.has_flag("fuse_replaced") else Color(0.13, 0.09, 0.065)
 	world.objects.fuse20.visible = not game.chapter.has_flag("fuse20_taken")
 	world.objects.fuse20.collision_layer = 0 if game.chapter.has_flag("fuse20_taken") else 1
-	var origin := Vector3(7.2, 0, -39.7)
-	camera_chair.position = origin + (Vector3(0, 0, -0.65) if game.chapter.has_flag("henrique_identified") else Vector3.ZERO)
+	var origin := Layout.upper_point(Vector3(7.2, 0, -39.7))
+	camera_chair.position = origin + (Vector3(0, 0, 0.65) if game.chapter.has_flag("henrique_identified") else Vector3.ZERO)

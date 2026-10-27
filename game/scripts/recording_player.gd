@@ -1,5 +1,7 @@
 extends Node
 
+const Building = preload("res://scripts/building_layout.gd")
+
 const Layout = preload("res://scripts/security_camera_layout.gd")
 
 # Reconstructed recordings have their own World3D. Scrubbing cannot move a
@@ -88,13 +90,13 @@ func seek(value: float) -> void:
 
 func pose() -> void:
 	if kind == "future":
-		actors[0].position = Vector3(lerpf(-4, 0.8, clampf(elapsed / 4, 0, 1)), 4.2, -42)
+		actors[0].position = Building.upper_point(Vector3(lerpf(-4, 0.8, clampf(elapsed / 4, 0, 1)), 4.2, -42))
 		door_pivot.rotation.y = lerpf(-PI / 2, 0, clampf((elapsed - 4) / 0.65, 0, 1))
 	elif kind == "meeting":
 		for index in range(5):
 			var progress := clampf((elapsed - index * 0.8) / 3, 0, 1)
 			actors[index].visible = elapsed >= index * 0.8
-			actors[index].position = Vector3(lerpf(2.2, 4.6 + (index % 3) * 1.2, progress), 4.2, lerpf(-38, -37 if index < 3 else -40, progress))
+			actors[index].position = Building.upper_point(Vector3(lerpf(2.2, 4.6 + (index % 3) * 1.2, progress), 4.2, lerpf(-38, -37 if index < 3 else -40, progress)))
 	else:
 		actors[0].position = Vector3(lerpf(0, -2.7, clampf((elapsed - 1) / 4, 0, 1)), 0, lerpf(11, 8.2, clampf((elapsed - 1) / 4, 0, 1)))
 

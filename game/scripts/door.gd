@@ -1,5 +1,6 @@
 extends StaticBody3D
 
+var glazed := false
 var is_open := false
 var moving := false
 var pivot: Node3D
@@ -34,12 +35,22 @@ func _ready() -> void:
 	pivot.add_child(mesh)
 	var art = preload("res://scripts/art.gd")
 	mesh.material_override = preload("res://scripts/materials.gd").surface("wood")
+	if glazed:
+		var glass := StandardMaterial3D.new()
+		glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		glass.albedo_color = Color(0.16, 0.24, 0.23, 0.22)
+		glass.cull_mode = BaseMaterial3D.CULL_DISABLED
+		glass.roughness = 0.2
+		mesh.material_override = glass
+		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		for x in [0.04, 1.46]: art.box(pivot, Vector3(x, 1.25, 0), Vector3(0.08, 2.5, 0.17), Color(0.12, 0.17, 0.15))
+		for y in [0.06, 1.0, 2.45]: art.box(pivot, Vector3(0.75, y, 0), Vector3(1.5, 0.09, 0.17), Color(0.12, 0.17, 0.15))
 	# The visual frame sits outside the existing clear opening.
 	for x in [-0.8, 0.8]:
 		art.box(self, Vector3(x, 1.25, 0), Vector3(0.1, 2.6, 0.24), Color(0.09, 0.13, 0.12))
 	art.box(self, Vector3(0, 2.55, 0), Vector3(1.7, 0.1, 0.24), Color(0.09, 0.13, 0.12))
 	for side in [-1.0, 1.0]:
-		for y in [0.65, 1.6]:
+		for y in ([] if glazed else [0.65, 1.6]):
 			art.box(pivot, Vector3(0.75, y, side * 0.08), Vector3(1.15, 0.65, 0.025), Color(0.14, 0.19, 0.16))
 		art.box(pivot, Vector3(1.3, 1.15, side * 0.1), Vector3(0.1, 0.24, 0.025), Color(0.38, 0.4, 0.34))
 		art.box(handle, Vector3(-0.09, 0, side * 0.15), Vector3(0.24, 0.045, 0.06), Color(0.54, 0.54, 0.45))

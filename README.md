@@ -17,6 +17,14 @@ Após concluir a primeira hora, escolha **Continuar — Registros Incompletos**.
 
 Percurso, critérios, compatibilidade de saves e limites: [docs/CHAPTER_2.md](docs/CHAPTER_2.md). Para experimentar o reparo novo desde o início, use Nova partida; checkpoints antigos que já restauraram a energia continuam após essa tarefa.
 
+### Prédio empilhado e exterior
+
+O segundo andar ocupa a projeção do térreo, a 4,2 m de altura. A escada principal e a de serviço têm dois lances com retorno de 180°, patamar, corrimãos, fechamento lateral e colisão contínua. A rota de manutenção e os eventos dos dois capítulos acompanham essa implantação; CAM-04/CAM-05 e seus arquivos usam as posições das lentes no novo piso.
+
+A chegada começa no estacionamento externo. Há marquise aberta, fachada dos dois pavimentos, porta de vidro, janelas com vãos reais e colisão, peitoris, caixilhos, cobertura, calhas, equipamentos no telhado, carros, bancos, canteiros, árvores, grades, postes, drenagem e chuva. As janelas mostram o cenário do próprio jogo. O exterior usa geometria e materiais locais; não exige downloads.
+
+Checkpoints anteriores recebem migração de posição para o novo piso ou um patamar seguro da escada, mantendo objetivos e inventário. Para ver a nova chegada, use **Nova partida**. A planta de emergência também foi atualizada. Detalhes técnicos e cobertura: [docs/BUILDING_LAYOUT.md](docs/BUILDING_LAYOUT.md).
+
 ### Capítulo 1 — O Primeiro Turno
 
 A partida começa diante da entrada do Vesper. Abra a porta, leia o envelope no balcão, entre na segurança e siga os objetivos no alto da tela. Pegue a lanterna na mesa para ver a mão e o item em primeira pessoa. A sequência contém oito cenas, três puzzles, anomalias, documentos e conclusão. Esc permite salvar/carregar checkpoint e ajustar o áudio. J abre o diário com documentos e mensagens coletados.

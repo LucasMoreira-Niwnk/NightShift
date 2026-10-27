@@ -114,7 +114,8 @@ switch ($Mode) {
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         }
     }
-    'test' { & $godotExecutable --path $projectDirectory -- --smoke-test }
+    # Captures explicitly draw frames; background/minimized windows must not stall physics tests.
+    'test' { & $godotExecutable --disable-render-loop --path $projectDirectory -- --smoke-test }
     'prepare' { exit 0 }
 }
 exit $LASTEXITCODE

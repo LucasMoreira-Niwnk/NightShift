@@ -1,5 +1,7 @@
 extends RefCounted
 
+const Building = preload("res://scripts/building_layout.gd")
+
 var game: Node
 var test: Node
 
@@ -7,8 +9,10 @@ func walk(action: String, seconds: float) -> void:
 	game.player.rotation.y = 0
 	game.player.velocity = Vector3.ZERO
 	Input.action_press(action)
-	await game.get_tree().create_timer(seconds).timeout
+	for tick in range(int(round(seconds * Engine.physics_ticks_per_second))):
+		await game.get_tree().physics_frame
 	Input.action_release(action)
+	print("ROUTE ", action, " ", game.player.position)
 
 func stairs_up() -> void:
 	game.player.position = Vector3(0, 0.05, -14.2)
@@ -16,8 +20,14 @@ func stairs_up() -> void:
 	if not game.world.doors.stairs.is_open: game.world.doors.stairs.interact()
 	if not game.world.doors.upper_gate.is_open: game.world.doors.upper_gate.interact()
 	await game.get_tree().create_timer(0.4).timeout
-	await walk("move_forward", 4.4)
-	test.check(game.player.position.y > 4.0 and game.player.position.z < -27, "Controller climbs main stairs without teleport or jump")
+	await walk("move_forward", 0.8)
+	await walk("move_left", 0.35)
+	await walk("move_forward", 1.7)
+	await walk("move_right", 0.7)
+	await walk("move_back", 1.7)
+	await walk("move_left", 0.35)
+	await walk("move_back", 0.95)
+	test.check(game.player.position.y > 4.0 and game.player.position.z > -14, "Controller climbs main stairs without teleport or jump")
 
 func restore(snapshot: Dictionary) -> void:
 	var file := FileAccess.open(game.chapter.save_path, FileAccess.WRITE)
@@ -41,22 +51,28 @@ func repair_power() -> void:
 	await stairs_up()
 	game.world.doors.administration.restore_open(true)
 	game.world.doors.it.restore_open(true)
-	await test.reachable("repair_note", Vector3(-6.6, 4.25, -31.5))
+	await test.reachable("repair_note", Building.upper_point(Vector3(-6.6, 4.25, -31.5)))
 	game.player.interaction_target().interact()
 	test.dismiss()
-	await test.reachable("fuse10", Vector3(-5.1, 4.25, -42.9))
+	await test.reachable("fuse10", Building.upper_point(Vector3(-5.1, 4.25, -42.9)))
 	game.player.interaction_target().interact()
 	chapter.interact("fuse_slot")
 	test.check(not chapter.has_flag("fuse_replaced"), "Wrong fuse rating rejected without consuming a correct spare")
-	await test.reachable("fuse20", Vector3(-5.8, 4.25, -42.9))
+	await test.reachable("fuse20", Building.upper_point(Vector3(-5.8, 4.25, -42.9)))
 	game.player.interaction_target().interact()
 	test.check(chapter.has_flag("fuse20_owned") and not game.world.objects.fuse20.visible, "Correct spare collected and removed from world")
 	test.check(chapter.save_game() and chapter.load_game(), "Checkpoint preserves note and fuse inventory")
 	test.check(chapter.has_flag("fuse20_owned") and chapter.documents.has("repair_note"), "Repair evidence persists across load")
-	game.player.position = Vector3(0, 4.25, -29.5)
+	game.player.position = Vector3(0, 4.25, -12.5)
 	game.player.camera.rotation = Vector3.ZERO
-	await walk("move_back", 4.4)
-	test.check(game.player.position.y < 0.2 and game.player.position.y > -0.1 and game.player.position.z > -16, "Controller descends main stairs safely")
+	await walk("move_forward", 1.2)
+	await walk("move_right", 0.35)
+	await walk("move_forward", 1.7)
+	await walk("move_left", 0.7)
+	await walk("move_back", 1.7)
+	await walk("move_right", 0.35)
+	await walk("move_back", 0.85)
+	test.check(game.player.position.y < 0.2 and game.player.position.y > -0.1 and game.player.position.z > -16, "Controller descends folded main stairs safely")
 	await test.reachable("fuse_slot", Vector3(-6.1, 0.05, -10.65))
 	game.player.interaction_target().interact()
 	test.check(chapter.has_flag("fuse_replaced") and not chapter.has_flag("fuse20_owned"), "Spare installed in physical fuse holder")
@@ -102,7 +118,7 @@ func run() -> void:
 	await stairs_up()
 	test.check(chapter.stage == 11, "Entering upper corridor advances chapter two")
 	await test.capture("chapter2-corridor")
-	await test.reachable("cam04", Vector3(0.2, 4.25, -29))
+	await test.reachable("cam04", Building.upper_point(Vector3(0.2, 4.25, -29)))
 	game.player.interaction_target().interact()
 	test.dismiss()
 	test.check(chapter.stage == 12 and chapter.has_flag("cam04_inspected"), "Camera LED, label and cable inspected")
@@ -110,41 +126,41 @@ func run() -> void:
 	chapter.interact("knock_door")
 	await game.get_tree().create_timer(1.8).timeout
 	test.check(game.world.doors.meeting.is_open, "Second knock response opens door behind operator")
-	game.player.position = Vector3(0, 4.25, -42)
+	game.player.position = Building.upper_point(Vector3(0, 4.25, -42))
 	if not game.world.doors.it.is_open: game.world.doors.it.interact()
 	await game.get_tree().create_timer(0.4).timeout
 	await walk("move_left", 1.0)
 	test.check(game.player.position.x < -2.5, "Upper IT doorway can be traversed")
-	await test.reachable("network_patch", Vector3(-8.2, 4.25, -42))
+	await test.reachable("network_patch", Building.upper_point(Vector3(-8.2, 4.25, -42)))
 	game.player.interaction_target().interact()
 	test.check(not act.restore_network(2) and chapter.stage == 12, "Wrong network port can be retried")
 	for child in game.ui.column.get_children():
 		if child is GridContainer: child.get_child(6).emit_signal("pressed")
 	test.check(chapter.stage == 13 and chapter.has_flag("cam04_restored"), "Port 07 restores CAM-04 and unlocks buffer")
-	game.player.position = Vector3(-7.2, 4.25, -43.1)
+	game.player.position = Building.upper_point(Vector3(-7.2, 4.25, -43.1))
 	chapter.interact("it_terminal")
 	await watch("future")
 	test.check(chapter.has_flag("future_recording_watched"), "Future recording evidence stored")
 	game.computer.close()
 	var before_future: Dictionary = chapter.serialize_state()
-	game.player.position = Vector3(-0.8, 4.25, -42)
+	game.player.position = Building.upper_point(Vector3(-0.8, 4.25, -42))
 	await game.get_tree().create_timer(0.2).timeout
 	test.check(chapter.has_flag("future_door_pending"), "Leaving IT arms predicted door event")
 	game.world.doors.it.interact()
 	test.check(chapter.stage == 14 and chapter.has_flag("future_event_resisted"), "Holding the moving door changes predicted event")
 	test.check(chapter.save_game() and chapter.load_game() and chapter.has_flag("future_event_resisted"), "Door resistance decision persists")
 	restore(before_future)
-	game.player.position = Vector3(-0.8, 4.25, -42)
+	game.player.position = Building.upper_point(Vector3(-0.8, 4.25, -42))
 	await game.get_tree().create_timer(3.9).timeout
 	test.check(chapter.stage == 14 and not chapter.has_flag("future_event_resisted"), "Allowing door closure records alternate decision")
-	await test.reachable("meeting_minutes", Vector3(5.3, 4.25, -36.9))
+	await test.reachable("meeting_minutes", Building.upper_point(Vector3(5.3, 4.25, -36.9)))
 	game.player.interaction_target().interact()
 	test.dismiss()
-	await test.reachable("access_log", Vector3(6.5, 4.25, -36.9))
+	await test.reachable("access_log", Building.upper_point(Vector3(6.5, 4.25, -36.9)))
 	game.player.interaction_target().interact()
 	test.dismiss()
 	test.check(not act.identify_participant(5), "Meeting investigation requires video as well as documents")
-	game.player.position = Vector3(8.7, 4.25, -36.5)
+	game.player.position = Building.upper_point(Vector3(8.7, 4.25, -36.5))
 	chapter.interact("meeting_terminal")
 	await watch("meeting")
 	var cctv_cases = preload("res://scripts/cctv_tests.gd").new()
@@ -154,20 +170,20 @@ func run() -> void:
 	test.dismiss()
 	game.computer.close()
 	test.check(chapter.stage == 15 and chapter.documents.has("henrique_photo"), "Henrique evidence starts alternate-route blackout")
-	game.player.position = Vector3(0, 4.25, -27.7)
-	await walk("move_back", 0.7)
-	test.check(game.player.position.z < -26.65 and not chapter.can_open("upper_gate"), "Blackout gate physically blocks main stairs")
+	game.player.position = Vector3(0, 4.25, -12.5)
+	await walk("move_forward", 0.7)
+	test.check(game.player.position.z > -13.65 and not chapter.can_open("upper_gate"), "Blackout gate physically blocks main stairs")
 	chapter.interact("emergency_map")
 	test.dismiss()
-	game.player.position = Vector3(-6, 4.25, -33)
+	game.player.position = Building.upper_point(Vector3(-6, 4.25, -33))
 	await game.get_tree().create_timer(0.7).timeout
 	test.check(chapter.has_flag("voice_shadow_seen"), "Alternate route triggers voice and window shadow once")
 	game.world.doors.service_upper.interact()
 	await game.get_tree().create_timer(0.4).timeout
-	game.player.position = Vector3(-8.5, 4.25, -31)
+	game.player.position = Building.upper_point(Vector3(-8.5, 4.25, -31))
 	await walk("move_left", 1.0)
 	test.check(chapter.has_flag("service_crossed"), "Service doorway reached by walking from administration")
-	game.player.position = Vector3(-12, 4.25, -31)
+	game.player.position = Vector3(-9.7, 4.25, -9)
 	game.player.camera.look_at(game.world.upper.warning.global_position)
 	await game.get_tree().create_timer(0.1).timeout
 	game.player.camera.rotation.y += PI
@@ -176,9 +192,12 @@ func run() -> void:
 	await game.get_tree().create_timer(0.1).timeout
 	test.check(chapter.has_flag("service_message_gone"), "Service warning disappears after looking away and back")
 	game.player.camera.rotation = Vector3.ZERO
-	await walk("move_back", 4.4)
+	await walk("move_back", 1.8)
+	await walk("move_left", 0.65)
+	await walk("move_forward", 1.8)
 	test.check(chapter.stage == 16 and game.player.position.y < 0.2, "Service stair leads continuously to ground floor")
-	await walk("move_back", 3.6)
+	await walk("move_right", 0.65)
+	await walk("move_back", 2.5)
 	game.player.position = Vector3(-9.5, 0.05, 1)
 	game.world.doors.service_exit.interact()
 	await game.get_tree().create_timer(0.4).timeout

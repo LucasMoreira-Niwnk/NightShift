@@ -6,6 +6,7 @@ var failures := 0
 func check(condition: bool, message: String) -> void:
 	if not condition:
 		failures += 1
+		print("CHAPTER_TEST_FAILED: " + message)
 		push_error("CHAPTER_TEST: " + message)
 
 func dismiss() -> void:
@@ -24,7 +25,7 @@ func reachable(id: String, position: Vector3, height: float = 0.0) -> void:
 		print("RAY_DEBUG ", id, " collider=", game.player.ray.get_collider(), " player=", game.player.position)
 
 func run() -> void:
-	get_tree().create_timer(240).timeout.connect(func():
+	get_tree().create_timer(360).timeout.connect(func():
 		push_error("CHAPTER_TEST_TIMEOUT")
 		get_tree().quit(1))
 	var chapter: Node = game.chapter
@@ -34,6 +35,8 @@ func run() -> void:
 	await get_tree().create_timer(0.8).timeout
 	check(game.player.is_on_floor(), "Player settles on entrance floor")
 	check(game.player.position.z > 12, "Arrival begins outside reception")
+	var architecture_cases = preload("res://scripts/architecture_tests.gd").new()
+	await architecture_cases.run(game, self)
 	check(not game.computer.monitor_power, "Terminal starts switched off")
 	check(game.sound.effects.ring.data.size() > 0 and game.sound.effects.rain.loop_end > 0, "Soundscape has playable PCM and looping ambience")
 	game.player.position = Vector3(0, 0.05, 14)
@@ -122,13 +125,17 @@ func run() -> void:
 	check(game.player.hand.lens_point != Vector3.ZERO, "Flashlight lens anchor found")
 	check(game.player.hand.light.position.distance_to(game.player.hand.lens_point) < 0.025, "Beam starts at the model lens")
 	check((-game.player.flashlight.global_transform.basis.z).dot(-game.player.camera.global_transform.basis.z) > 0.99, "Flashlight beam aligns with camera aim")
-	await RenderingServer.frame_post_draw
+	await get_tree().process_frame
+	await get_tree().process_frame
+	RenderingServer.force_draw(false)
 	check("LIGADA" in game.ui.light_label.text, "HUD reflects actual flashlight state")
 	var flash_key := InputEventKey.new()
 	flash_key.physical_keycode = KEY_F
 	flash_key.pressed = true
 	game.player._unhandled_input(flash_key)
-	await RenderingServer.frame_post_draw
+	await get_tree().process_frame
+	await get_tree().process_frame
+	RenderingServer.force_draw(false)
 	check("DESLIGADA" in game.ui.light_label.text, "HUD updates when flashlight switches off")
 	game.player._unhandled_input(flash_key)
 	await reachable("recorder", Vector3(-7.25, 0.05, 1.6))
@@ -146,7 +153,8 @@ func run() -> void:
 	for index in range(3):
 		game.computer.select_camera(index)
 		await get_tree().process_frame
-		await RenderingServer.frame_post_draw
+		await get_tree().process_frame
+		RenderingServer.force_draw(false)
 		var frame: Image = game.computer.feed.get_texture().get_image()
 		check(not frame.is_empty(), "CCTV renders camera " + str(index))
 		if index == 0:
@@ -260,6 +268,7 @@ func run() -> void:
 
 func capture(id: String) -> void:
 	# Keep visual assertions deterministic even if the test window is minimized.
+	await get_tree().process_frame
 	await get_tree().process_frame
 	RenderingServer.force_draw(false)
 	game.get_viewport().get_texture().get_image().save_png("res://../.local/" + id + ".png")

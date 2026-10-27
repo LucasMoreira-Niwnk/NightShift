@@ -126,7 +126,7 @@ func _physics_process(_delta: float) -> void:
 		if step_distance > 1.5:
 			step_distance = 0
 			play("step", point + Vector3(0, 0.1, 0), -19)
-	rain.volume_db = -16 if point.z > 12 else -34
+	rain.volume_db = -16 if game.world.is_outdoors(point) else -34
 
 func set_volume(bus: String, value: float) -> void:
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index(bus), linear_to_db(maxf(value, 0.0001)))

@@ -1,5 +1,7 @@
 extends RefCounted
 
+const Building = preload("res://scripts/building_layout.gd")
+
 const Data = preload("res://scripts/chapter_two_data.gd")
 var game: Node
 var future_timer := -1.0
@@ -168,10 +170,10 @@ func identify_participant(index: int) -> bool:
 	if game.computer.recording.active: game.computer.stop_recording()
 	chapter.advance(15)
 	var ghost: Node3D = game.world.upper.camera_chair
-	ghost.position = Vector3(7.2, 0, -39.7)
+	ghost.position = Building.upper_point(Vector3(7.2, 0, -39.7))
 	var tween := game.create_tween()
 	chapter.event_tweens.append(tween)
-	tween.tween_property(ghost, "position:z", -40.35, 2.0)
+	tween.tween_property(ghost, "position:z", 0.35, 2.0)
 	chapter.collect_document("henrique_photo", "Henrique Almeida — fotografia", Data.PHOTO)
 	chapter.say("Augusto: 'Onde você ouviu esse nome? Daniel, saia do segundo andar. Agora.'\n[A alimentação da escadaria cai. Na CAM-05, a sexta cadeira recua; na sala, ela não se move.]")
 	chapter.save_game()
@@ -209,18 +211,18 @@ func tick(delta: float) -> void:
 	var point: Vector3 = game.player.position
 	var distance := point.distance_to(last_point)
 	last_point = point
-	if point.z < -16 and point.z > -26 and point.x > -1.4 and point.x < 1.4 and game.player.controls_enabled and distance < 0.5:
+	if game.world.staircases.is_main(point) and game.player.controls_enabled and distance < 0.5:
 		step_distance += distance
 		if step_distance > 1.65:
 			step_distance = 0
 			game.sound.play("step", point + Vector3(0, 2, -2), -16)
-	if chapter.stage == 10 and point.y > 4 and point.z < -27:
+	if chapter.stage == 10 and point.y > 4 and point.z > -13.8 and absf(point.x) < 1.6:
 		chapter.advance(11)
-	if chapter.stage == 11 and point.distance_to(Vector3(-1.6, 4.2, -36)) < 2 and not chapter.has_flag("corridor_knocks"):
+	if chapter.stage == 11 and point.distance_to(Building.upper_point(Vector3(-1.6, 4.2, -36))) < 2 and not chapter.has_flag("corridor_knocks"):
 		chapter.flags.corridor_knocks = true
 		answer_knocks(-1)
 	if chapter.stage == 13 and chapter.has_flag("future_recording_watched") and not chapter.has_flag("future_event_resolved"):
-		if future_timer < 0 and point.y > 4 and absf(point.z + 42) < 1.2 and point.x > -1.3 and point.x < 1.5 and not game.computer.active:
+		if future_timer < 0 and point.y > 4 and absf(point.z - 2) < 1.2 and point.x > -1.3 and point.x < 1.5 and not game.computer.active:
 			chapter.flags.future_door_pending = true
 			future_timer = 3.5
 			game.world.doors.it.custom_prompt = "E — Segurar a porta"
@@ -233,7 +235,7 @@ func tick(delta: float) -> void:
 			if future_timer <= 0: resolve_future(false)
 	if chapter.stage == 15:
 		if point.distance_to(game.world.objects.voice_door.position) < 3: voice_event()
-		if point.x < -10.6 and point.y > 3:
+		if point.x < -8.4 and point.y > 3.5 and game.world.staircases.is_service(point):
 			chapter.flags.service_crossed = true
 			var toward: Vector3 = (game.world.upper.warning.global_position - game.player.camera.global_position).normalized()
 			var looking: float = (-game.player.camera.global_transform.basis.z).dot(toward)
@@ -242,7 +244,7 @@ func tick(delta: float) -> void:
 				chapter.flags.service_message_seen = true
 			elif chapter.has_flag("service_message_seen"): chapter.flags.service_looked_away = true
 			game.world.upper.warning.visible = not chapter.has_flag("service_message_gone")
-		if chapter.has_flag("service_crossed") and point.x < -10 and point.y < 0.5 and point.z > -19:
+		if chapter.has_flag("service_crossed") and game.world.staircases.is_service(point) and point.y < 0.5 and point.z < -7:
 			chapter.flags.alternate_route_unlocked = true
 			chapter.advance(16)
 	if chapter.stage == 17 and chapter.has_flag("c2_final_report_read") and not game.ui.modal and not finish_pending:

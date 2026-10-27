@@ -9,7 +9,7 @@ O aviso ao lado do quadro não contém mais a resposta, nem na geometria, nem no
 Percurso (spoilers):
 
 1. Inspecione o painel na técnica. Isole todos os circuitos e examine o suporte F1 para retirar o fusível queimado.
-2. Suba a escadaria ao fundo do corredor usando o crachá. Administração fica à esquerda, perto do palier; TI fica à esquerda, mais ao fundo.
+2. Suba a escadaria ao fundo do corredor usando o crachá. Ao entrar no corredor superior, administração fica à direita, perto do palier; TI fica à direita, mais ao fundo. Na planta orientada ao norte, ambas ocupam a ala oeste.
 3. Encontre a ordem de manutenção sobre a mesa da administração. Ela identifica o calibre e explica a sequência por nomes dos circuitos.
 4. Busque a reposição na bancada da TI. Há fusíveis de 10 A e 20 A; o de 10 A não serve para F1 e não consome a reposição correta.
 5. Retorne pela escada, instale o fusível de 20 A com o painel isolado e execute a partida: arquivo (C), recepção (A), corredor (B). D permanece desligado.
@@ -32,7 +32,7 @@ Nota, fusível, cartucho retirado, instalação e sequência são persistidos. U
 | 17 | Ler a ocorrência 002, cujo texto distingue a decisão da porta, e ouvir a resposta de Augusto. |
 | 18 | 02:00; perfil comportamental 68%, referência Henrique, imagem impossível na CAM-04 e encerramento. O capítulo 3 permanece fora do escopo. |
 
-Após o final do capítulo 1, o botão Continuar inicia o segundo capítulo sem recarregar o mapa ou apagar inventário, documentos e progresso. As escadas têm degraus visuais e uma rampa de colisão contínua; não há teleporte entre pisos. A passagem de serviço se conecta a uma nova porta na parede oeste da segurança.
+Após o final do capítulo 1, o botão Continuar inicia o segundo capítulo sem recarregar o mapa ou apagar inventário, documentos e progresso. O piso superior está sobre o térreo. As duas escadas têm retorno de 180°, patamar, degraus visuais e rampas de colisão contínua; não há teleporte entre pisos. A passagem de serviço se conecta a uma nova porta na parede oeste da segurança.
 
 ## CCTV e gravações
 
@@ -44,7 +44,7 @@ Os arquivos são reconstruções animadas em uma World3D separada, a partir de u
 
 ## Persistência e verificação
 
-O mesmo save versão 1 agora aceita estados 0–18, preservando saves anteriores. As flags incluem reparo, calibre, nota, conectividade, arquivos assistidos, `future_event_resisted`, Henrique, rota e descoberta de MÍMESIS. Eventos interrompidos de porta/final retomam a partir do objetivo correspondente; um arquivo interrompido pode ser reproduzido novamente.
+O mesmo save versão 1 aceita estados 0–18, preservando saves anteriores. `map_revision: 2` identifica a planta empilhada; arquivos sem esse campo têm as posições antigas transformadas para a sala equivalente. Posições nas antigas escadas vão para um patamar seguro. As flags incluem reparo, calibre, nota, conectividade, arquivos assistidos, `future_event_resisted`, Henrique, rota e descoberta de MÍMESIS. Eventos interrompidos de porta/final retomam a partir do objetivo correspondente; um arquivo interrompido pode ser reproduzido novamente.
 
 `tools/godot.ps1 -Mode check` e `-Mode test` verificam os scripts e o percurso integrado. A cobertura inclui subida/descida real com o controlador, reposição incompatível, sequência errada, estados persistentes, rede, isolamento das gravações, ambas as escolhas da porta, investigação, bloqueio da escada e retorno pela passagem de serviço. Os testes usam posições controladas entre pontos; não equivalem a uma partida manual contínua.
 

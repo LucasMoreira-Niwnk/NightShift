@@ -30,6 +30,8 @@ var floor_plans: Array = []
 var materials: Dictionary = {}
 var phone_display: Label3D
 var chair_marks: Node3D
+var architecture: Node3D
+var staircases: Node3D
 var upper: Node3D
 var fuse_visual: Node3D
 var camera_mounts: Array = []
@@ -37,34 +39,33 @@ var camera_mounts: Array = []
 func _ready() -> void:
 	for kind in ["tile", "wall", "metal", "wood", "ceiling"]:
 		materials[kind] = Materials.surface(kind)
-	room("Recepção", Vector3(0, 0, 8), Vector2(12, 8))
+	architecture = preload("res://scripts/building_exterior.gd").new()
+	architecture.world = self
+	add_child(architecture)
+	room("Recepção", Vector3(0, 0, 8), Vector2(16, 8))
 	room("Corredor", Vector3(0, 0, -6), Vector2(4, 20))
 	room("Segurança", Vector3(-5, 0, 1), Vector2(6, 6))
 	room("Arquivo", Vector3(5, 0, -6), Vector2(6, 8))
 	room("Sala técnica", Vector3(-5, 0, -10), Vector2(6, 8))
 	# Outer walls and partitions. Each opening is 1.5 m wide and has a door.
-	wall(Vector3(-6, 1.5, 8), Vector3(0.2, 3, 8))
-	wall(Vector3(6, 1.5, 8), Vector3(0.2, 3, 8))
-	wall(Vector3(-3.375, 1.5, 12), Vector3(5.25, 3, 0.2))
-	wall(Vector3(3.375, 1.5, 12), Vector3(5.25, 3, 0.2))
+	for x in [-8, 8]: architecture.window_wall(self, Vector3(x, 1.5, 8), Vector3(0.2, 3, 8), [-1.8, 1.8], 2.1)
+	for x in [-4.375, 4.375]: architecture.window_wall(self, Vector3(x, 1.5, 12), Vector3(7.25, 3, 0.2), [0.0], 4.6)
 	wall(Vector3(0, 2.75, 12), Vector3(1.5, 0.5, 0.2))
 	room("Marquise", Vector3(0, 0, 14), Vector2(6, 4))
-	wall(Vector3(-3, 1.5, 14), Vector3(0.2, 3, 4))
-	wall(Vector3(3, 1.5, 14), Vector3(0.2, 3, 4))
-	wall(Vector3(0, 1.5, 16), Vector3(6, 3, 0.2))
+
 	make_door("entrance", Vector3(0, 0, 12), "entrada do Vesper")
 	doors.entrance.rotation.y = 0
 	add_sign("VESPER\nSETOR ADMINISTRATIVO", Vector3(0, 2.8, 12.15)).pixel_size = 0.0011
 	wall(Vector3(-4, 1.5, 4), Vector3(4, 3, 0.2))
 	# Security extends two metres beyond reception: seal its exposed rear edge.
 	wall(Vector3(-7, 1.5, 4), Vector3(2, 3, 0.2))
-	wall(Vector3(4, 1.5, 4), Vector3(4, 3, 0.2))
+	wall(Vector3(5, 1.5, 4), Vector3(6, 3, 0.2))
 	partition(-8, -2, 4, 1)
 	wall(Vector3(-5, 1.5, -2), Vector3(6, 3, 0.2))
 	wall(Vector3(-8, 1.5, -10), Vector3(0.2, 3, 8))
 	wall(Vector3(-5, 1.5, -6), Vector3(6, 3, 0.2))
 	wall(Vector3(-5, 1.5, -14), Vector3(6, 3, 0.2))
-	wall(Vector3(8, 1.5, -6), Vector3(0.2, 3, 8))
+	architecture.window_wall(self, Vector3(8, 1.5, -6), Vector3(0.2, 3, 8), [-1.8, 1.0], 0.9)
 	wall(Vector3(5, 1.5, -2), Vector3(6, 3, 0.2))
 	wall(Vector3(5, 1.5, -10), Vector3(6, 3, 0.2))
 	wall(Vector3(2, 1.5, 1), Vector3(0.2, 3, 6))
@@ -182,6 +183,9 @@ func _ready() -> void:
 	environment.environment.ambient_light_color = Color(0.18, 0.26, 0.30)
 	environment.environment.ambient_light_energy = 0.04
 	add_child(environment)
+	staircases = preload("res://scripts/folded_stairs.gd").new()
+	staircases.world = self
+	add_child(staircases)
 	upper = preload("res://scripts/second_floor.gd").new()
 	upper.game = game
 	upper.world = self
@@ -192,6 +196,7 @@ func _ready() -> void:
 	fuse_visual.rotation.y = PI / 2
 	upper.fuse_model(fuse_visual, Color(0.13, 0.09, 0.065))
 	preload("res://scripts/security_camera_layout.gd").install(self)
+	architecture.build()
 
 func box(parent: Node3D, location: Vector3, size: Vector3, kind: String = "wall", collision: bool = true, color: Color = Color.WHITE) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
@@ -264,6 +269,7 @@ func make_door(id: String, location: Vector3, label: String) -> void:
 	door.position = location
 	door.rotation.y = PI / 2
 	door.display_name = label
+	door.glazed = id == "entrance"
 	door.access = func(): return game.chapter.can_open(id)
 	add_child(door)
 	doors[id] = door
@@ -423,3 +429,9 @@ func add_floor_plan(location: Vector3, angle: float, id: String) -> void:
 	board.add_child(collision)
 	floor_plans.append(board)
 
+
+func is_outdoors(point: Vector3) -> bool:
+	if absf(point.x) < 8.15 and point.z > -16.15 and point.z < 12: return false
+	if absf(point.x) < 3.05 and point.z > -24.4 and point.z < -14: return false
+	if point.x > -14.5 and point.x < -8 and point.z > -10.7 and point.z < 3.2: return false
+	return true

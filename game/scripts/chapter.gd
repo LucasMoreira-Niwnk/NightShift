@@ -397,7 +397,7 @@ func serialize_state() -> Dictionary:
 	var point: Vector3 = game.player.position
 	var door_states := {}
 	for id in game.world.doors: door_states[id] = game.world.doors[id].is_open
-	return {"version": SAVE_VERSION, "stage": stage, "flags": flags.duplicate(true), "documents": documents.duplicate(), "transcript": transcript.duplicate(), "flashlight_on": game.player.flashlight.visible, "pitch": game.player.camera.rotation.x, "verified": verified.duplicate(), "history": history.duplicate(), "breakers": breakers.duplicate(), "entity_steps": entity_steps, "elapsed": elapsed, "position": [point.x, maxf(point.y, 0.05), point.z], "yaw": game.player.rotation.y, "doors": door_states}
+	return {"map_revision": 2, "version": SAVE_VERSION, "stage": stage, "flags": flags.duplicate(true), "documents": documents.duplicate(), "transcript": transcript.duplicate(), "flashlight_on": game.player.flashlight.visible, "pitch": game.player.camera.rotation.x, "verified": verified.duplicate(), "history": history.duplicate(), "breakers": breakers.duplicate(), "entity_steps": entity_steps, "elapsed": elapsed, "position": [point.x, maxf(point.y, 0.05), point.z], "yaw": game.player.rotation.y, "doors": door_states}
 
 func save_game() -> bool:
 	var file := FileAccess.open(save_path, FileAccess.WRITE)
@@ -448,9 +448,13 @@ func load_game() -> bool:
 	game.director.reset()
 	game.player.flashlight.visible = has_flag("flashlight") and bool(data.get("flashlight_on", true))
 	var point := Vector3(float(data.position[0]), float(data.position[1]), float(data.position[2]))
+	var old_map: bool = int(data.get("map_revision", 1)) < 2
+	var old_upper: bool = point.y > 3.5 and point.z < -25 and point.x >= -10
+	if old_map: point = preload("res://scripts/building_layout.gd").migrate(point)
 	game.player.position = point
 	game.player.velocity = Vector3.ZERO
 	game.player.rotation.y = float(data.get("yaw", 0))
+	if old_map and old_upper: game.player.rotation.y = PI - game.player.rotation.y
 	game.player.camera.rotation.x = clampf(float(data.get("pitch", 0)), -1.4, 1.4)
 	for id in data.get("doors", {}):
 		if game.world.doors.has(id): game.world.doors[id].restore_open(bool(data.doors[id]))

@@ -27,7 +27,7 @@ func _ready() -> void:
 	world.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(world)
 	player = preload("res://scripts/player.gd").new()
-	player.position = Vector3(0, 0.1, 14.7)
+	player.position = Vector3(1.5, 0.1, 23)
 	player.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(player)
 	player.ray.collision_mask = 3

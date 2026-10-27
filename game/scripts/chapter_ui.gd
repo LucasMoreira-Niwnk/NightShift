@@ -263,6 +263,8 @@ func text_body(text: String) -> void:
 
 func open_modal() -> void:
 	modal = true
+	# CCTV hides the HUD root; showing a child panel alone cannot reveal it.
+	panel.get_parent().show()
 	for child in panel.get_parent().get_children():
 		if child != panel and child is CanvasItem: child.hide()
 	modal_shade.show()

@@ -32,6 +32,7 @@ var phone_display: Label3D
 var chair_marks: Node3D
 var upper: Node3D
 var fuse_visual: Node3D
+var camera_mounts: Array = []
 
 func _ready() -> void:
 	for kind in ["tile", "wall", "metal", "wood", "ceiling"]:
@@ -190,6 +191,7 @@ func _ready() -> void:
 	fuse_visual.position.x = 0.09
 	fuse_visual.rotation.y = PI / 2
 	upper.fuse_model(fuse_visual, Color(0.13, 0.09, 0.065))
+	preload("res://scripts/security_camera_layout.gd").install(self)
 
 func box(parent: Node3D, location: Vector3, size: Vector3, kind: String = "wall", collision: bool = true, color: Color = Color.WHITE) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()

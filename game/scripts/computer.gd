@@ -23,8 +23,8 @@ var channel_label: Label
 var clock_label: Label
 var elapsed := 0.0
 var camera_names := ["01 / RECEPÇÃO", "02 / CORREDOR PRINCIPAL", "03 / ARQUIVO", "04 / 2º ANDAR", "05 / REUNIÕES"]
-var camera_positions := [Vector3(5.5, 2.7, 11.4), Vector3(1.7, 2.7, 3.4), Vector3(7.6, 2.7, -9.5), Vector3(1.5, 6.8, -28), Vector3(9.3, 6.9, -44)]
-var camera_targets := [Vector3(-2, 1.1, 7.5), Vector3(0, 1.1, -11), Vector3(4, 0.8, -5.5), Vector3(0, 5.3, -43), Vector3(5.5, 5.1, -38)]
+var camera_positions: Array = preload("res://scripts/security_camera_layout.gd").POSITIONS
+var camera_targets: Array = preload("res://scripts/security_camera_layout.gd").TARGETS
 var observation: OptionButton
 var interference: ColorRect
 var channel_screens: Array = []
@@ -311,9 +311,9 @@ func close() -> void:
 	active = false
 	overlay.hide()
 	reflection.hide()
-	game.set_player_control(true)
+	game.set_player_control(not game.ui.modal and not game.ui.paused and not game.ui.ending)
 	game.ui.get_child(0).show()
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if game.ui.modal or game.ui.paused or game.ui.ending else Input.MOUSE_MODE_CAPTURED
 
 func select_camera(index: int) -> void:
 	if recording != null and recording.active: stop_recording()
@@ -436,7 +436,7 @@ func _process(delta: float) -> void:
 		update_status()
 
 func _input(event: InputEvent) -> void:
-	if not active or not event is InputEventKey or not event.pressed or event.echo:
+	if not active or game.ui.modal or not event is InputEventKey or not event.pressed or event.echo:
 		return
 	match event.physical_keycode:
 		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5:

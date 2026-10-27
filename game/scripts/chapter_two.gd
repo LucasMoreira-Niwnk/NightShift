@@ -60,7 +60,7 @@ func interact(id: String) -> bool:
 		"network_patch":
 			if chapter.stage < 12: chapter.say("O diagnóstico de rede depende da autorização de inspeção da CAM-04.")
 			else: game.ui.show_network_patch()
-		"it_terminal", "meeting_terminal":
+		"it_terminal", "meeting_terminal", "cam05":
 			game.computer.interact()
 			game.computer.select_camera(3 if id == "it_terminal" else 4)
 		"knock_door":

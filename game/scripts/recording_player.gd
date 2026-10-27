@@ -1,5 +1,7 @@
 extends Node
 
+const Layout = preload("res://scripts/security_camera_layout.gd")
+
 # Reconstructed recordings have their own World3D. Scrubbing cannot move a
 # gameplay door, actor, or collider, nor change the player's narrative state.
 var game: Node
@@ -37,20 +39,20 @@ func play(clip: String) -> void:
 		environment.environment.ambient_light_color = Color(0.6, 0.8, 0.75)
 	camera = Camera3D.new()
 	camera.cull_mask = 5
-	camera.fov = 60
+	camera.fov = 75
 	viewport.add_child(camera)
 	camera.current = true
 	if kind == "tomorrow":
-		camera.position = Vector3(5.5, 2.7, 11.4)
-		camera.look_at(Vector3(-2, 1.1, 7.5))
+		camera.position = Layout.POSITIONS[0]
+		camera.look_at(Layout.TARGETS[0])
 		actors.append(game.world.humanoid(Color(0.45, 0.6, 0.52), scene))
 	elif kind == "meeting":
-		camera.position = Vector3(9.3, 6.9, -44)
-		camera.look_at(Vector3(4.5, 5.1, -38))
+		camera.position = Layout.POSITIONS[4]
+		camera.look_at(Layout.TARGETS[4])
 		for index in range(5): actors.append(game.world.humanoid(Color(0.4, 0.53, 0.46), scene))
 	else:
-		camera.position = Vector3(1.5, 6.8, -28)
-		camera.look_at(Vector3(-1, 5.1, -42))
+		camera.position = Layout.POSITIONS[3]
+		camera.look_at(Layout.TARGETS[3])
 		actors.append(game.world.humanoid(Color(0.45, 0.6, 0.52), scene))
 		var relative: NodePath = game.world.get_path_to(game.world.doors.it)
 		var recorded_door := scene.get_node(relative)

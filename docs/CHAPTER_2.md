@@ -38,6 +38,8 @@ Após o final do capítulo 1, o botão Continuar inicia o segundo capítulo sem 
 
 CAM-04 cobre o corredor administrativo e CAM-05 a reunião. Antes do reparo de rede, os feeds do segundo andar ficam sem sinal. Teclas 1–5, setas e botões selecionam canais. A estação da TI e o projetor da reunião abrem a mesma interface de investigação.
 
+As cinco câmeras têm modelos montados no cenário. A origem da lente, a direção do feed e o enquadramento inicial dos arquivos vêm de `security_camera_layout.gd`; a CAM-05 fica no canto alto da sala de reuniões. O projetor é uma estação de consulta separada. Ao abrir a investigação a partir do CCTV, o diálogo aparece imediatamente e mantém o cursor livre; fechar o diálogo retorna ao monitor, e sair do monitor só devolve controle ao personagem quando nenhum diálogo permanece aberto.
+
 Os arquivos são reconstruções animadas em uma World3D separada, a partir de uma cópia sem scripts do cenário. Possuem data, duração, pausa, avanço/retorno e zoom; são identificados como ARQUIVO/RECONSTRUÇÃO. O mundo da partida não é rebobinado. Os três arquivos mostram saída da TI/porta, cinco entradas da reunião e chegada de outro operador na recepção. Somente um viewport de transmissão é atualizado por vez; os três monitores auxiliares retêm quadros dos canais inspecionados.
 
 ## Persistência e verificação

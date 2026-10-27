@@ -72,6 +72,9 @@ func repair_power() -> void:
 
 func watch(kind: String) -> void:
 	test.check(game.chapter.act_two.watch_recording(kind), "Archive can open: " + kind)
+	var index := 0 if kind == "tomorrow" else (4 if kind == "meeting" else 3)
+	var lens: Marker3D = game.world.camera_mounts[index].get_node("Lens")
+	test.check(lens.global_position.distance_to(game.computer.recording.camera.position) < 0.0001 and lens.global_transform.basis.z.dot(game.computer.recording.camera.transform.basis.z) > 0.9999, "Recorded viewpoint matches physical camera: " + kind)
 	var original: Transform3D = game.world.doors.it.pivot.transform
 	var point: Vector3 = game.player.position
 	game.computer.recording.seek(5)
@@ -144,6 +147,8 @@ func run() -> void:
 	game.player.position = Vector3(8.7, 4.25, -36.5)
 	chapter.interact("meeting_terminal")
 	await watch("meeting")
+	var cctv_cases = preload("res://scripts/cctv_tests.gd").new()
+	await cctv_cases.run(game, test)
 	test.check(not act.identify_participant(0), "Registered attendee cannot be marked absent")
 	test.check(act.identify_participant(5), "Henrique identified from six names and five entries")
 	test.dismiss()

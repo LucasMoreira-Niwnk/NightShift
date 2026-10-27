@@ -259,5 +259,7 @@ func run() -> void:
 	get_tree().quit(0 if failures == 0 else 1)
 
 func capture(id: String) -> void:
-	await RenderingServer.frame_post_draw
+	# Keep visual assertions deterministic even if the test window is minimized.
+	await get_tree().process_frame
+	RenderingServer.force_draw(false)
 	game.get_viewport().get_texture().get_image().save_png("res://../.local/" + id + ".png")

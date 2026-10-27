@@ -1,6 +1,10 @@
 extends Node3D
 
 const Art = preload("res://scripts/art.gd")
+const PALM_AXIS := Vector3(-0.985, 0.17, 0)
+const WRIST_ROLL := 2.9
+const FINGER_CURL := [0.75, 1.1, 0.8]
+const GRIP_OFFSET := Vector3(0, -0.045, -0.025)
 var time := 0.0
 var walking := false
 var light: SpotLight3D
@@ -8,8 +12,7 @@ var rig: Node3D
 var skeleton: Skeleton3D
 var torch: Node3D
 var lens_point := Vector3.ZERO
-const PALM_AXIS := Vector3(-0.985, 0.17, 0)
-var base := Vector3(0.52, -0.31, -0.66)
+var base := Vector3(0.42, -0.28, -0.6)
 
 func _ready() -> void:
 	position = base
@@ -23,12 +26,13 @@ func _ready() -> void:
 	var wrist_rest := rig.global_transform.affine_inverse() * skeleton.global_transform * skeleton.get_bone_global_rest(wrist)
 	# Align the authored wrist, not the mesh bounds, to the first-person grip.
 	var palm_axis := PALM_AXIS.normalized()
-	var grip_basis := Basis(palm_axis.cross(Vector3.FORWARD), palm_axis, Vector3.FORWARD).rotated(palm_axis, -0.45).scaled(Vector3.ONE * 0.095)
+	# Overhand grip: knuckles above the barrel, fingertips closing underneath.
+	var grip_basis := Basis(palm_axis.cross(Vector3.FORWARD), palm_axis, Vector3.FORWARD).rotated(palm_axis, WRIST_ROLL).scaled(Vector3.ONE * 0.095)
 	rig.transform = Transform3D(grip_basis, Vector3.ZERO) * wrist_rest.affine_inverse()
 	for finger in ["index", "middle", "ring", "pinky"]:
 		for joint in range(1, 4):
 			var index := skeleton.find_bone("finger_%s%d.r" % [finger, joint])
-			var curl: float = [0.5, 0.9, 0.65][joint - 1]
+			var curl: float = FINGER_CURL[joint - 1]
 			skeleton.set_bone_pose_rotation(index, Quaternion(Vector3.BACK, curl))
 	for joint in range(1, 4):
 		var thumb := skeleton.find_bone("finger_thumb%d.r" % joint)
@@ -37,7 +41,7 @@ func _ready() -> void:
 	build_sleeve()
 	var socket := skeleton.find_bone("socket.r")
 	var grip: Vector3 = global_transform.affine_inverse() * skeleton.global_transform * skeleton.get_bone_global_pose(socket).origin
-	torch = Art.flashlight(self, grip - Vector3(0, 0.027, 0), 0.22)
+	torch = Art.flashlight(self, grip + GRIP_OFFSET, 0.22)
 	fpv_layer(rig)
 	fpv_layer(torch)
 	lens_point = find_lens(torch)

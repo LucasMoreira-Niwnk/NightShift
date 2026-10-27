@@ -18,7 +18,12 @@ if (-not $godotExecutable) {
     $godotExecutable = Join-Path $env:USERPROFILE 'Downloads\Godot_v4.0-stable_win64.exe\Godot_v4.0-stable_win64_console.exe'
 }
 if (-not (Test-Path -LiteralPath $godotExecutable -PathType Leaf)) {
-    throw 'Godot não encontrado. Defina NIGHTSHIFT_GODOT com o caminho completo do executável.'
+    $fallbackGui = Join-Path $env:USERPROFILE 'Downloads\Godot_v4.0-stable_win64.exe\Godot_v4.0-stable_win64.exe'
+    if (Test-Path -LiteralPath $fallbackGui -PathType Leaf) {
+        $godotExecutable = $fallbackGui
+    } else {
+        throw 'Godot não encontrado. Defina NIGHTSHIFT_GODOT com o caminho completo do executável.'
+    }
 }
 $projectDirectory = Join-Path (Split-Path $PSScriptRoot -Parent) 'game'
 # Keep editor settings and runtime data local to this workspace.

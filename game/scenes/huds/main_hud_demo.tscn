@@ -1,0 +1,111 @@
+[gd_scene load_steps=2 format=3 uid="uid://main_hud_demo_nightshift"]
+
+[ext_resource type="Script" path="res://scripts/huds/main_hud_demo.gd" id="1_demo"]
+
+[node name="MainHUDDemo" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_demo")
+
+[node name="HUDLayer" type="CanvasLayer" parent="."]
+layer = 1
+
+[node name="HUDContainer" type="Control" parent="HUDLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ShaderLayer" type="CanvasLayer" parent="."]
+layer = 2
+
+[node name="PostProcessRect" type="ColorRect" parent="ShaderLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ScanlinesRect" type="ColorRect" parent="ShaderLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="UIControls" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="VBox" type="VBoxContainer" parent="UIControls"]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -80.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 6
+
+[node name="Tabs" type="HBoxContainer" parent="UIControls/VBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="BtnCCTV" type="Button" parent="UIControls/VBox/Tabs"]
+layout_mode = 2
+text = "🖥️ CCTV Retrô"
+
+[node name="BtnDOS" type="Button" parent="UIControls/VBox/Tabs"]
+layout_mode = 2
+text = "💻 Terminal DOS"
+
+[node name="BtnMinimal" type="Button" parent="UIControls/VBox/Tabs"]
+layout_mode = 2
+text = "◻️ Minimalista"
+
+[node name="BtnTablet" type="Button" parent="UIControls/VBox/Tabs"]
+layout_mode = 2
+text = "📱 Tablet"
+
+[node name="BtnContaminated" type="Button" parent="UIControls/VBox/Tabs"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
+text = "👁️ MÊMESIS Contaminado"
+
+[node name="Shaders" type="HBoxContainer" parent="UIControls/VBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="CheckCRT" type="CheckBox" parent="UIControls/VBox/Shaders"]
+layout_mode = 2
+button_pressed = true
+text = "Efeito CRT / Curvatura"
+
+[node name="CheckScanlines" type="CheckBox" parent="UIControls/VBox/Shaders"]
+layout_mode = 2
+button_pressed = true
+text = "Scanlines"
+
+[node name="GlitchLabel" type="Label" parent="UIControls/VBox/Shaders"]
+layout_mode = 2
+text = "Glitch Intensity:"
+
+[node name="SliderGlitch" type="HSlider" parent="UIControls/VBox/Shaders"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
+
+[node name="GlitchValLabel" type="Label" parent="UIControls/VBox/Shaders"]
+layout_mode = 2
+text = "0.00"

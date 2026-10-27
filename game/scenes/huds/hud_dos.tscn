@@ -1,0 +1,65 @@
+[gd_scene load_steps=2 format=3 uid="uid://hud_dos_nightshift"]
+
+[ext_resource type="Script" path="res://scripts/huds/hud_dos.gd" id="1_dos"]
+
+[node name="HUDDOS" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_dos")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.02, 0.04, 0.02, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 24
+
+[node name="VBox" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="OutputBox" type="RichTextLabel" parent="Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+focus_mode = 2
+bbcode_enabled = true
+scroll_following = true
+selection_enabled = true
+
+[node name="InputContainer" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PromptLabel" type="Label" parent="Margin/VBox/InputContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0.533333, 1)
+text = "C:\\VESPER\\SEC>"
+
+[node name="CommandLine" type="LineEdit" parent="Margin/VBox/InputContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+context_menu_enabled = false
+flat = true
+
+[node name="Cursor" type="ColorRect" parent="Margin/VBox/InputContainer"]
+custom_minimum_size = Vector2(10, 20)
+layout_mode = 2
+color = Color(0, 1, 0.533333, 1)

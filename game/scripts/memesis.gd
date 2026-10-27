@@ -35,12 +35,9 @@ const DISTANCIA_TESTE := 2.4          # metros à frente do jogador, no F3
 
 const ALTURA := 2.2                   # altura da coluna em metros
 const LARGURA := 1.0                  # diâmetro da caixa que contém o cilindro
-# Miolo denso e estreito: a fumaça fica opaca no eixo e o vazamento para fora
-# vira só um halo. Com o raio grande do shader a coluna lia como poste de névoa.
-const NUCLEO_DENSIDADE := 6.0
-const NUCLEO_RAIO := 0.16
-const BORDA_RAIO := 0.46
-const FAISCAS := 46                   # partículas de aberração saindo do miolo
+# O preto vai até o diâmetro cheio da caixa: 1 m, sem halo cinza em volta.
+const NUCLEO_DENSIDADE := 9.0
+const NUCLEO_RAIO := 0.5
 const PASSO := 0.85                   # metros por segundo da ronda
 const ESPERA := 1.4                   # segundos parado em cada ponto
 
@@ -60,8 +57,9 @@ const OLHO_NU := 1                    # camada que a câmera do jogador vê
 
 var _coluna: FogVolume
 var _haze: ShaderMaterial
-var _faiscas: CPUParticles3D
 var _brilho: OmniLight3D
+var _ambiente_tint := Vector3.ZERO
+var _ambiente_level := 0.0
 var _alvo := 0
 var _parado := 0.0
 
@@ -80,11 +78,10 @@ func _ready() -> void:
 	haze.shader = shader
 	haze.set_shader_parameter("core_density", NUCLEO_DENSIDADE)
 	haze.set_shader_parameter("core_radius", NUCLEO_RAIO)
-	haze.set_shader_parameter("edge_radius", BORDA_RAIO)
 	_haze = haze
 	_coluna.material = haze
 	add_child(_coluna)
-	add_faiscas()
+	add_olhos()
 	add_brilho()
 	if str(ProjectSettings.get_setting("rendering/renderer/rendering_method")) == "gl_compatibility":
 		push_warning("Mêmesis: FogVolume exige Forward+; em gl_compatibility o vulto não aparece.")
@@ -115,55 +112,32 @@ func seguir_ambiente() -> void:
 	var pico: float = maxf(cor.r, maxf(cor.g, cor.b))
 	if pico > 0.001:
 		cor = Color(cor.r / pico, cor.g / pico, cor.b / pico)
-	_haze.set_shader_parameter("ambient_tint", Vector3(cor.r, cor.g, cor.b))
-	_haze.set_shader_parameter("ambient_level", ambiente.ambient_light_energy)
+	_ambiente_tint = Vector3(cor.r, cor.g, cor.b)
+	_ambiente_level = ambiente.ambient_light_energy
+	_haze.set_shader_parameter("ambient_tint", _ambiente_tint)
+	_haze.set_shader_parameter("ambient_level", _ambiente_level)
 	if _brilho != null:
 		# A luz segue o mesmo matiz da franja: o que o vulto joga na parede é a
 		# cor que ele roubou da sala, não uma segunda cor concorrendo com ela.
 		_brilho.light_color = cor
 
-## Fagulhas que escapam do miolo, cada uma com a aberração cromática do sopro.
-## Reaproveita shaders/memesis.gdshader, que já faz exatamente isso e tinha
-## ficado órfão quando o corpo virou névoa.
-func add_faiscas() -> void:
-	var shader: Shader = load("res://shaders/memesis.gdshader")
-	if shader == null:
-		push_warning("Mêmesis: shader das fagulhas ausente")
-		return
-	var skin := ShaderMaterial.new()
-	skin.shader = shader
-	# A franja precisa ser mais larga que a do corpo antigo: aqui cada fagulha
-	# aparece sozinha no ar, sem dezenas de irmãs empilhadas para somar cor.
-	skin.set_shader_parameter("aberration", 0.14)
-	skin.set_shader_parameter("fringe_gain", 2.4)
-	skin.set_shader_parameter("core_radius", 0.45)
+## Os dois pontos vermelhos, na altura da cabeça. Ficam dentro da névoa, e é só
+## isso que dá direção ao vulto: o resto do corpo lê igual de qualquer ângulo.
+func add_olhos() -> void:
+	var olhar: Node3D = preload("res://scripts/memesis_olhos.gd").new()
+	# Na casca da coluna, não no eixo: no centro a névoa preta fica por cima
+	# dos pontos e eles mal aparecem.
+	# Na altura dos olhos de quem observa, limitada ao que a coluna comporta.
+	olhar.altura = 1.6
+	olhar.altura_min = ALTURA * 0.50
+	olhar.altura_max = ALTURA * 0.90
+	# Folga generosa: a névoa volumétrica é calculada numa grade grossa, e 4 cm
+	# de margem cabem dentro de uma célula — o preto denso engolia os pontos.
+	olhar.raio = LARGURA * 0.5 + 0.18
+	add_child(olhar)
 
-	_faiscas = CPUParticles3D.new()
-	_faiscas.amount = FAISCAS
-	_faiscas.lifetime = 2.2
-	_faiscas.randomness = 0.85
-	_faiscas.local_coords = false
-	_faiscas.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
-	# Nascem no eixo, não na casca: é do miolo denso que elas escapam.
-	_faiscas.emission_sphere_radius = NUCLEO_RAIO
-	_faiscas.position = Vector3(0.0, ALTURA * 0.45, 0.0)
-	_faiscas.direction = Vector3.UP
-	_faiscas.spread = 55.0
-	_faiscas.gravity = Vector3(0.0, 0.18, 0.0)
-	_faiscas.initial_velocity_min = 0.10
-	_faiscas.initial_velocity_max = 0.45
-	_faiscas.scale_amount_min = 0.05
-	_faiscas.scale_amount_max = 0.14
-	# Somem antes de chegar longe: fagulha que persiste vira confete.
-	_faiscas.scale_amount_curve = fade_curve()
-	_faiscas.mesh = QuadMesh.new()
-	_faiscas.material_override = skin
-	_faiscas.layers = OLHO_NU | CCTV_LAYER
-	add_child(_faiscas)
-
-## A franja só acende a névoa; para alcançar parede e chão é preciso uma luz de
-## verdade. Fraca e de alcance curto: é um clarão que denuncia o vulto virando a
-## esquina, não um lampião que ilumina a sala.
+## Névoa preta não devolve luz nenhuma; sem esta lâmpada fraca o vulto não
+## marcaria presença alguma na parede nem no chão.
 func add_brilho() -> void:
 	_brilho = OmniLight3D.new()
 	_brilho.position = Vector3(0.0, ALTURA * 0.45, 0.0)
@@ -173,13 +147,6 @@ func add_brilho() -> void:
 	# sombra de uma luz dentro da névoa só criaria listras no chão.
 	_brilho.shadow_enabled = false
 	add_child(_brilho)
-
-func fade_curve() -> Curve:
-	var curve := Curve.new()
-	curve.add_point(Vector2(0.0, 0.2))
-	curve.add_point(Vector2(0.3, 1.0))
-	curve.add_point(Vector2(1.0, 0.0))
-	return curve
 
 ## Invocação de teste (F3 em main.gd): planta o vulto na frente de quem olha.
 func chamar_para_frente(eye: Camera3D) -> void:

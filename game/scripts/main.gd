@@ -159,6 +159,11 @@ func _input(event: InputEvent) -> void:
 			if world != null and world.figure != null and player != null:
 				world.figure.chamar_para_frente(player.camera)
 			get_viewport().set_input_as_handled()
+		elif event.physical_keycode == KEY_F5:
+			# Teste de arte: a pose da foto refeita em névoa e partículas.
+			if world != null and world.figure_volume != null and player != null:
+				world.figure_volume.chamar_para_frente(player.camera)
+			get_viewport().set_input_as_handled()
 		elif event.physical_keycode == KEY_F2:
 			if crt_overlay_layer:
 				crt_overlay_layer.visible = !crt_overlay_layer.visible

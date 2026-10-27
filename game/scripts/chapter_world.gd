@@ -9,11 +9,15 @@ var objects: Dictionary = {}
 var doors: Dictionary = {}
 var corridor_lights: Array = []
 var interior_lights: Array = []
+var room_lights: Array = []
 
 # Reator velho das lampadas do corredor: '-' apagado, '*' aceso. Gagueja em
 # rajadas curtas e passa trechos longos no escuro.
 const CORRIDOR_RHYTHM := "---*---*-*---**--*-*--------*----"
 const RHYTHM_STEP := 0.12
+# As salas seguem o mesmo compasso invertido, e nunca apagam de fato: a queda
+# vai so ate metade da energia nominal, como uma reatancia oscilando.
+const ROOM_DIP := 0.5
 
 var corridor_powered := false
 var interior_powered := true
@@ -234,6 +238,8 @@ func room(label: String, center: Vector3, size: Vector2) -> void:
 	light.shadow_bias = 0.04
 	add_child(light)
 	interior_lights.append(light)
+	if label != "Corredor":
+		room_lights.append({"light": light, "energy": light.light_energy})
 	if label == "Corredor":
 		light.light_color = Color(0.46, 0.64, 0.66)
 		light.light_energy = 0.3
@@ -363,8 +369,12 @@ func _process(delta: float) -> void:
 	if corridor_lights.is_empty(): return
 	rhythm_time += delta
 	var step := int(rhythm_time / RHYTHM_STEP) % CORRIDOR_RHYTHM.length()
-	var on := corridor_powered and interior_powered and CORRIDOR_RHYTHM[step] == "*"
-	for light in corridor_lights: light.visible = on
+	var beat := CORRIDOR_RHYTHM[step] == "*"
+	for light in corridor_lights:
+		light.visible = beat and corridor_powered and interior_powered
+	# Invertido em relacao ao corredor: onde o corredor acende, a sala cai.
+	for entry in room_lights:
+		entry.light.light_energy = entry.energy * (ROOM_DIP if beat else 1.0)
 
 func in_security(point: Vector3) -> bool:
 	return point.x < -2.3 and point.x > -7.8 and point.z > -1.8 and point.z < 3.8

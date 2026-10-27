@@ -2,8 +2,9 @@ extends Node3D
 
 const Art = preload("res://scripts/art.gd")
 const PALM_AXIS := Vector3(0, 1, 0)
-const WRIST_ROLL := 2.9
+const WRIST_ROLL := 1.5
 const FINGER_CURL := [0.75, 1.1, 0.8]
+const THUMB_CURL := [-0.25, 0.7, 0.3]
 const GRIP_OFFSET := Vector3(-0.018, -0.03, -0.025)
 var time := 0.0
 var walking := false
@@ -36,7 +37,8 @@ func _ready() -> void:
 			skeleton.set_bone_pose_rotation(index, Quaternion(Vector3.BACK, curl))
 	for joint in range(1, 4):
 		var thumb := skeleton.find_bone("finger_thumb%d.r" % joint)
-		if thumb >= 0: skeleton.set_bone_pose_rotation(thumb, Quaternion(Vector3.BACK, [0.35, 0.8, 0.35][joint - 1]))
+		# Oppose the thumb at its base before curling the pad around the barrel.
+		if thumb >= 0: skeleton.set_bone_pose_rotation(thumb, Quaternion(Vector3.BACK, THUMB_CURL[joint - 1]))
 	skeleton.force_update_all_bone_transforms()
 	build_sleeve()
 	var socket := skeleton.find_bone("socket.r")

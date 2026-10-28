@@ -28,7 +28,7 @@ func _ready() -> void:
 	ray = RayCast3D.new()
 	ray.target_position = Vector3(0, 0, -2.5)
 	camera.add_child(ray)
-	hand = preload("res://scripts/hand.gd").new()
+	hand = preload("res://scenes/mao_lanterna.tscn").instantiate()
 	camera.add_child(hand)
 	flashlight = hand.light
 	hand.hide()

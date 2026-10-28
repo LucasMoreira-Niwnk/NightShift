@@ -122,6 +122,25 @@ func run() -> void:
 	game.player.interaction_target().interact()
 	check(game.player.hand.visible and game.player.flashlight.visible, "FPV hand and flashlight equipped")
 	check(game.player.hand.skeleton != null, "Imported right-hand skeleton loaded")
+	check(game.player.hand.scene_file_path == "res://scenes/mao_lanterna.tscn", "Player equips the authored hand scene")
+	check(not game.player.hand.has_node("Preview"), "Hand preview environment is removed from gameplay")
+	var edited_hand = load("res://scenes/mao_lanterna.tscn").instantiate()
+	var edited_position: Vector3 = edited_hand.get_node("Lanterna").position + Vector3(0.01, 0, 0)
+	edited_hand.get_node("Lanterna").position = edited_position
+	var edited_pose: AnimationPlayer = edited_hand.get_node("PoseAnimation")
+	var edited_library = edited_pose.get_animation_library("").duplicate(true)
+	edited_pose.remove_animation_library("")
+	edited_pose.add_animation_library("", edited_library)
+	var grip_animation: Animation = edited_pose.get_animation("Pegada")
+	var thumb_path := NodePath("ArmRig/arms/Skeleton3D:finger_thumb2.r")
+	var thumb_track := grip_animation.find_track(thumb_path, Animation.TYPE_ROTATION_3D)
+	var authored_thumb := Quaternion(Vector3.BACK, 0.42)
+	grip_animation.rotation_track_insert_key(thumb_track, 0, authored_thumb)
+	game.player.camera.add_child(edited_hand)
+	check(edited_hand.torch.position.is_equal_approx(edited_position), "Scene flashlight placement survives initialization")
+	var loaded_thumb: Quaternion = edited_hand.skeleton.get_bone_pose_rotation(edited_hand.skeleton.find_bone("finger_thumb2.r"))
+	check(absf(loaded_thumb.dot(authored_thumb)) > 0.9999, "Authored thumb animation survives initialization")
+	edited_hand.free()
 	var grip_skeleton: Skeleton3D = game.player.hand.skeleton
 	var index_knuckle := grip_skeleton.get_bone_global_pose(grip_skeleton.find_bone("finger_index1.r")).origin
 	var index_middle := grip_skeleton.get_bone_global_pose(grip_skeleton.find_bone("finger_index2.r")).origin

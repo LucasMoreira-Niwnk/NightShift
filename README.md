@@ -9,6 +9,17 @@ Capítulo jogável de terror psicológico 3D em primeira pessoa para Windows, fe
 - Clique em `Jogar.cmd` para atualizar a branch atual, preparar o cache e iniciar o jogo.
 - WASD move, mouse olha, E interage com portas e computador. F liga/desliga a lanterna. Esc pausa e libera o mouse.
 
+### Editar a mão e a lanterna visualmente
+
+Abra `game/scenes/mao_lanterna.tscn` (no Godot: `res://scenes/mao_lanterna.tscn`). A cena contém o braço, a manga, a lanterna, o esqueleto e a pose `Pegada`. F6 mostra o enquadramento em primeira pessoa com câmera e iluminação de prévia. O jogador instancia essa mesma cena ao equipar a lanterna.
+
+- Selecione `MaoLanterna` e altere seu Transform para mudar a posição do conjunto na tela. `ArmRig` controla o alinhamento do braço; `Lanterna` pode ser movida/girada independentemente para encaixar na abertura da pegada.
+- Para os dedos, selecione `PoseAnimation`, escolha a animação **Pegada** e coloque o cursor no tempo **0**. Selecione `ArmRig/arms/Skeleton3D`, escolha o osso do dedo e ajuste a rotação no editor 3D/Inspetor. Insira ou atualize a chave de rotação desse osso no tempo 0 e salve a cena. As trilhas `finger_thumb1.r`, `finger_thumb2.r` e `finger_thumb3.r` controlam o polegar.
+- A pose estática também aparece ao abrir a cena. Para mudar o resultado no jogo, atualize as chaves de **Pegada**: uma alteração temporária no osso sem atualizar a animação será substituída pela pose salva ao executar.
+- `Preview` serve apenas à edição/F6: sua câmera, ambiente e luz são removidos ao equipar no jogo. Mantenha as malhas na camada visual 2 para não aparecerem no CCTV nem gerarem sombras no cenário. A origem do feixe é recalculada pela lente da lanterna ao iniciar.
+
+As malhas nativas em `game/assets/models/viewmodel/` derivam dos modelos CC0 já incluídos (WRAD Arms e Innerscene), com os materiais locais e a manga do projeto. Não é necessário atualizar o Godot 4.0 nem instalar um plugin para editar essa cena.
+
 ### Expansão — segundo andar e Registros Incompletos
 
 O reparo da energia agora exige exploração: a ordem de manutenção está na administração do segundo andar e o fusível compatível na sala de TI. Retire o cartucho queimado com os circuitos isolados, instale a reposição e siga a sequência encontrada na nota. O aviso junto ao painel não contém a solução.

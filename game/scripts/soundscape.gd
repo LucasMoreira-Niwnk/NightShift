@@ -10,7 +10,9 @@ var stare_time := 0.0
 var memesis_pad: AudioStreamPlayer3D
 var lamp_hum: AudioStreamPlayer3D
 var rain: AudioStreamPlayer
+var rain_right: AudioStreamPlayer
 var indoor_rain: AudioStreamPlayer
+var indoor_rain_right: AudioStreamPlayer
 var reverb: AudioEffectReverb
 var variants: Dictionary = {}
 var last_variant: Dictionary = {}
@@ -51,8 +53,12 @@ func _ready() -> void:
 	monitor_music = music_player("res://assets/audio/abandoned_mine.wav", -80)
 	memesis_pad = memesis_pad_player()
 	lamp_hum = lamp_hum_player()
-	rain = loop_player("rain", -20)
-	indoor_rain = loop_player("rain_inside", -60)
+	# A chuva e mono: vira duas faixas, uma em cada canal, e a da direita
+	# comeca na metade da faixa. Sem o desencontro as duas soam como uma so.
+	rain = loop_player("rain", -20, -1)
+	rain_right = loop_player("rain", -20, 1, 0.5)
+	indoor_rain = loop_player("rain_inside", -60, -1)
+	indoor_rain_right = loop_player("rain_inside", -60, 1, 0.5)
 	last_position = game.player.position
 	play("engine", Vector3.ZERO, -14, false)
 	var settings := ConfigFile.new()
@@ -213,14 +219,31 @@ func choose_step(point: Vector3) -> AudioStreamWAV:
 	last_variant[surface] = index
 	return bank[index]
 
-func loop_player(id: String, volume: float) -> AudioStreamPlayer:
+func loop_player(id: String, volume: float, pan: int = 0, start: float = 0.0) -> AudioStreamPlayer:
 	var player := AudioStreamPlayer.new()
-	player.stream = effects[id]
+	player.stream = hard_panned(effects[id], pan > 0) if pan != 0 else effects[id]
 	player.bus = "Ambiente"
 	player.volume_db = volume
 	add_child(player)
-	player.play()
+	player.play(player.stream.get_length() * start)
 	return player
+
+# Um canal recebe a faixa mono inteira e o outro fica em silencio: paniramento
+# total sem precisar de bus nem de efeito de panner.
+func hard_panned(stream: AudioStreamWAV, right: bool) -> AudioStreamWAV:
+	var mono := stream.data
+	var frames := mono.size() / 2
+	var wide := PackedByteArray()
+	wide.resize(frames * 4)
+	for frame in range(frames):
+		wide.encode_s16(frame * 4 + (2 if right else 0), mono.decode_s16(frame * 2))
+	var panned: AudioStreamWAV = stream.duplicate()
+	panned.stereo = true
+	panned.data = wide
+	panned.loop_begin = 0
+	panned.loop_end = frames
+	panned.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	return panned
 
 func play(id: String, point: Vector3 = Vector3.ZERO, volume: float = -12, spatial: bool = true) -> Node:
 	if not effects.has(id): return null
@@ -269,6 +292,8 @@ func update_mix(point: Vector3, delta: float) -> void:
 	var blend := 1.0 - exp(-delta * 3.0)
 	rain.volume_db = crossfade_db(rain.volume_db, -20.0 if outdoors else -60.0, blend)
 	indoor_rain.volume_db = crossfade_db(indoor_rain.volume_db, -60.0 if outdoors else -29.0, blend)
+	rain_right.volume_db = rain.volume_db
+	indoor_rain_right.volume_db = indoor_rain.volume_db
 	# A quiet room tone, stronger near technical spaces; the blackout removes it.
 	var hum_level := -34.0
 	if point.x < -2 and point.z < -6: hum_level = -28.0

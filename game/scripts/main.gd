@@ -8,6 +8,7 @@ var ui: CanvasLayer
 var sound: Node
 var director: Node
 var shadows: Node3D
+var discomfort: CanvasLayer
 
 var tablet_hud: Control = null
 var hud_minimal: Control = null
@@ -48,6 +49,9 @@ func _ready() -> void:
 	shadows.game = self
 	shadows.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(shadows)
+	discomfort = preload("res://scripts/discomfort.gd").new()
+	discomfort.game = self
+	add_child(discomfort)
 	director = preload("res://scripts/event_director.gd").new()
 	director.game = self
 	director.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -56,8 +60,12 @@ func _ready() -> void:
 	# Inicializa integrações de HUD (CRT, Scanlines, Tablet móvel e Demo)
 	setup_hud_integrations()
 
+	# Sem isto o estado da etapa 0 so chegava ao mundo no primeiro advance(), e o
+	# corredor ficava com a energia desligada ate a primeira interacao: as luzes
+	# so comecavam a piscar depois que o jogador mexia em alguma coisa.
+	chapter.apply_world()
 	chapter.refresh()
-	ui.say("14 de novembro de 2008 — 23h57\nEdifício Vesper. Daniel Reis, seu primeiro turno começa agora.\n[Tab] Consultar Tablet  |  [F1] Alternar HUDs  |  [F2] Filtro CRT")
+	ui.say("14 de novembro de 2008 — 23h57\nEdifício Vesper. Daniel Reis, seu primeiro turno começa agora.\n[Tab] Consultar Tablet  |  [F1] Alternar HUDs  |  [F2] Grão de filme")
 	if OS.get_cmdline_user_args().has("--smoke-test"):
 		var tests := preload("res://scripts/chapter_tests.gd").new()
 		tests.game = self
@@ -65,19 +73,12 @@ func _ready() -> void:
 		tests.call_deferred("run")
 
 func setup_hud_integrations() -> void:
-	# 1. Overlay visual global de Scanlines analógicas e vinheta CRT
+	# 1. Overlay global: grao de filme. O que Daniel ve nao e um monitor, entao
+	# nao ha curva nem varredura aqui — o tubo CRT fica nas telas de computador.
 	crt_overlay_layer = CanvasLayer.new()
 	crt_overlay_layer.layer = 25
 	add_child(crt_overlay_layer)
-
-	# O CRT vem primeiro: reamostra tudo que ja foi desenhado (3D + textos dos HUDs)
-	# e devolve como imagem curvada, entao as letras passam a fazer parte do tubo.
-	var crt_rect := overlay_rect("res://shaders/crt.gdshader")
-	# curvatura mais suave que o padrao do shader: o HUD de gameplay precisa ser legivel
-	crt_rect.material.set_shader_parameter("curvature", 6.0)
-	crt_rect.material.set_shader_parameter("chromatic_aberration", 0.35)
-	crt_overlay_layer.add_child(crt_rect)
-	crt_overlay_layer.add_child(overlay_rect("res://shaders/scanlines.gdshader"))
+	crt_overlay_layer.add_child(overlay_rect("res://shaders/film_grain.gdshader"))
 
 	# 2. HUD minimalista de exploração (relógio, prompt e bateria da lanterna)
 	var minimal_scene = load("res://scenes/huds/hud_minimal.tscn")

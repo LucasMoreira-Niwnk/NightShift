@@ -1,5 +1,7 @@
 extends Node3D
 
+# Preserve the dedicated render pass used by the camera discomfort effect.
+const FPV_LAYER := 16
 var time := 0.0
 var walking := false
 var light: SpotLight3D
@@ -16,6 +18,9 @@ func _ready() -> void:
 	torch = $Lanterna
 	light = $FlashlightBeam
 	base = position
+	fpv_layer(rig)
+	fpv_layer(torch)
+	fpv_layer($UniformSleeve)
 	# Play the pose authored in the 3D editor once. Never rebuild the scene's
 	# bones, meshes or flashlight transform here: visual edits must survive.
 	var pose: AnimationPlayer = $PoseAnimation
@@ -46,6 +51,12 @@ func find_lens(node: Node3D) -> Vector3:
 			var result := find_lens(child)
 			if result != Vector3.ZERO: return result
 	return Vector3.ZERO
+
+func fpv_layer(node: Node) -> void:
+	if node is MeshInstance3D:
+		node.layers = 2 | FPV_LAYER
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for child in node.get_children(): fpv_layer(child)
 
 func _process(delta: float) -> void:
 	if standalone_preview: return

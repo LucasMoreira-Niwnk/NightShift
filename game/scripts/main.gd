@@ -66,11 +66,6 @@ func _ready() -> void:
 	chapter.apply_world()
 	chapter.refresh()
 	ui.say("14 de novembro de 2008 — 23h57\nEdifício Vesper. Daniel Reis, seu primeiro turno começa agora.\n[Tab] Consultar Tablet  |  [F1] Alternar HUDs  |  [F2] Grão de filme")
-	if OS.get_cmdline_user_args().has("--visual-probe"):
-		var probe := preload("res://scripts/visual_probe.gd").new()
-		probe.game = self
-		add_child(probe)
-		probe.call_deferred("run")
 	if OS.get_cmdline_user_args().has("--smoke-test"):
 		var tests := preload("res://scripts/chapter_tests.gd").new()
 		tests.game = self

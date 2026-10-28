@@ -4,6 +4,7 @@ const Art = preload("res://scripts/art.gd")
 var world: Node3D
 var warning: Label3D
 var service_lights: Array = []
+var building_service := false
 
 func _ready() -> void:
 	name = "Stairwells"
@@ -11,12 +12,12 @@ func _ready() -> void:
 	service_stair()
 
 func box(point: Vector3, size: Vector3, kind: String = "metal", collision: bool = true) -> MeshInstance3D:
-	return world.box(self, point, size, "wall_concrete" if kind == "wall" else kind, collision)
+	return world.box(self, point, size, ("service_wall" if building_service else "wall_concrete") if kind == "wall" else kind, collision)
 
 func landing(center: Vector3, size: Vector2) -> void:
 	# Concrete soffit and a thin finish keep floor tiles off the underside.
 	box(center - Vector3.UP * 0.09, Vector3(size.x, 0.14, size.y), "ceiling")
-	box(center - Vector3.UP * 0.01, Vector3(size.x, 0.02, size.y), "floor_concrete")
+	box(center - Vector3.UP * 0.01, Vector3(size.x, 0.02, size.y), "service_floor" if building_service else "floor_concrete")
 	for x in [-size.x * 0.5 + 0.1, size.x * 0.5 - 0.1]:
 		Art.box(self, center + Vector3(x, 0.008, 0), Vector3(0.08, 0.015, size.y - 0.1), Color(0.65, 0.48, 0.15))
 
@@ -61,7 +62,7 @@ func flight(x: float, start_z: float, end_z: float, start_y: float, end_y: float
 		var t := (index + 0.5) / 12.0
 		var height := lerpf(start_y, end_y, (index + 1.0) / 12.0)
 		var z := lerpf(start_z, end_z, t)
-		box(Vector3(x, height - 0.1, z), Vector3(2.1, 0.2, run / 12), "metal", false)
+		box(Vector3(x, height - 0.1, z), Vector3(2.1, 0.2, run / 12), "service_floor" if structural else "metal", false)
 		Art.box(self, Vector3(x, height + 0.007, z), Vector3(2.04, 0.012, 0.045), Color(0.58, 0.49, 0.24))
 	for side in [-1.0, 1.0]:
 		var edge: float = x + side * 1.03
@@ -83,6 +84,21 @@ func flight(x: float, start_z: float, end_z: float, start_y: float, end_y: float
 		rail_body.rotation.x = slope
 		add_child(rail_body)
 
+func directed_flight(start: Vector3, finish: Vector3) -> void:
+	var count := get_child_count()
+	var delta := finish - start
+	var length := Vector2(delta.x,delta.z).length()
+	flight(0,0,length,start.y,finish.y,true)
+	var parts: Array = get_children().slice(count)
+	var root := Node3D.new()
+	root.name = "DoorAlignedFlight"
+	add_child(root)
+	root.position = Vector3(start.x,0,start.z)
+	root.rotation.y = atan2(delta.x,delta.z)
+	for part in parts:
+		remove_child(part)
+		root.add_child(part)
+
 func landing_guard(a: Vector3, b: Vector3) -> void:
 	var middle := (a + b) / 2
 	var length := a.distance_to(b)
@@ -103,13 +119,6 @@ func service_lamp(point: Vector3, target: Vector3, yaw: float) -> void:
 	fixture.position = point
 	fixture.rotation.y = yaw
 	add_child(fixture)
-	Art.box(fixture, Vector3.ZERO, Vector3(0.38, 0.5, 0.08), Color(0.1, 0.13, 0.12))
-	var diffuser := Art.box(fixture, Vector3(0, 0, 0.065), Vector3(0.28, 0.34, 0.04), Color(0.7, 0.75, 0.67))
-	var glow := StandardMaterial3D.new()
-	glow.albedo_color = Color(0.7, 0.75, 0.67)
-	glow.emission_enabled = true
-	glow.emission = Color(0.32, 0.37, 0.28)
-	diffuser.material_override = glow
 	var lamp := SpotLight3D.new()
 	lamp.position = Vector3(0, 0, 0.13)
 	lamp.light_color = Color(0.86, 0.88, 0.76)
@@ -123,6 +132,7 @@ func service_lamp(point: Vector3, target: Vector3, yaw: float) -> void:
 	fixture.add_child(lamp)
 	lamp.look_at(target, Vector3.UP)
 	service_lights.append(lamp)
+	world.install_fixture(fixture,Vector3.ZERO,lamp,true)
 	# A short-range bounce fills the fixture's own wall without the former
 	# room-wide omni spill through the two stair flights.
 	var bounce := OmniLight3D.new()
@@ -147,7 +157,7 @@ func light(point: Vector3, caption: String) -> void:
 	lamp.shadow_enabled = true
 	add_child(lamp)
 	world.pulse_light(lamp)
-	Art.box(self, point + Vector3(0, 0.1, 0), Vector3(0.7, 0.08, 0.22), Color(0.5, 0.6, 0.53))
+	world.install_fixture(self,point+Vector3(0,0.1,0),lamp)
 	var side := 1.0 if point.x > 0 else -1.0
 	var sign_point := Vector3(side * 2.86, point.y - 0.55, point.z)
 	var plaque := Art.box(self, sign_point, Vector3(0.04,0.3,1.65),Color(0.12,0.17,0.14))
@@ -176,22 +186,24 @@ func main_stair() -> void:
 	light(Vector3(1.4, 6.8, -16.3), "02 / ADMINISTRAÇÃO")
 
 func service_stair() -> void:
-	landing(Vector3(-11.15, 0, -3.75), Vector2(6.3, 13.5))
-	# Both landings now reach the facade and the administration threshold.
-	# In particular, there must be no 35 cm slot before the upstairs door.
-	landing(Vector3(-11.1, 2.1, -2.5), Vector2(6.2, 2.0))
-	landing(Vector3(-11.1, 4.2, -9.25), Vector2(6.2, 2.5))
-	flight(-12.3, -8, -3.5, 0, 2.1, true)
-	flight(-9.7, -3.5, -8, 2.1, 4.2, true)
-	# Upper landing: only the eastern flight remains open for descent.
-	landing_guard(Vector3(-14.15, 4.2, -8), Vector3(-10.77, 4.2, -8))
-	landing_guard(Vector3(-8.63, 4.2, -8), Vector3(-8.05, 4.2, -8))
-	landing_guard(Vector3(-14.15, 4.2, -10.5), Vector3(-14.15, 4.2, -8))
-	# Half landing: close its end, outer edges and the gap between the flights.
-	landing_guard(Vector3(-14.15, 2.1, -1.55), Vector3(-8.05, 2.1, -1.55))
-	landing_guard(Vector3(-14.15, 2.1, -3.5), Vector3(-14.15, 2.1, -1.55))
-	landing_guard(Vector3(-8.05, 2.1, -3.5), Vector3(-8.05, 2.1, -1.55))
-	landing_guard(Vector3(-11.27, 2.1, -3.5), Vector3(-10.73, 2.1, -3.5))
+	building_service = true
+	landing(Vector3(-11.15,0,-3.75),Vector2(6.3,13.5))
+	# The two flights follow the doors' X axis. A protected western gallery
+	# connects their half-height ends; both final approaches face east.
+	landing(Vector3(-13.0,2.1,-4.0),Vector2(2.2,12.1))
+	landing(Vector3(-8.5,4.2,-9),Vector2(1.0,2.1))
+	directed_flight(Vector3(-9,0,1),Vector3(-11.9,2.1,1))
+	directed_flight(Vector3(-11.9,2.1,-9),Vector3(-9,4.2,-9))
+	landing_guard(Vector3(-14.1,2.1,-10.05),Vector3(-14.1,2.1,2.05))
+	landing_guard(Vector3(-11.9,2.1,-7.95),Vector3(-11.9,2.1,-0.05))
+	for z in [-10.05,2.05]:
+		landing_guard(Vector3(-14.1,2.1,z),Vector3(-11.9,2.1,z))
+	for z in [-10.05,-7.95]:
+		landing_guard(Vector3(-9,4.2,z),Vector3(-8.06,4.2,z))
+	for z in [-0.05,2.05]:
+		landing_guard(Vector3(-9,0,z),Vector3(-8.06,0,z))
+	for segment in [[-10.05,-9.8],[-8.2,-7.95]]:
+		landing_guard(Vector3(-8.06,4.2,segment[0]),Vector3(-8.06,4.2,segment[1]))
 	for level in [0.0, 4.2]: world.architecture.window_wall(self, Vector3(-14.35, level + 1.5, -3.75), Vector3(0.2, 3, 13.5), [-3.7, 1.5, 4.3], 1.4)
 	box(Vector3(-14.35, 3.6, -3.75), Vector3(0.2, 1.2, 13.5), "wall")
 	box(Vector3(-11.15, 3.65, -10.6), Vector3(6.5, 7.3, 0.2), "wall")
@@ -203,12 +215,18 @@ func service_stair() -> void:
 	box(Vector3(-8, 6.95, -9), Vector3(0.2, 0.5, 1.5), "wall")
 	warning = world.add_sign("VOCÊ SEMPRE VOLTA\nPELO MESMO CAMINHO.", Vector3(-11.6, 5.9, -10.45))
 	warning.pixel_size = 0.0019
-	service_lamp(Vector3(-14.18, 6.3, -5.6), Vector3(-10, 3.7, -6), PI / 2)
-	service_lamp(Vector3(-14.18, 3.9, -4.3), Vector3(-11.1, 2.2, -2.5), PI / 2)
+	service_lamp(Vector3(-14.18, 6.3, -5.6), Vector3(-10, 3.5, -9), PI / 2)
+	service_lamp(Vector3(-14.18, 3.9, -4.3), Vector3(-13, 2.2, -4), PI / 2)
 	service_lamp(Vector3(-14.18, 2.55, 1.9), Vector3(-9.2, 0.7, 1), PI / 2)
 	world.add_sign("ESCADA DE SERVIÇO\nTÉRREO / SEGURANÇA", Vector3(-10, 6.65, -10.45)).pixel_size = 0.0013
 	world.add_sign("PATAMAR\nCONTINUE DESCENDO", Vector3(-14.17, 3.0, -4.3), PI / 2).pixel_size = 0.0011
 	world.add_sign("SAÍDA / SEGURANÇA", Vector3(-14.17, 2.0, 1.9), PI / 2).pixel_size = 0.0012
+
+	for child in get_children():
+		if child is MeshInstance3D and child.position.x < -8 and child.material_override is ShaderMaterial:
+			if child.material_override == world.materials.wall_cream or child.material_override == world.materials.wall_concrete:
+				child.material_override = world.materials.service_wall
+	building_service = false
 
 func is_main(point: Vector3) -> bool:
 	return point.x > -2.9 and point.x < 2.9 and point.z < -15.7 and point.z > -24.3

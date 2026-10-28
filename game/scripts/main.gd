@@ -39,7 +39,7 @@ func _ready() -> void:
 	computer.player = player
 	computer.chapter = chapter
 	computer.game = self
-	computer.position = Vector3(-6.5, 1.08, -0.18)
+	computer.position = Vector3(-6.5, 1.08, -1.35)
 	add_child(computer)
 	sound = preload("res://scripts/soundscape.gd").new()
 	sound.game = self

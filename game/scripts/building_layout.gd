@@ -1,6 +1,6 @@
 extends RefCounted
 
-const REVISION := 2
+const REVISION := 3
 const HEIGHT := 4.2
 
 # Canonical room coordinates are kept for narrative data; the constructed floor

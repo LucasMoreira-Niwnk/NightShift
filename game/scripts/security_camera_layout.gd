@@ -20,7 +20,7 @@ static func install(world: Node3D) -> void:
 		lens.name = "Lens"
 		mount.add_child(lens)
 		# Housing stays behind the optical origin; -Z is the filming direction.
-		Art.rounded_box(mount, Vector3(0, 0, 0.2), Vector3(0.25, 0.18, 0.4), Color(0.35, 0.37, 0.32))
+		Art.external(mount,"security_camera_01",Vector3(0,-0.08,0.22),Vector3(0.28,0.24,0.43))
 		var aperture := MeshInstance3D.new()
 		var glass := CylinderMesh.new()
 		glass.top_radius = 0.065

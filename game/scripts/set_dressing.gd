@@ -70,28 +70,9 @@ func shelf(parent: Node3D, point: Vector3, angle: float, seed_value: int) -> Nod
 	root.rotation.y = angle
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	for x in [-0.51, 0.51]:
-		for z in [-0.24, 0.24]:
-			block(root, Vector3(x, 1.04, z), Vector3(0.035, 2.08, 0.035), Color(0.25, 0.26, 0.19), true, false, 0.008)
-			for y in [0.18, 0.65, 1.12, 1.59, 2.03]:
-				cylinder(root, Vector3(x, y - 0.035, z), 0.022, 0.025, Color(0.23, 0.12, 0.055))
-	cable(root, [Vector3(-0.5, 0.1, -0.25), Vector3(0.5, 1.98, -0.25)], 0.009)
-	cable(root, [Vector3(0.5, 0.1, -0.25), Vector3(-0.5, 1.98, -0.25)], 0.009)
+	Art.external(root,"wooden_bookshelf_worn",Vector3.ZERO,Vector3(1.05,2.08,0.55))
 	for level in range(4):
-		var y := 0.18 + level * 0.47
-		block(root, Vector3(0, y, 0), Vector3(1.05, 0.045, 0.51), Color(0.31, 0.28, 0.19), false, true)
-		var x := -0.43
-		for index in range(10):
-			var width := rng.randf_range(0.045, 0.076)
-			var height := rng.randf_range(0.23, 0.38)
-			var palette := [Color(0.27,0.19,0.12), Color(0.19,0.26,0.2), Color(0.29,0.14,0.12), Color(0.22,0.23,0.23), Color(0.35,0.3,0.18)]
-			var book := Node3D.new()
-			root.add_child(book)
-			book.position = Vector3(x, y + 0.024, rng.randf_range(-0.02, 0.04))
-			book.rotation.y = rng.randf_range(-0.05, 0.05)
-			bound_volume(book, Vector3(width, height, rng.randf_range(0.22, 0.28)), palette[index % 5], "%02d/%02d" % [level + 1, index + 1])
-			x += width + 0.013
-	label(root, "ARQUIVO / %02d\n1968 — 2008" % seed_value, Vector3(0, 1.94, 0.268), 0.00065)
+		Art.model(root,"books",Vector3(0,0.2+level*0.47,0),Vector3(0.85,0.3,0.3))
 	return root
 
 func bound_volume(root: Node3D, size: Vector3, color: Color, code: String) -> void:
@@ -130,70 +111,16 @@ func leaf_mesh(parent: Node3D, tool: SurfaceTool) -> void:
 	parent.add_child(mesh)
 
 func plant(parent: Node3D, point: Vector3, scale_value: float, seed_value: int, pot: bool = true) -> Node3D:
-	var root := Node3D.new()
-	root.name = "NeglectedPlant"
-	parent.add_child(root)
-	root.position = point
-	root.scale = Vector3.ONE * scale_value
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed_value
-	var base := 0.0
-	if pot:
-		cylinder(root, Vector3(0, 0.2, 0), 0.18, 0.4, Color(0.28,0.23,0.16), 0.26)
-		cylinder(root, Vector3(0, 0.39, 0), 0.27, 0.06, Color(0.34,0.29,0.21))
-		cylinder(root, Vector3(0, 0.425, 0), 0.23, 0.01, Color(0.065,0.055,0.03))
-		base = 0.43
-	var tool := SurfaceTool.new()
-	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for i in range(9):
-		var angle := i * 2.4
-		var tip := Vector3(sin(angle) * 0.45, base + rng.randf_range(0.6,1.1), cos(angle) * 0.45)
-		cable(root, [Vector3(0,base,0), tip * Vector3(0.6,1,0.6)], 0.007, Color(0.21,0.22,0.1))
-		for j in range(3):
-			var start := Vector3(0,base,0).lerp(tip, 0.45 + j * 0.15)
-			var end := start + Vector3(sin(angle+j)*0.42,-0.06 + j*0.08,cos(angle+j)*0.42)
-			var color := Color(0.18,0.24,0.105) if (i+j)%4 != 0 else Color(0.32,0.25,0.11)
-			add_leaf(tool, start, end, 0.08, 0.1, color)
-	leaf_mesh(root, tool)
-	return root
+	return Art.external(parent,"potted_plant_01" if pot else "shrub_01",point,Vector3(0.55,1.0,0.55)*scale_value,seed_value*0.7)
 
 func tree(parent: Node3D, point: Vector3, seed_value: int) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed_value
-	cylinder(parent, point + Vector3.UP * 2.5, 0.22, 5, Color(0.14,0.13,0.09), 0.1)
-	var tool := SurfaceTool.new()
-	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for i in range(12):
-		var angle := i*2.4
-		var start := point + Vector3.UP * (2.5 + i * 0.17)
-		var end := point + Vector3(sin(angle)*1.7,4.7+rng.randf(),cos(angle)*1.7)
-		cable(parent, [start, start.lerp(end,0.65),end],0.045,Color(0.13,0.14,0.09))
-		for j in range(14):
-			var leaf_start := start.lerp(end,rng.randf_range(0.4,1.0)) + Vector3(rng.randf_range(-0.45,0.45),rng.randf_range(-0.2,0.5),rng.randf_range(-0.45,0.45))
-			add_leaf(tool,leaf_start,leaf_start+Vector3(sin(j)*0.65,0.1,cos(j)*0.65),0.16,0.1,Color(0.09,0.16,0.075))
-	leaf_mesh(parent,tool)
+	Art.external(parent,"pine_sapling_small",point,Vector3(3.5,5.5,3.5),seed_value*0.7)
 
 func terminal(root: Node3D) -> void:
-	# Deep CRT shell: retain the feed quad and the original interaction collider.
-	block(root, Vector3(0,0.45,-0.2),Vector3(1.04,0.67,0.55),Color(0.35,0.35,0.27),false,false,0.055)
-	for side in [-1.0,1.0]:
-		for index in range(9): block(root,Vector3(side*0.526,0.29+index*0.035,-0.22),Vector3(0.006,0.014,0.28),Color(0.055,0.06,0.05))
-	for x in [-0.47,0.47]:
-		for y in [0.18,0.72]: cylinder(root,Vector3(x,y,0.081),0.013,0.008,Color(0.12,0.13,0.1)).rotation.x=PI/2
-	label(root,"VESPER / VT-08",Vector3(-0.26,0.153,0.104),0.0006)
-	for i in range(4): cylinder(root,Vector3(0.31+i*0.038,0.153,0.104),0.009,0.009,Color(0.19,0.22,0.16)).rotation.x=PI/2
-	block(root,Vector3(0,0.88,-0.24),Vector3(2.14,0.045,0.045),Color(0.2,0.23,0.2),true)
-	for x in [-0.9,0.9]: block(root,Vector3(x,0.59,-0.24),Vector3(0.045,1.18,0.045),Color(0.18,0.22,0.2),true)
-	for index in range(3):
-		var x := -0.65+index*0.65
-		block(root,Vector3(x,1.18,-0.22),Vector3(0.65,0.4,0.29),Color(0.27,0.29,0.23),false,false,0.035)
-		cable(root,[Vector3(x,1.05,-0.3),Vector3(x,0.78,-0.36),Vector3(-0.55,0.05,-0.4),Vector3(-0.55,-0.7,-0.2)],0.009)
-	for x in [-0.55,0.53]:
-		block(root,Vector3(x,-0.74,0),Vector3(0.28,0.65,0.44),Color(0.28,0.3,0.24),false,false,0.025)
-		for i in range(8): block(root,Vector3(x,-0.96+i*0.026,0.223),Vector3(0.19,0.009,0.004),Color(0.05,0.07,0.055))
-	label(root,"NOBREAK\nCCTV / BATERIA",Vector3(0.53,-0.61,0.229),0.00055)
-	label(root,"2008 / VSP-SEC",Vector3(-0.55,-0.55,0.229),0.00045)
-	cable(root,[Vector3(0,0.3,-0.48),Vector3(0.17,0.1,-0.48),Vector3(0.35,-0.3,-0.38),Vector3(0.53,-0.6,-0.25)],0.015)
+	Art.imported(root,"desktop_pc",Vector3(0.72,-1.08,-0.1),Vector3(0.24,0.55,0.45))
+	# Supports for the three elevated CCTV monitors.
+	for x in [-0.9,0.9]: block(root,Vector3(x,0.75,-0.4),Vector3(0.04,1.5,0.04),Color(0.18,0.22,0.2),true)
+	cable(root,[Vector3(0,0.4,-0.45),Vector3(0.2,-0.4,-0.45),Vector3(0.6,-0.95,-0.3)],0.012)
 
 func panel(parent: Node3D, points: Array, color: Color) -> void:
 	var tool := SurfaceTool.new()
@@ -206,51 +133,7 @@ func panel(parent: Node3D, points: Array, color: Color) -> void:
 	parent.add_child(mesh)
 
 func vehicle(parent: Node3D, point: Vector3, color: Color, seed_value: int) -> Node3D:
-	var root := Node3D.new()
-	root.name = "WeatheredSedan"
-	parent.add_child(root)
-	root.position = point
-	block(root,Vector3(0,0.64,0),Vector3(1.85,0.56,4.2),color,true,false,0.15)
-	block(root,Vector3(0,0.95,1.45),Vector3(1.72,0.09,1.12),color,true,false,0.045)
-	block(root,Vector3(0,0.95,-1.56),Vector3(1.72,0.09,0.93),color,true,false,0.045)
-	block(root,Vector3(0,1.48,-0.1),Vector3(1.4,0.09,1.55),color,true,false,0.045)
-	# Slanted glazing and pillars define the cabin instead of a cuboid canopy.
-	panel(root,[Vector3(-0.8,0.96,1.2),Vector3(0.8,0.96,1.2),Vector3(0.67,1.45,0.65),Vector3(-0.67,1.45,0.65)],Color(0.045,0.085,0.09))
-	panel(root,[Vector3(0.8,0.96,-1.4),Vector3(-0.8,0.96,-1.4),Vector3(-0.67,1.45,-0.85),Vector3(0.67,1.45,-0.85)],Color(0.035,0.065,0.07))
-	for sign_value in [-1.0,1.0]:
-		var x: float = sign_value*0.81
-		panel(root,[Vector3(x,0.96,-1.35),Vector3(x,0.96,1.15),Vector3(sign_value*0.68,1.45,0.63),Vector3(sign_value*0.68,1.45,-0.83)],Color(0.035,0.065,0.065))
-		for z in [-1.35,0.0,1.15]: cable(root,[Vector3(x,0.95,z),Vector3(sign_value*0.69,1.46,clampf(z,-0.83,0.63))],0.027,color)
-		cable(root,[Vector3(sign_value*0.938,0.86,-1.25),Vector3(sign_value*0.938,0.44,-1.25),Vector3(sign_value*0.938,0.44,1.25),Vector3(sign_value*0.938,0.86,1.25)],0.007,Color(0.045,0.05,0.04))
-		cable(root,[Vector3(sign_value*0.94,0.88,-0.02),Vector3(sign_value*0.94,0.45,-0.02)],0.006)
-		block(root,Vector3(sign_value*0.94,0.72,-0.48),Vector3(0.025,0.032,0.15),Color(0.32,0.34,0.29),true,false,0.009)
-		block(root,Vector3(sign_value*0.94,0.72,0.67),Vector3(0.025,0.032,0.15),Color(0.32,0.34,0.29),true,false,0.009)
-		block(root,Vector3(sign_value*1.01,0.99,0.93),Vector3(0.2,0.11,0.23),color,true,false,0.035)
-		for z in [-1.34,1.34]:
-			var tire := cylinder(root,Vector3(sign_value*0.9,0.35,z),0.34,0.2,Color(0.025,0.03,0.025))
-			tire.rotation.z=PI/2
-			var hub := cylinder(root,Vector3(sign_value*1.007,0.35,z),0.19,0.012,Color(0.27,0.29,0.24))
-			hub.rotation.z=PI/2
-			for i in range(8):
-				var a := i*TAU/8
-				block(root,Vector3(sign_value*1.017,0.35+sin(a)*0.125,z+cos(a)*0.125),Vector3(0.008,0.038,0.038),Color(0.055,0.065,0.05),false,false,0.012)
-			for i in range(12):
-				var a := i*TAU/12
-				block(root,Vector3(sign_value*1.005,0.35+sin(a)*0.29,z+cos(a)*0.29),Vector3(0.004,0.017,0.017),Color(0.08,0.085,0.065))
-		# Rust blooms collect below the doors and around wheel arches.
-		for i in range(13):
-			var z := -1.8+i*0.29
-			block(root,Vector3(sign_value*0.939,0.44+(i%3)*0.035,z),Vector3(0.006,0.02+(i%4)*0.018,0.08),Color(0.22,0.12,0.055))
-	for z in [-2.12,2.12]:
-		block(root,Vector3(0,0.43,z),Vector3(1.75,0.12,0.08),Color(0.14,0.17,0.14),false,false,0.025)
-		for x in [-0.63,0.63]:
-			block(root,Vector3(x,0.72,z),Vector3(0.4,0.16,0.03),Color(0.48,0.46,0.31) if z>0 else Color(0.28,0.035,0.02),false,false,0.02)
-		block(root,Vector3(0,0.51,z*1.006),Vector3(0.47,0.12,0.014),Color(0.57,0.57,0.42))
-		var plate := label(root,"VSP %04d" % (1900+seed_value),Vector3(0,0.51,z*1.012),0.0007)
-		plate.rotation.y=PI if z<0 else 0.0
-	for x in [-0.35,0.35]: cable(root,[Vector3(x,0.975,1.19),Vector3(x+0.26,1.12,1.03)],0.009)
-	for i in range(5): block(root,Vector3(-0.16+i*0.08,0.75,2.123),Vector3(0.035,0.12,0.015),Color(0.035,0.045,0.035))
-	return root
+	return Art.imported(parent,"sedan",point,Vector3(4.2,1.45,1.9),PI/2)
 
 func decay(parent: Node3D) -> void:
 	var root := Node3D.new()

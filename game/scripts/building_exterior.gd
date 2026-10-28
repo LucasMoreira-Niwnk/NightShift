@@ -183,14 +183,9 @@ func fence(point: Vector3, length: float, angle: float) -> void:
 	world.box(root, Vector3.ZERO, Vector3(length, 2.3, 0.1), "metal").hide()
 
 func lamp(point: Vector3) -> void:
-	world.staircases.pipe(point, point + Vector3.UP * 5.2, 0.075, Color(0.1, 0.14, 0.13))
-	# A carcaca nao sombreia: ela fica logo acima da lampada e, com sombra, tapa
-	# o proprio cone — sobrava so o que vazava pelas bordas.
-	var casing := Art.rounded_box(self, point + Vector3.UP * 5.2, Vector3(0.65, 0.12, 0.4), Color(0.3, 0.35, 0.31), 0.05)
-	casing.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var light := SpotLight3D.new()
-	# Na cabeca do poste: 2 cm sob a carcaca, que tem base em 5.14.
-	light.position = point + Vector3.UP * 5.12
+	# Source sits inside the imported lantern, below its opaque cap.
+	light.position = point + Vector3.UP * 4.75
 	light.rotation.x = -PI / 2
 	light.light_color = Color(0.8, 0.67, 0.44)
 	# Mais energia que a omni de 3.8: o cone joga tudo para baixo, mas tambem
@@ -209,6 +204,8 @@ func lamp(point: Vector3) -> void:
 	light.shadow_bias = 0.2
 	light.shadow_normal_bias = 3.0
 	add_child(light)
+	world.install_fixture(self,point,light,false,"street_lamp_01",Vector3(0.7,5.3,0.7))
+	world.box(self,point+Vector3.UP*2.6,Vector3(0.18,5.2,0.18),"metal").hide()
 
 func tree(point: Vector3) -> void:
 	world.dressing.tree(self, point, int(abs(point.z) * 10))
@@ -260,11 +257,7 @@ func details() -> void:
 		box(Vector3(x, 0.008, 19), Vector3(0.35, 0.018, 3.8), Color(0.025, 0.035, 0.032), false)
 		for index in range(24): Art.box(self, Vector3(x, 0.022, 17.2 + index * 0.15), Vector3(0.3, 0.02, 0.035), Color(0.22, 0.25, 0.22))
 	for x in [-5.0, 5.0]:
-		for z in [18.3, 18.9]:
-			for offset in [-0.8, 0.8]: box(Vector3(x + offset, 0.28, z), Vector3(0.09, 0.56, 0.09), Color(0.1, 0.14, 0.12))
-		for index in range(5):
-			Art.box(self, Vector3(x, 0.58, 18.25 + index * 0.16), Vector3(2.05, 0.07, 0.12), Color(0.18, 0.2, 0.14))
-			Art.box(self, Vector3(x, 0.82 + index * 0.12, 18.15), Vector3(2.05, 0.08, 0.055), Color(0.18, 0.2, 0.14))
+		Art.model(self,"bench",Vector3(x,0,18.55),Vector3(2.05,1.3,0.85))
 		world.box(self, Vector3(x, 0.48, 18.55), Vector3(2.1, 0.96, 0.85), "metal").hide()
 	# Water is blended into the ground material, without raised opaque discs.
 	Art.model(self, "trashcan", Vector3(8.8, 0, 16), Vector3(0.65, 1.0, 0.65))

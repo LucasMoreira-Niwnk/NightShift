@@ -134,3 +134,10 @@ Capítulos 1 e 2 conectados pelo segundo andar: reparo com nota/fusível, três 
 Repositório: https://github.com/LucasMoreira-Niwnk/NightShift
 
 Consulte [CONTRIBUTING.md](CONTRIBUTING.md) para configurar outra máquina, criar branches, validar e enviar commits por pull request.
+
+
+### Escada de serviço e objetos importados
+
+A escada de serviço usa dois lances no eixo das portas, unidos por uma galeria lateral no meio do percurso. A chegada superior se alinha à administração e a inferior à segurança. Corrimãos, rodapés de proteção e envelopes de colisão fecham as bordas expostas; piso, degraus e paredes usam concreto fotográfico. Checkpoints antigos nessa escada são realocados para patamares seguros (map revision 3).
+
+Luminárias fluorescentes e arandelas industriais usam modelos CC0 do Poly Haven. O difusor acompanha visibilidade e energia da luz, inclusive nas piscadas e no apagão geral. Computador e impressora ficam próximos da parede da segurança; monitor, gabinete, impressora, telefone, portas opacas, câmeras, quadro, estantes, plantas, carro e decoração utilizam modelos externos. Há extintor, vassoura, caixas e materiais de escritório em pontos fora das rotas. Estrutura, corrimãos, colisões, documentos de roteiro e detalhes interativos permanecem editáveis no Godot. Fontes/licenças em `game/assets/ART_CREDITS.md`; nenhum download ocorre durante o jogo.

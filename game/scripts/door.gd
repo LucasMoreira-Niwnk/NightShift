@@ -60,6 +60,13 @@ func _ready() -> void:
 		pivot.add_child(label)
 	for y in [0.35, 1.25, 2.2]:
 		aged_box(pivot, Vector3(0.03, y, 0), Vector3(0.08, 0.16, 0.21), Color(0.3, 0.33, 0.29))
+	if not glazed:
+		# Preserve the interactive hinge/handle, replacing only the visual asset.
+		for old in find_children("*","MeshInstance3D",true,false): old.hide()
+		var imported := preload("res://scripts/art.gd").imported(self,"interior_door",Vector3.ZERO,Vector3(1.7,2.6,0.24))
+		for part in imported.find_children("*","MeshInstance3D",true,false):
+			if part.name.begins_with("Frame"): continue
+			part.reparent(handle if part.name.begins_with("Latch") else pivot,true)
 	collider = CollisionShape3D.new()
 	var shape := BoxShape3D.new()
 	shape.size = box.size

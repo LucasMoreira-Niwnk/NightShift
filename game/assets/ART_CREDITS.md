@@ -18,7 +18,7 @@ Imported GLB models: chair, office chair, desk, bookcases, books, radio, keyboar
 
 ## Original project geometry
 
-Paneled doors, frames, handles, hinges, individual narrative books, loose documents, switchboard details and telephone details are authored in `scripts/art.gd`, `door.gd` and `chapter_world.gd`. They supplement the imported models. Model visual detail does not replace the existing interaction and collision bodies.
+Structural frames, glazed architectural doors, loose narrative documents, labels, fuse/switch details and humanoid silhouettes use original project geometry. Opaque door leaves/frames, telephone, monitors and printer now use imported models. They supplement the imported models. Model visual detail does not replace the existing interaction and collision bodies.
 
 ## Poly Haven — CC0, textured glTF models
 
@@ -34,7 +34,7 @@ Downloaded through the official public API, using 1K textures and original geome
 
 License: https://polyhaven.com/license — Creative Commons Zero, commercial use and redistribution allowed. Runtime fitting adjusts scale and orientation to the established level and interaction bodies. `tools/download_polyhaven_models.ps1` reproduces the downloads.
 
-The rounded monitor housing, phone, humanoid silhouettes and HUD are original project geometry/code. The former primitive hand and Signal Flashlight viewmodel have been replaced as described below; the original Poly Haven download remains available in the asset folder.
+Humanoid silhouettes and HUD are original project geometry/code. Monitor and phone replacements are recorded below. The former primitive hand and Signal Flashlight viewmodel have been replaced as described below; the original Poly Haven download remains available in the asset folder.
 
 ## WRAD Arms — CC0
 
@@ -62,3 +62,27 @@ Diffuse maps are 2K; OpenGL normal, roughness and AO maps are 1K. Contributors, 
 ## Áudio — Vesper
 
 Gravações CC0 de rubberduck, GboxMikeFozzy, mikeask e Joseph SARDIN (BigSoundBank / LaSonothèque), editadas para o jogo. Fontes por arquivo, modificações e licença em [audio/vesper/SOURCES.md](audio/vesper/SOURCES.md). A interferência de rádio permanece procedural; os áudios anteriores do projeto são preservados.
+
+
+## Imported environment props — October 2026
+
+Additional Poly Haven glTF/1K models (CC0, original API checksums verified):
+
+- Mounted Fluorescent Lights — https://polyhaven.com/a/mounted_fluorescent_lights (single variant A, emission controlled by fixture power).
+- Industrial Wall Lamp — https://polyhaven.com/a/industrial_wall_lamp
+- Potted Plant 01 — https://polyhaven.com/a/potted_plant_01
+- Cardboard Box 01 — https://polyhaven.com/a/cardboard_box_01
+- Wooden Bookshelf Worn — https://polyhaven.com/a/wooden_bookshelf_worn
+- Clipboard — https://polyhaven.com/a/clipboard
+- Stationery Supplies — https://polyhaven.com/a/stationery_supplies
+- Korean Fire Extinguisher 01 — https://polyhaven.com/a/korean_fire_extinguisher_01
+- Plastic Broom — https://polyhaven.com/a/plastic_broom
+- Power Box 01 — https://polyhaven.com/a/power_box_01
+- Security Camera 01 — https://polyhaven.com/a/security_camera_01
+- Office Notepads — https://polyhaven.com/a/office_notepads
+
+Innerscene CC0 models: desktop printer, desk phone, vintage CRT, flush door, sedan and desktop PC. Exact pages/checksums: `models/innerscene/sources.json`; license: `models/innerscene/LICENSE.md`. GLBs and extracted source textures are included for offline Godot import. Door leaves and handles retain the project's interactive pivots and colliders. The CRT screen quads retain the shared live surveillance viewport.
+
+Additional Kenney Furniture Kit models are from the same original CC0 archive: bench and open cardboard box. Materials are adapted to the project palette. Architectural shells, stair geometry/rails, collisions and narrative UI remain native editable Godot geometry.
+
+Outdoor replacements from Poly Haven (CC0, API MD5 verified): Shrub 01 (https://polyhaven.com/a/shrub_01), Pine Sapling Small (https://polyhaven.com/a/pine_sapling_small, single variant A), Street Lamp 01 (https://polyhaven.com/a/street_lamp_01). Street lantern glass/bulbs use the same power controller as indoor fixtures. Trees and shrubs replace the former generated leaf geometry.

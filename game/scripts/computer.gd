@@ -68,17 +68,15 @@ func build_monitor() -> void:
 	collider.shape = shape
 	collider.position.y = 0.4
 	add_child(collider)
-	part(Vector3(0, 0.45, 0), Vector3(1.05, 0.68, 0.18), Color(0.045, 0.055, 0.055))
-	part(Vector3(0, 0.1, 0), Vector3(0.12, 0.2, 0.12), Color(0.07, 0.08, 0.08))
-	part(Vector3(0, 0.02, 0.08), Vector3(0.5, 0.04, 0.3), Color(0.06, 0.07, 0.07))
+	preload("res://scripts/art.gd").imported(self,"crt_monitor",Vector3(0,0.08,-0.17),Vector3(1.05,0.72,0.62))
 	var art = preload("res://scripts/art.gd")
 	art.model(self, "computerKeyboard", Vector3(0, 0.02, 0.42), Vector3(0.85, 0.06, 0.27))
 	art.model(self, "computerMouse", Vector3(0.57, 0.02, 0.28), Vector3(0.13, 0.06, 0.22))
 	var screen := MeshInstance3D.new()
 	var quad := QuadMesh.new()
-	quad.size = Vector2(0.91, 0.52)
+	quad.size = Vector2(0.75, 0.5)
 	screen.mesh = quad
-	screen.position = Vector3(0, 0.45, 0.096)
+	screen.position = Vector3(-0.07, 0.45, 0.151)
 	# CCTV excludes layer 2 to avoid a recursive image of its own monitor.
 	screen.layers = 2
 	var material := crt_material()
@@ -98,12 +96,12 @@ func build_monitor() -> void:
 	for index in range(3):
 		var image := MeshInstance3D.new()
 		var quad_screen := QuadMesh.new()
-		quad_screen.size = Vector2(0.61, 0.35)
+		quad_screen.size = Vector2(0.48, 0.28)
 		image.mesh = quad_screen
-		image.position = Vector3(-0.65 + index * 0.65, 1.18, -0.05)
+		image.position = Vector3(-0.7 + index * 0.7, 1.18, 0.02)
 		image.layers = 2
 		var bezel = preload("res://scripts/art.gd")
-		bezel.rounded_box(self, image.position - Vector3(0, 0, 0.04), Vector3(0.65, 0.4, 0.07), Color(0.035, 0.045, 0.04))
+		bezel.imported(self,"crt_monitor",Vector3(-0.65+index*0.7,0.98,-0.16),Vector3(0.65,0.4,0.35))
 		var surface := crt_material()
 		tube_feed(surface, null)
 		image.material_override = surface

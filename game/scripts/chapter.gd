@@ -403,7 +403,7 @@ func serialize_state() -> Dictionary:
 	var point: Vector3 = game.player.position
 	var door_states := {}
 	for id in game.world.doors: door_states[id] = game.world.doors[id].is_open
-	return {"map_revision": 2, "version": SAVE_VERSION, "stage": stage, "flags": flags.duplicate(true), "documents": documents.duplicate(), "transcript": transcript.duplicate(), "flashlight_on": game.player.flashlight.visible, "pitch": game.player.camera.rotation.x, "verified": verified.duplicate(), "history": history.duplicate(), "breakers": breakers.duplicate(), "entity_steps": entity_steps, "elapsed": elapsed, "position": [point.x, maxf(point.y, 0.05), point.z], "yaw": game.player.rotation.y, "doors": door_states}
+	return {"map_revision": 3, "version": SAVE_VERSION, "stage": stage, "flags": flags.duplicate(true), "documents": documents.duplicate(), "transcript": transcript.duplicate(), "flashlight_on": game.player.flashlight.visible, "pitch": game.player.camera.rotation.x, "verified": verified.duplicate(), "history": history.duplicate(), "breakers": breakers.duplicate(), "entity_steps": entity_steps, "elapsed": elapsed, "position": [point.x, maxf(point.y, 0.05), point.z], "yaw": game.player.rotation.y, "doors": door_states}
 
 func save_game() -> bool:
 	var file := FileAccess.open(save_path, FileAccess.WRITE)
@@ -457,6 +457,9 @@ func load_game() -> bool:
 	var old_map: bool = int(data.get("map_revision", 1)) < 2
 	var old_upper: bool = point.y > 3.5 and point.z < -25 and point.x >= -10
 	if old_map: point = preload("res://scripts/building_layout.gd").migrate(point)
+	# Old service stairs used a different footprint: relocate saves to supported landings.
+	if int(data.get("map_revision", 1)) < 3 and point.x < -8.2 and point.x > -14.3 and point.z > -10.5 and point.z < 3:
+		point = Vector3(-8.5,4.25,-9) if point.y > 3.2 else (Vector3(-13,2.15,-4) if point.y > 1 else Vector3(-8.5,0.05,1))
 	game.player.position = point
 	game.player.velocity = Vector3.ZERO
 	game.player.rotation.y = float(data.get("yaw", 0))

@@ -121,7 +121,7 @@ func run() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	check(chapter.stage == 1, "Arrival advances on entering security")
-	await reachable("flashlight", Vector3(-5.8, 0.05, 1.6))
+	await reachable("flashlight", Vector3(-5.8, 0.05, 0.7))
 	game.player.interaction_target().interact()
 	check(game.player.hand.visible and game.player.flashlight.visible, "FPV hand and flashlight equipped")
 	check(game.player.hand.skeleton != null, "Imported right-hand skeleton loaded")
@@ -190,10 +190,10 @@ func run() -> void:
 	RenderingServer.force_draw(false)
 	check("DESLIGADA" in game.ui.light_label.text, "HUD updates when flashlight switches off")
 	game.player._unhandled_input(flash_key)
-	await reachable("recorder", Vector3(-7.25, 0.05, 1.6))
+	await reachable("recorder", Vector3(-7.25, 0.05, 0.7))
 	game.player.interaction_target().interact()
 	dismiss()
-	game.player.position = Vector3(-6.5, 0.05, 1.8)
+	game.player.position = Vector3(-6.5, 0.05, 0.7)
 	game.player.camera.look_at(game.computer.global_position + Vector3(0, 0.45, 0))
 	await get_tree().physics_frame
 	game.player.ray.force_raycast_update()
@@ -231,7 +231,7 @@ func run() -> void:
 	await capture("art-logbook")
 	game.player.interaction_target().interact()
 	dismiss()
-	game.player.position = Vector3(-6.5, 0.05, 1.8)
+	game.player.position = Vector3(-6.5, 0.05, 0.7)
 	game.computer.interact()
 	check(chapter.stage == 3, "Patrol and return advance chair event")
 	check(not chapter.report_anomaly(0, 1), "Incorrect report rejected without advancing")
@@ -251,7 +251,7 @@ func run() -> void:
 	game.player.camera.rotation.y += PI
 	await get_tree().create_timer(2.0).timeout
 	check(chapter.has_flag("chair_moved"), "Chair moves after player looks away")
-	game.player.position = Vector3(-6.5, 0.05, 1.8)
+	game.player.position = Vector3(-6.5, 0.05, 0.7)
 	game.computer.interact()
 	check(chapter.stage == 4, "Technical room stage reached")
 	game.computer.close()
@@ -278,7 +278,7 @@ func run() -> void:
 	check(chapter.stage == saved_stage and chapter.has_flag("power") and game.player.has_flashlight, "Save restores flags/items/stage")
 	check(not game.player.flashlight.visible and chapter.documents.has("diagram"), "Save preserves torch switch and collected documents")
 	game.player.flashlight.visible = true
-	game.player.position = Vector3(-6.5, 0.05, 1.8)
+	game.player.position = Vector3(-6.5, 0.05, 0.7)
 	game.computer.interact()
 	check(chapter.stage == 5, "Entity stage reached")
 	game.computer.select_camera(1)
@@ -302,7 +302,7 @@ func run() -> void:
 	check(game.computer.security_camera.position.is_equal_approx(Vector3(-7.5, 2.7, 3.5)), "CAM-01 retains impossible empty-security view after channel switch")
 	chapter.power_off_monitor()
 	check(chapter.stage == 7 and not game.computer.monitor_power, "Power-off unlocks final report")
-	await reachable("report", Vector3(-4.4, 0.05, 1.6))
+	await reachable("report", Vector3(-4.4, 0.05, 0.7))
 	game.player.interaction_target().interact()
 	check(game.ui.modal and chapter.has_flag("report_read"), "Report readable")
 	dismiss()

@@ -27,6 +27,14 @@ uniform float core_radius : hint_range(0.0, 0.5) = 0.5;
 // viraria um tubo de contorno visível, borda larga devolveria o halo cinza.
 uniform float edge_softness : hint_range(0.001, 0.2) = 0.045;
 
+// Cavidade em volta dos olhos, alimentada por memesis.gd a cada quadro.
+// Sem ela não há posição boa para os pontos: dentro da coluna o preto denso
+// os engole, e fora o olho entra em quadro sozinho, descolado do pilar. A
+// cavidade deixa ficarem perto do eixo sem desaparecer.
+uniform vec3 olhos_local = vec3(0.0, 0.0, 0.0);   // em metros, da caixa
+uniform float olhos_raio : hint_range(0.0, 1.0) = 0.0;
+uniform vec3 caixa = vec3(1.0, 2.2, 1.0);         // tamanho da caixa, em metros
+
 void fog() {
 	// UVW vem em 0..1; centralizar deixa o eixo do cilindro no meio da caixa.
 	vec3 local_pos = UVW - vec3(0.5);
@@ -39,7 +47,15 @@ void fog() {
 	// As pontas também somem, senão a coluna termina em disco cortado no ar.
 	float ends = 1.0 - smoothstep(0.34, 0.5, abs(local_pos.y));
 
-	DENSITY = core_density * solid * ends;
+	// A cavidade é medida em metros: a caixa não é cúbica, e uma esfera em
+	// UVW sairia achatada, abrindo um buraco oval em vez de redondo.
+	float cova = 1.0;
+	if (olhos_raio > 0.0) {
+		float perto = length(local_pos * caixa - olhos_local);
+		cova = smoothstep(olhos_raio * 0.45, olhos_raio, perto);
+	}
+
+	DENSITY = core_density * solid * ends * cova;
 	// Preto chapado: é isto que faz o vulto ler como ausência, não como fumaça.
 	ALBEDO = vec3(0.0);
 	EMISSION = vec3(0.0);

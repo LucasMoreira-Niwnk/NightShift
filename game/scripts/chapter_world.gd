@@ -290,7 +290,7 @@ func room(label: String, center: Vector3, size: Vector2) -> void:
 	add_child(light)
 	interior_lights.append(light)
 	if label != "Corredor":
-		room_lights.append({"light": light, "energy": light.light_energy})
+		pulse_light(light)
 	if label == "Corredor":
 		light.light_color = Color(0.46, 0.64, 0.66)
 		light.light_energy = 0.3
@@ -304,6 +304,11 @@ func room(label: String, center: Vector3, size: Vector2) -> void:
 			corridor_lights.append(extra)
 	var fixture := Art.model(self, "lampSquareCeiling", center + Vector3(0, 2.7, 0), Vector3(0.8, 0.3, 0.8))
 	disable_fixture_shadows(fixture)
+
+## O mesmo reator gagueja no predio inteiro: ter andar e escada no registro e o
+## que faz a variacao existir fora do terreo.
+func pulse_light(light: Light3D) -> void:
+	room_lights.append({"light": light, "energy": light.light_energy})
 
 func make_door(id: String, location: Vector3, label: String) -> void:
 	var door := Door.new()

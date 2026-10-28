@@ -36,6 +36,9 @@ const MASSA_DENSIDADE := 14.0
 const COLUNA_ALTURA := 2.2
 const COLUNA_LARGURA := 1.0
 const COLUNA_DENSIDADE := 9.0
+# Raio da cavidade que a névoa abre em volta dos olhos, em metros. Precisa
+# passar da meia-largura do par (0,30 m), senão a névoa come as pontas.
+const COVA_OLHOS := 0.46
 # Adiantada em relação ao plano da foto: a laje é fina, e a coluna à frente
 # dela dá o degrau de profundidade que faz o vulto ter frente e fundo.
 const COLUNA_AVANCO := 0.48
@@ -62,6 +65,9 @@ var _corpo: FogVolume
 var _retrato: Image
 var _massa: ShaderMaterial
 var _brilho: OmniLight3D
+var _coluna: FogVolume
+var _coluna_pele: ShaderMaterial
+var _olhar: Node3D
 var _ambiente_tint := Vector3(0.6, 0.85, 1.0)
 var _ambiente_level := 0.04
 var _rng := RandomNumberGenerator.new()
@@ -100,8 +106,12 @@ func montar_coluna() -> void:
 	pele.shader = shader
 	pele.set_shader_parameter("core_density", COLUNA_DENSIDADE)
 	pele.set_shader_parameter("core_radius", 0.5)
+	pele.set_shader_parameter("caixa", Vector3(COLUNA_LARGURA, COLUNA_ALTURA, COLUNA_LARGURA))
+	pele.set_shader_parameter("olhos_raio", COVA_OLHOS)
 	coluna.material = pele
 	add_child(coluna)
+	_coluna = coluna
+	_coluna_pele = pele
 	# Na altura da cabeça da foto, e adiantados junto com a coluna: atrás da
 	# laje eles ficariam encobertos pela própria silhueta.
 	var olhar: Node3D = preload("res://scripts/memesis_olhos.gd").new()
@@ -114,9 +124,9 @@ func montar_coluna() -> void:
 	# Orbita o eixo da coluna, que está adiantado, e não a origem do vulto:
 	# senão o par descreveria um círculo largo em volta da figura inteira.
 	olhar.centro = Vector3(0.0, 0.0, COLUNA_AVANCO)
-	# Folga generosa: a grade da névoa volumétrica é grossa, e 4 cm de margem
-	# cabiam dentro de uma célula, com o preto denso engolindo os pontos.
-	olhar.raio = COLUNA_LARGURA * 0.5 + 0.18
+	# Na metade do raio da coluna: colado no miolo, não orbitando longe dela.
+	olhar.raio = COLUNA_LARGURA * 0.25
+	_olhar = olhar
 	add_child(olhar)
 
 func montar_corpo() -> void:
@@ -238,6 +248,7 @@ func _process(delta: float) -> void:
 	if not visible:
 		return
 	seguir_ambiente()
+	cavar_para_olhos()
 	arrastar(delta)
 	mover_nuvens(delta)
 	encarar_camera()
@@ -260,6 +271,14 @@ func arrastar(delta: float) -> void:
 	# estar num lugar diferente.
 	if _corpo != null:
 		_corpo.position = _corpo_base + _atraso
+
+## A névoa abre uma cova em volta dos olhos, que se movem a cada quadro. Sem
+## isto os pontos ficam enterrados no preto denso e somem da tela.
+func cavar_para_olhos() -> void:
+	if _coluna_pele == null or _olhar == null or _coluna == null:
+		return
+	# Em metros, relativo ao centro da caixa da névoa, que é o que o shader usa.
+	_coluna_pele.set_shader_parameter("olhos_local", _olhar.position - _coluna.position)
 
 func seguir_ambiente() -> void:
 	var mundo := get_viewport().find_world_3d()

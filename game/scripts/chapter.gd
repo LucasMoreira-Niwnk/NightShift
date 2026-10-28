@@ -162,6 +162,8 @@ func interact(id: String) -> void:
 	save_game()
 
 func can_open(id: String) -> bool:
+	# ponytail: modo debug destranca tudo (F4), sem tocar nas regras do roteiro
+	if Engine.get_main_loop().has_meta("debug_free_roam"): return true
 	if id == "stairs" or id == "upper_gate":
 		if stage == 15 or (stage < 9 and not has_flag("fault_inspected")) or stage == 9:
 			say("Leitor sem alimentação. Procure uma rota alternativa pela administração." if stage == 15 else "Acesso restrito. O crachá só libera a escada mediante ordem de manutenção ou inspeção.")
@@ -362,8 +364,9 @@ func apply_world() -> void:
 	game.world.set_corridor_power(stage != 4 or has_flag("power"))
 	if stage >= 4:
 		game.world.doors.technical.restore_open(not has_flag("power"))
-	game.world.figure.visible = stage == 5
-	game.world.figure.position = entity_position()
+	if not Engine.get_main_loop().has_meta("debug_free_roam"):
+		game.world.figure.visible = stage == 5
+		game.world.figure.position = entity_position()
 	game.world.double.visible = stage == 6
 	if stage == 6:
 		game.world.double.position = Vector3(0, 0, 8)

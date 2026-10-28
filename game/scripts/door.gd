@@ -71,7 +71,7 @@ func interact() -> void:
 	if override_action.is_valid() and override_action.call(): return
 	if moving:
 		return
-	if forced_locked:
+	if forced_locked and not Engine.get_main_loop().has_meta("debug_free_roam"):
 		return
 	if access.is_valid() and not access.call():
 		return

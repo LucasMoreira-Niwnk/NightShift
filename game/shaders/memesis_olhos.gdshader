@@ -17,9 +17,12 @@ shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never, blend_add;
 
 uniform vec3 cor : source_color = vec3(1.0, 0.09, 0.05);
-uniform float intensidade : hint_range(0.0, 10.0) = 4.2;
+// Baixa de propósito: com blend_add e o glow do Environment por cima, valores
+// altos estouram num borrão que toma a tela e os dois pontos viram um só.
+uniform float intensidade : hint_range(0.0, 10.0) = 1.5;
 // Fração central chapada, antes do brilho começar a cair.
-uniform float miolo : hint_range(0.0, 0.9) = 0.22;
+// Miolo apertado: quanto maior, mais larga a brasa e mais ela sangra.
+uniform float miolo : hint_range(0.0, 0.9) = 0.10;
 uniform float piscar : hint_range(0.0, 1.0) = 0.22;
 uniform float seed = 0.0;
 
@@ -39,6 +42,9 @@ void fragment() {
 	// Miolo chapado e queda suave até sumir: sem a queda o olho vira um disco
 	// de contorno visível em vez de uma brasa.
 	float brasa = 1.0 - smoothstep(miolo, 1.0, raio);
+	// Ao quadrado duas vezes: a queda fica muito mais abrupta, e o ponto para
+	// de virar um halo largo quando o glow entra por cima.
+	brasa *= brasa;
 	brasa *= brasa;
 
 	// Tremor leve e fora de compasso entre os dois olhos: parados, os pontos

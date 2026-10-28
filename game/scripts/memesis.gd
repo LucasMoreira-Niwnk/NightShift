@@ -38,6 +38,9 @@ const LARGURA := 1.0                  # diâmetro da caixa que contém o cilindr
 # O preto vai até o diâmetro cheio da caixa: 1 m, sem halo cinza em volta.
 const NUCLEO_DENSIDADE := 9.0
 const NUCLEO_RAIO := 0.5
+# Raio da cavidade que a névoa abre em volta dos olhos, em metros. Precisa
+# passar da meia-largura do par (0,30 m), senão a névoa come as pontas.
+const COVA_OLHOS := 0.46
 const PASSO := 0.85                   # metros por segundo da ronda
 const ESPERA := 1.4                   # segundos parado em cada ponto
 
@@ -58,6 +61,7 @@ const OLHO_NU := 1                    # camada que a câmera do jogador vê
 var _coluna: FogVolume
 var _haze: ShaderMaterial
 var _brilho: OmniLight3D
+var _olhar: Node3D
 var _ambiente_tint := Vector3.ZERO
 var _ambiente_level := 0.0
 var _alvo := 0
@@ -78,6 +82,8 @@ func _ready() -> void:
 	haze.shader = shader
 	haze.set_shader_parameter("core_density", NUCLEO_DENSIDADE)
 	haze.set_shader_parameter("core_radius", NUCLEO_RAIO)
+	haze.set_shader_parameter("caixa", Vector3(LARGURA, ALTURA, LARGURA))
+	haze.set_shader_parameter("olhos_raio", COVA_OLHOS)
 	_haze = haze
 	_coluna.material = haze
 	add_child(_coluna)
@@ -91,6 +97,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	seguir_ambiente()
+	cavar_para_olhos()
 	if RONDA_TESTE:
 		rondar(delta)
 
@@ -131,10 +138,20 @@ func add_olhos() -> void:
 	olhar.altura = 1.6
 	olhar.altura_min = ALTURA * 0.50
 	olhar.altura_max = ALTURA * 0.90
-	# Folga generosa: a névoa volumétrica é calculada numa grade grossa, e 4 cm
-	# de margem cabem dentro de uma célula — o preto denso engolia os pontos.
-	olhar.raio = LARGURA * 0.5 + 0.18
+	# Na metade do raio da coluna: colado no miolo, não orbitando longe dela.
+	# Afastado, na câmera o olho entrava em quadro sozinho e o pilar ficava
+	# para trás, como se fossem duas coisas.
+	olhar.raio = LARGURA * 0.25
+	_olhar = olhar
 	add_child(olhar)
+
+## A névoa abre uma cova em volta dos olhos, que se movem a cada quadro. Sem
+## isto os pontos ficam enterrados no preto denso e somem da tela.
+func cavar_para_olhos() -> void:
+	if _haze == null or _olhar == null or _coluna == null:
+		return
+	# Em metros, relativo ao centro da caixa da névoa, que é o que o shader usa.
+	_haze.set_shader_parameter("olhos_local", _olhar.position - _coluna.position)
 
 ## Névoa preta não devolve luz nenhuma; sem esta lâmpada fraca o vulto não
 ## marcaria presença alguma na parede nem no chão.

@@ -165,10 +165,57 @@ func _input(event: InputEvent) -> void:
 			if world != null and world.figure_volume != null and player != null:
 				world.figure_volume.chamar_para_frente(player.camera)
 			get_viewport().set_input_as_handled()
+		elif event.physical_keycode == KEY_F4:
+			toggle_debug_free_roam()
+			get_viewport().set_input_as_handled()
 		elif event.physical_keycode == KEY_F2:
 			if crt_overlay_layer:
 				crt_overlay_layer.visible = !crt_overlay_layer.visible
 			get_viewport().set_input_as_handled()
+
+const DEBUG_UPPER_Y := 4.2
+# Corredor -> porta da administracao -> dentro da sala, ida e volta.
+const DEBUG_PATROL := [
+	Vector3(0, DEBUG_UPPER_Y, -9),
+	Vector3(-1.6, DEBUG_UPPER_Y, -9),
+	Vector3(-4.8, DEBUG_UPPER_Y, -9),
+	Vector3(-4.8, DEBUG_UPPER_Y, -6.5),
+]
+var debug_patrol: Tween = null
+
+func toggle_debug_free_roam() -> void:
+	var tree := get_tree()
+	if tree.has_meta("debug_free_roam"):
+		tree.remove_meta("debug_free_roam")
+		stop_debug_figures()
+		ui.say("DEBUG: portas voltaram a obedecer o roteiro.")
+	else:
+		tree.set_meta("debug_free_roam", true)
+		start_debug_figures()
+		ui.say("DEBUG: portas destrancadas e Memesis em ronda no 2o andar (F4).")
+
+func start_debug_figures() -> void:
+	if world == null or world.figure == null or world.figure_volume == null: return
+	# O vulto do F3 fica parado no fim do corredor, de frente para a escadaria.
+	world.figure.position = Vector3(0, DEBUG_UPPER_Y, -11)
+	world.figure.rotation.y = PI
+	world.figure.show()
+	# A nevoa do F5 ronda: anda, para, entra e sai da administracao.
+	world.figure_volume.position = DEBUG_PATROL[0]
+	world.figure_volume.show()
+	debug_patrol = create_tween().set_loops()
+	for point in DEBUG_PATROL + [DEBUG_PATROL[2], DEBUG_PATROL[1]]:
+		debug_patrol.tween_property(world.figure_volume, "position", point, 2.2)
+		debug_patrol.tween_interval(1.1)
+
+func stop_debug_figures() -> void:
+	if debug_patrol != null and debug_patrol.is_valid(): debug_patrol.kill()
+	debug_patrol = null
+	if world == null or world.figure == null or world.figure_volume == null: return
+	world.figure.rotation.y = 0.0
+	world.figure.hide()
+	world.figure_volume.hide()
+	chapter.refresh()
 
 func toggle_tablet() -> void:
 	if tablet_hud == null or ui.modal or computer.active:

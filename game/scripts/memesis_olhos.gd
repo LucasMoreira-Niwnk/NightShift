@@ -31,8 +31,10 @@ const SUBIDA := 2.4                   # m/s com que os olhos acompanham a altura
 var _vigia: Node = null               # o computador de segurança, quando existe
 var _procurou := false
 
-const SEPARACAO := 0.17               # distância entre os dois olhos, em metros
-const TAMANHO := 0.085                # lado do quad de cada olho, em metros
+# Afastados junto com o tamanho: triplicar só o quad faria os dois se fundirem
+# num borrão só, que é de onde viemos.
+const SEPARACAO := 0.34               # distância entre os dois olhos, em metros
+const TAMANHO := 0.255                # lado do quad de cada olho, em metros
 const CCTV_LAYER := 4
 const OLHO_NU := 1
 

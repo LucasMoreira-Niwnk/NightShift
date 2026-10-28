@@ -205,7 +205,15 @@ func _ready() -> void:
 	# e um corpo de nevoa, e e esta chave que liga o sistema que o renderiza.
 	# Em gl_compatibility a propriedade existe mas nao faz nada.
 	environment.environment.volumetric_fog_enabled = true
-	environment.environment.volumetric_fog_density = 0.0
+	# Um fio de nevoa no ar inteiro: sem meio para espalhar, o cone do poste nao
+	# existe e so se ve o circulo no chao — que no asfalto gasto some. Com isto
+	# a luz vira volume. Knob de calibragem: acima de ~0.03 a cena embaca.
+	environment.environment.volumetric_fog_density = 0.012
+	# A nevoa e calculada numa grade grossa esticada ate 64 m: cones largos
+	# chegavam nela em degraus retangulares, que e o recorte visto no chao.
+	# Encurtar a grade concentra a mesma resolucao no que esta perto.
+	environment.environment.volumetric_fog_length = 32.0
+	environment.environment.volumetric_fog_detail_spread = 1.0
 	# Glow so para a franja do Memesis sangrar um pouco no ar. O limiar alto e
 	# o que segura o resto da cena de fora: as lampadas do predio ficam abaixo
 	# dele, e so a franja, empurrada acima de 1.0 pelo shader, acende o bloom.

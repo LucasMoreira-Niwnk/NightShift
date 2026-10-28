@@ -1,6 +1,7 @@
 extends CharacterBody3D
 
 const SPEED := 4.0
+const FLY_SPEED := 5.0
 const SENSITIVITY := 0.0025
 var camera: Camera3D
 var ray: RayCast3D
@@ -73,6 +74,15 @@ func _physics_process(delta: float) -> void:
 	velocity.x = motion.x * SPEED
 	velocity.z = motion.z * SPEED
 	hand.walking = direction.length() > 0.1
+	# Voo livre do modo debug (F4): espaco sobe, Ctrl desce, sem gravidade e
+	# atravessando paredes, para olhar a cena de cima na hora de calibrar luz.
+	if Engine.get_main_loop().has_meta("debug_free_roam"):
+		# Enquanto o modo esta ligado se voa sempre: soltar as teclas para no ar,
+		# que e o que serve para olhar; F4 de novo devolve a gravidade.
+		var lift := float(Input.is_key_pressed(KEY_SPACE)) - float(Input.is_key_pressed(KEY_CTRL))
+		velocity.y = lift * FLY_SPEED
+		global_position += velocity * delta
+		return
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 	else:

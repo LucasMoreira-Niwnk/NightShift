@@ -184,13 +184,30 @@ func fence(point: Vector3, length: float, angle: float) -> void:
 
 func lamp(point: Vector3) -> void:
 	world.staircases.pipe(point, point + Vector3.UP * 5.2, 0.075, Color(0.1, 0.14, 0.13))
-	Art.rounded_box(self, point + Vector3.UP * 5.2, Vector3(0.65, 0.12, 0.4), Color(0.3, 0.35, 0.31), 0.05)
-	var light := OmniLight3D.new()
-	light.position = point + Vector3.UP * 4.9
+	# A carcaca nao sombreia: ela fica logo acima da lampada e, com sombra, tapa
+	# o proprio cone — sobrava so o que vazava pelas bordas.
+	var casing := Art.rounded_box(self, point + Vector3.UP * 5.2, Vector3(0.65, 0.12, 0.4), Color(0.3, 0.35, 0.31), 0.05)
+	casing.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var light := SpotLight3D.new()
+	# Na cabeca do poste: 2 cm sob a carcaca, que tem base em 5.14.
+	light.position = point + Vector3.UP * 5.12
+	light.rotation.x = -PI / 2
 	light.light_color = Color(0.8, 0.67, 0.44)
-	light.light_energy = 3.8
-	light.omni_range = 17
+	# Mais energia que a omni de 3.8: o cone joga tudo para baixo, mas tambem
+	# cobre bem menos area do que uma lampada que irradiava para todo lado.
+	light.light_energy = 9.0
+	light.spot_range = 30
+	# Cone de 85 graus (170 de abertura total) so para a borda nao cortar seco.
+	light.spot_angle = 85.0
+	light.spot_attenuation = 1.0
+	# Dentro desses 85 graus a luz util acaba em ~65: o expoente 7 deixa menos
+	# de 0.1% da intensidade de la para fora. Knob de calibragem.
+	light.spot_angle_attenuation = 7.0
 	light.shadow_enabled = true
+	# Bias folgado: com cone largo cada texel cobre muita area, e a auto-sombra
+	# do proprio chao era o que apagava a poca quando a camera chegava perto.
+	light.shadow_bias = 0.2
+	light.shadow_normal_bias = 3.0
 	add_child(light)
 
 func tree(point: Vector3) -> void:

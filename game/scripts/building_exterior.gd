@@ -6,10 +6,14 @@ var window_count := 0
 var building_shell := false
 var glass: ShaderMaterial
 var frame_material: ShaderMaterial
+var surround_material: StandardMaterial3D
 
 func _ready() -> void:
 	name = "VesperExterior"
 	glass = preload("res://scripts/materials.gd").fitting(Color(0.3,0.32,0.28),true)
+	surround_material = preload("res://scripts/materials.gd").photographic("concrete_floor_worn_001",1.7)
+	surround_material.albedo_color = Color(0.69,0.71,0.66)
+	surround_material.normal_scale = 0.4
 	frame_material = preload("res://scripts/materials.gd").fitting(Color(0.18,0.22,0.19))
 
 func frame_box(parent: Node3D, point: Vector3, size: Vector3, _color: Color) -> MeshInstance3D:
@@ -54,6 +58,12 @@ func window_wall(parent: Node3D, center: Vector3, size: Vector3, openings: Array
 		frame_box(parent, middle - Vector3.UP * 0.2, Vector3(width, 0.035, 0.065) if along_x else Vector3(0.065, 0.035, width), frame)
 		# Projecting stone sill, drip edge and discreet grime streaks.
 		frame_box(parent, middle + Vector3.UP * (sill - middle.y - 0.08), Vector3(width + 0.28, 0.12, 0.38) if along_x else Vector3(0.38, 0.12, width + 0.28), Color(0.29, 0.31, 0.28))
+		# Concrete reveals sit outside the aperture, leaving the glass unobstructed.
+		var header_point := middle + Vector3.UP*(head-middle.y+0.14)
+		var header := Art.box(parent,header_point,Vector3(width+0.42,0.18,0.34) if along_x else Vector3(0.34,0.18,width+0.42),Color.WHITE,surround_material)
+		header.name = "WindowConcreteLintel"
+		for side in [-1.0,1.0]:
+			Art.box(parent,middle+direction*(side*(width/2+0.12)),Vector3(0.14,head-sill+0.2,0.28) if along_x else Vector3(0.28,head-sill+0.2,0.14),Color.WHITE,surround_material)
 		window_count += 1
 		cursor = right
 	if cursor < length / 2:
@@ -91,11 +101,14 @@ func build() -> void:
 		for z in range(7): Art.box(self, Vector3(x, 8.32, -4.55 + z * 0.18), Vector3(1.9, 0.015, 0.06), Color(0.09, 0.13, 0.12))
 	box(Vector3(0, 3.05, 14), Vector3(6.5, 0.18, 4.5), Color(0.1, 0.15, 0.14))
 	for x in [-2.9, 2.9]: box(Vector3(x, 1.45, 15.5), Vector3(0.16, 2.9, 0.16), Color(0.22, 0.28, 0.26))
-	var sign: Label3D = world.add_sign("V E S P E R", Vector3(0, 6.5, 12.3))
+	var sign: Label3D = world.add_sign("V E S P E R", Vector3(0, 6.5, 12.5))
 	sign.pixel_size = 0.007
 	sign.modulate = Color(0.53, 0.68, 0.61)
-	world.add_sign("SETOR ADMINISTRATIVO / ACESSO RESTRITO", Vector3(0, 5.8, 12.3)).pixel_size = 0.0013
+	world.add_sign("SETOR ADMINISTRATIVO / ACESSO RESTRITO", Vector3(0, 5.8, 12.5)).pixel_size = 0.0013
 	building_shell = false
+	var envelope := preload("res://scripts/facade_details.gd").new()
+	envelope.world = world
+	add_child(envelope)
 	world.dressing.decay(self)
 	world.dressing.abandoned_site(self)
 	grounds()

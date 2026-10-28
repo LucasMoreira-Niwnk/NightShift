@@ -43,3 +43,12 @@ Ainda cabe avaliação com jogadores de orientação, conforto dos lances, legib
 - Vidros recebem depósitos nas bordas, escorridos e opacidade discreta; a visão para os cômodos permanece aberta. Caixilhos e portas usam pintura fosca, pequenos pontos de perda de tinta e oxidação pouco contrastada. Vãos, colisões e animações das portas não mudaram.
 - O teto tem reboco pintado e manchas de infiltração discretas. As carcaças decorativas das luminárias deixam de bloquear seu próprio ponto de luz. A sinalização de direção da recepção e das escadas passa às paredes, sem sombras projetadas; não há placas suspensas abaixo dessas fontes.
 - Todos os recursos visuais utilizados já estavam incluídos no projeto. Prévia técnica em `.local/material-*.png` usa os materiais reais, com HUD e grão de filme ocultados somente no script de captura para facilitar a inspeção. Os efeitos de imagem do jogo permanecem inalterados.
+
+
+## Massa e hierarquia da fachada
+
+`facade_details.gd` cria o envelope decorativo: pilares de 46 cm na frente, pilastras laterais, bases mais largas, cornijas em dois níveis, pingadeiras metálicas, marquise com 34 cm de espessura, portal da entrada e painel central do letreiro. A base da torre de serviço usa a fotografia de alvenaria já incluída; o concreto usa o conjunto `concrete_floor_worn_001` com relevo reduzido e cor própria.
+
+A pintura externa distingue o térreo em tom mineral quente e o andar superior em verde acinzentado desbotado. As molduras de concreto são construídas ao redor das aberturas existentes. Não há aumento de pavimentos nem alteração da planta interna. Pilares e apoios novos têm colisão, mantendo livres a porta principal, a passagem de serviço e os percursos das escadas; frisos, molduras e revestimentos são detalhes visuais. Não foram adicionadas luzes, bibliotecas ou downloads ao jogo.
+
+Capturas técnicas em `.local/facade-front.png`, `.local/facade-corner.png`, `.local/facade-entry.png` e `.local/facade-side.png`, com grão/HUD ocultados apenas para inspecionar os materiais.

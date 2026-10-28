@@ -84,6 +84,8 @@ void fragment() {
   // Keep the substrate readable, even where algae have settled.
   weathered=mix(plaster,weathered,0.58);
   color=mix(plaster,weathered,clamp(0.32+moisture*0.45+rising*0.3,0.0,0.82));
+  // Faded upper-storey paint and warm ground-floor render separate the volumes.
+  color*=wp.y>4.1 ? vec3(0.78,0.85,0.8) : vec3(0.94,0.88,0.76);
   color*=1.0-moisture*0.12-rising*0.06;
   float chip=smoothstep(0.68,0.84,fbm(p*0.8+12.3))*0.16;
   color=mix(color,texture(broken_color,fuv).rgb,chip);

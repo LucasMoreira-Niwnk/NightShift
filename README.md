@@ -47,6 +47,8 @@ Na falha do disjuntor do capítulo 1 e no apagão do capítulo 2, as luminárias
 
 A revisão das superfícies unifica as faces externas e substitui a camada de fachada excessivamente escura por reboco pintado com fissuras finas e umidade. Poeira interna e asfalto recebem tratamentos separados; poças são áreas molhadas irregulares no próprio material do chão. Portas e janelas têm pintura fosca e depósitos de sujeira, e o teto usa reboco pintado. Placas de direção ficam nas paredes e as carcaças das luminárias não projetam sombras sobre sua própria luz.
 
+A fachada ganhou pilares e embasamentos de concreto, vergas e molduras nas janelas, cornijas com pingadeiras metálicas e uma marquise mais espessa com apoios largos. Reboco claro no térreo, pintura esverdeada desbotada no pavimento superior, concreto gasto e alvenaria na base da torre de serviço criam variação de materiais. O letreiro central, juntas e grelhas completam o exterior. A planta interna e os vãos permanecem os mesmos.
+
 ### Capítulo 1 — O Primeiro Turno
 
 A partida começa diante da entrada do Vesper. Abra a porta, leia o envelope no balcão, entre na segurança e siga os objetivos no alto da tela. Pegue a lanterna na mesa para ver a mão e o item em primeira pessoa. A sequência contém oito cenas, três puzzles, anomalias, documentos e conclusão. Esc permite salvar/carregar checkpoint e ajustar o áudio. J abre o diário com documentos e mensagens coletados.

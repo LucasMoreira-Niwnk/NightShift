@@ -129,6 +129,9 @@ func run() -> void:
 	check(right_only and right_skeleton.find_bone("wrist.r") >= 0, "Hand scene contains only the right-arm skeleton")
 	var right_mesh: MeshInstance3D = right_skeleton.get_node("arms_mesh")
 	check(right_mesh.transform.is_equal_approx(Transform3D.IDENTITY) and right_skeleton.global_transform.basis.determinant() > 0, "Right hand is neither mirrored nor displaced from its skin")
+	var wrist_world := right_skeleton.global_transform * right_skeleton.get_bone_global_pose(right_skeleton.find_bone("wrist.r")).origin
+	var shaft_center: Vector3 = game.player.hand.torch.to_global(Vector3(0, 0.027, 0))
+	check(game.player.camera.unproject_position(wrist_world).x > game.player.camera.unproject_position(shaft_center).x, "Forearm rises to the right of the flashlight shaft on screen")
 	var pose_animation: Animation = game.player.hand.get_node("PoseAnimation").get_animation("Pegada")
 	var valid_rotations := true
 	for track in range(pose_animation.get_track_count()):

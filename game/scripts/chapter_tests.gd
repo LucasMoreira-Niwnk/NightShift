@@ -39,6 +39,7 @@ func run() -> void:
 	await architecture_cases.run(game, self)
 	check(not game.computer.monitor_power, "Terminal starts switched off")
 	check(game.sound.effects.ring.data.size() > 0 and game.sound.effects.rain.loop_end > 0, "Soundscape has playable PCM and looping ambience")
+	preload("res://scripts/soundscape_tests.gd").new().run(game, self)
 	game.player.position = Vector3(0, 0.05, 14)
 	game.player.rotation.y = 0
 	Input.action_press("move_forward")

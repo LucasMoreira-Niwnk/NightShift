@@ -312,6 +312,9 @@ func make_door(id: String, location: Vector3, label: String) -> void:
 	door.access = func(): return game.chapter.can_open(id)
 	add_child(door)
 	doors[id] = door
+	door.operated.connect(func(opened: bool):
+		if game.sound != null:
+			game.sound.play("door_open" if opened else "door_close", door.global_position + Vector3.UP, -18))
 
 func table(location: Vector3, size: Vector2) -> void:
 	box(self, location + Vector3(0, 1, 0), Vector3(size.x, 0.16, size.y), "wood").hide()

@@ -1,5 +1,7 @@
 extends StaticBody3D
 
+signal operated(opened)
+
 var glazed := false
 var is_open := false
 var moving := false
@@ -97,6 +99,7 @@ func set_open(value: bool) -> void:
 		return
 	moving = true
 	is_open = value
+	if value: operated.emit(true)
 	# The closed doorway is the interaction target even while the door is open.
 	# Disable physical obstruction, retaining ray detection on collision layer 2.
 	set_collision_layer_value(1, not is_open)
@@ -104,4 +107,5 @@ func set_open(value: bool) -> void:
 	animation = create_tween()
 	animation.tween_property(pivot, "rotation:y", -PI / 2.0 if is_open else 0.0, 0.35)
 	await animation.finished
+	if not value: operated.emit(false)
 	moving = false

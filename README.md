@@ -55,6 +55,12 @@ O cenário utiliza texturas PBR 1K do ambientCG, modelos glTF texturizados do Po
 
 Os objetos da mesa foram separados para evitar sobreposição entre teclado, mouse, rádio, lanterna e relatório. Papéis e livros apoiam-se no tampo; livros decorativos usam as alturas reais das prateleiras; o diagrama elétrico é montado verticalmente. O feixe da lanterna parte da lente e aponta para a mira, com balanço reduzido ao caminhar.
 
+### Sons do Vesper
+
+Os efeitos físicos agora usam gravações CC0 incluídas no projeto: passos com variações em piso rígido/madeira, telefone fixo, mecanismo de impressão antigo, interruptor, portas, rangido/arrasto e chegada do carro. A chuva fica abafada no interior, com transição suave; a ventilação desaparece no apagão. Portas têm sons ao abrir/fechar, os eventos mantêm posição 3D e os efeitos recebem reverberação interna discreta. A interferência do rádio e o leito de infrassom anterior continuam presentes. Vozes ainda aguardam dublagem.
+
+Fontes, autores, adaptações e limites: [game/assets/audio/vesper/SOURCES.md](game/assets/audio/vesper/SOURCES.md). Tudo funciona offline; Python e ffmpeg servem somente para reproduzir a preparação dos assets. A mixagem final em fones/caixas ainda requer playtest.
+
 ### HUD
 
 A HUD mostra o objetivo e o progresso das oito cenas no canto superior esquerdo; cômodo, horário narrativo e estado real da lanterna no direito. Os equipamentos coletados aparecem embaixo. A mira reage quando há algo interativo e exibe o comando E. Mensagens possuem fundo de contraste e desaparecem após alguns segundos; o objetivo permanece disponível. Documentos e pausa ocultam a HUD para facilitar a leitura. Não há indicadores fictícios de vida ou bateria.

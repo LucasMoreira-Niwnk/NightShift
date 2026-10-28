@@ -57,3 +57,8 @@ Original unbranded cylindrical flashlight, with embedded materials. Used for bot
 Six additional texture sets supply actual cracked plaster, damaged plaster/exposed masonry, mossy facade, worn concrete, weathered asphalt and muddy leaf litter: `concrete_floor_worn_001`, `worn_cracked_plaster`, `damaged_plaster`, `worn_mossy_plasterwall`, `worn_asphalt`, `brown_mud_leaves_01`.
 
 Diffuse maps are 2K; OpenGL normal, roughness and AO maps are 1K. Contributors, source pages, source download URLs and checksums are recorded in `textures/decay/README.md` and `textures/decay/manifest.json`. License: https://polyhaven.com/license (CC0-1.0). Files are bundled locally; gameplay does not access the network.
+
+
+## Áudio — Vesper
+
+Gravações CC0 de rubberduck, GboxMikeFozzy, mikeask e Joseph SARDIN (BigSoundBank / LaSonothèque), editadas para o jogo. Fontes por arquivo, modificações e licença em [audio/vesper/SOURCES.md](audio/vesper/SOURCES.md). A interferência de rádio permanece procedural; os áudios anteriores do projeto são preservados.

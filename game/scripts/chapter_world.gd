@@ -305,7 +305,7 @@ func room(label: String, center: Vector3, size: Vector2) -> void:
 
 ## O mesmo reator gagueja no predio inteiro: ter andar e escada no registro e o
 ## que faz a variacao existir fora do terreo.
-func pulse_light(light: OmniLight3D) -> void:
+func pulse_light(light: Light3D) -> void:
 	room_lights.append({"light": light, "energy": light.light_energy})
 
 func make_door(id: String, location: Vector3, label: String) -> void:

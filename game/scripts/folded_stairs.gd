@@ -132,6 +132,11 @@ func service_lamp(point: Vector3, target: Vector3, yaw: float) -> void:
 	bounce.omni_range = 3.8
 	bounce.shadow_enabled = true
 	fixture.add_child(bounce)
+	# O mesmo reator gagueja aqui: sem isto a escada de servico ficaria a unica
+	# parte do predio com luz constante. Facho e fill juntos, senao o fill
+	# sustenta o ambiente justo na batida em que o facho deveria cair.
+	world.pulse_light(lamp)
+	world.pulse_light(bounce)
 
 func light(point: Vector3, caption: String) -> void:
 	var lamp := OmniLight3D.new()

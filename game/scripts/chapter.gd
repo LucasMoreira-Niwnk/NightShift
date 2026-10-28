@@ -162,6 +162,8 @@ func interact(id: String) -> void:
 	save_game()
 
 func can_open(id: String) -> bool:
+	# ponytail: modo debug destranca tudo (F4), sem tocar nas regras do roteiro
+	if Engine.get_main_loop().has_meta("debug_free_roam"): return true
 	if id == "stairs" or id == "upper_gate":
 		if stage == 15 or (stage < 9 and not has_flag("fault_inspected")) or stage == 9:
 			say("Leitor sem alimentação. Procure uma rota alternativa pela administração." if stage == 15 else "Acesso restrito. O crachá só libera a escada mediante ordem de manutenção ou inspeção.")

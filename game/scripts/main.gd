@@ -165,10 +165,22 @@ func _input(event: InputEvent) -> void:
 			if world != null and world.figure_volume != null and player != null:
 				world.figure_volume.chamar_para_frente(player.camera)
 			get_viewport().set_input_as_handled()
+		elif event.physical_keycode == KEY_F4:
+			toggle_debug_free_roam()
+			get_viewport().set_input_as_handled()
 		elif event.physical_keycode == KEY_F2:
 			if crt_overlay_layer:
 				crt_overlay_layer.visible = !crt_overlay_layer.visible
 			get_viewport().set_input_as_handled()
+
+func toggle_debug_free_roam() -> void:
+	var tree := get_tree()
+	if tree.has_meta("debug_free_roam"):
+		tree.remove_meta("debug_free_roam")
+		ui.say("DEBUG: portas voltaram a obedecer o roteiro.")
+	else:
+		tree.set_meta("debug_free_roam", true)
+		ui.say("DEBUG: todas as portas destrancadas (F4).")
 
 func toggle_tablet() -> void:
 	if tablet_hud == null or ui.modal or computer.active:

@@ -29,6 +29,19 @@ func stairs_up() -> void:
 	await walk("move_back", 0.95)
 	test.check(game.player.position.y > 4.0 and game.player.position.z > -14, "Controller climbs main stairs without teleport or jump")
 
+func walk_service(action: String, seconds: float) -> void:
+	game.player.rotation.y = 0
+	game.player.velocity = Vector3.ZERO
+	Input.action_press(action)
+	var last_y: float = game.player.position.y
+	var largest_drop := 0.0
+	for tick in range(int(round(seconds * Engine.physics_ticks_per_second))):
+		await game.get_tree().physics_frame
+		largest_drop = maxf(largest_drop, last_y - game.player.position.y)
+		last_y = game.player.position.y
+	Input.action_release(action)
+	test.check(largest_drop < 0.12, "Service controller follows the ramp without a free fall: " + action)
+
 func restore(snapshot: Dictionary) -> void:
 	var file := FileAccess.open(game.chapter.save_path, FileAccess.WRITE)
 	file.store_string(JSON.stringify(snapshot))
@@ -193,10 +206,21 @@ func run() -> void:
 	await game.get_tree().create_timer(0.1).timeout
 	test.check(chapter.has_flag("service_message_gone"), "Service warning disappears after looking away and back")
 	game.player.camera.rotation = Vector3.ZERO
-	await walk("move_back", 1.8)
-	await walk("move_left", 0.65)
-	await walk("move_forward", 1.8)
+	await walk_service("move_back", 1.8)
+	test.check(absf(game.player.position.y - 2.1) < 0.12, "Service upper flight reaches the half landing")
+	await walk_service("move_left", 0.65)
+	await walk_service("move_forward", 1.8)
 	test.check(chapter.stage == 16 and game.player.position.y < 0.2, "Service stair leads continuously to ground floor")
+	# Traverse the same route uphill and back to distinguish real ramps from
+	# a layout that merely lets the player drop to the ground.
+	await walk_service("move_back", 1.8)
+	test.check(absf(game.player.position.y - 2.1) < 0.12, "Service lower flight is climbable to the half landing")
+	await walk_service("move_right", 0.65)
+	await walk_service("move_forward", 1.8)
+	test.check(absf(game.player.position.y - 4.2) < 0.12, "Service stair also climbs back to administration")
+	await walk_service("move_back", 1.8)
+	await walk_service("move_left", 0.65)
+	await walk_service("move_forward", 1.8)
 	await walk("move_right", 0.65)
 	await walk("move_back", 2.5)
 	game.player.position = Vector3(-9.5, 0.05, 1)

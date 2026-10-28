@@ -27,6 +27,29 @@ func run(game: Node, test: Node) -> void:
 	var soffit := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(0, 3.8, -16.7), Vector3(0, 4.3, -16.7)))
 	test.check(not soffit.is_empty() and absf(soffit.position.y - 4.04) < 0.01, "Upper landing has a continuous structural soffit")
 	var pane_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(7, 1.7, 6.2), Vector3(9, 1.7, 6.2)))
+	# Service stair: doorway support, protected landing edges and correctly
+	# directed collision ramps. A fall to the ground must not count as descent.
+	for x in [-8.3, -8.16, -8.02]:
+		var threshold := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(x, 4.8, -9), Vector3(x, 3.8, -9)))
+		test.check(not threshold.is_empty() and absf(threshold.position.y - 4.2) < 0.02, "Service landing reaches administration threshold: " + str(x))
+	for edge in [[Vector3(-12, 4.8, -8.7), Vector3(-12, 4.8, -7.5)], [Vector3(-11.1, 2.7, -2.1), Vector3(-11.1, 2.7, -0.8)], [Vector3(-11.1, 2.7, -3.1), Vector3(-11.1, 2.7, -4.0)]]:
+		test.check(not space.intersect_ray(PhysicsRayQueryParameters3D.create(edge[0], edge[1])).is_empty(), "Service landing guard closes drop: " + str(edge[0]))
+	for z in [-7.75, -6.0, -4.0]:
+		for x in [-12.3, -9.7]:
+			var height: float = (z + 8) * 2.1 / 4.5 if x < -11 else 2.1 + (-z - 3.5) * 2.1 / 4.5
+			var tread := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(x, height + 0.15, z), Vector3(x, height - 0.2, z)))
+			test.check(not tread.is_empty() and absf(tread.position.y - height) < 0.02 and tread.normal.y > 0.85, "Service flight slope follows its landing heights: " + str(Vector2(x, z)))
+	for z in [-7.0, -5.0, -3.55, -2.0]:
+		test.check(space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(-9.7, 0.1, z), Vector3(-9.7, 1.85, z))).is_empty(), "Service ground passage retains capsule headroom: " + str(z))
+	test.check(game.world.staircases.service_lights.size() == 3, "Service stair has three mounted directional fixtures")
+	for landing in [[Vector3(-12, 4.25, -8.65), 4.2, -8.25], [Vector3(-11.1, 2.15, -2.2), 2.1, -1.8]]:
+		game.player.position = landing[0]
+		game.player.rotation.y = 0
+		game.player.velocity = Vector3.ZERO
+		Input.action_press("move_back")
+		for tick in range(42): await game.get_tree().physics_frame
+		Input.action_release("move_back")
+		test.check(game.player.position.y > landing[1] - 0.1 and game.player.position.z < landing[2], "Service guard physically stops the controller walking off its landing")
 	test.check(not pane_hit.is_empty() and absf(pane_hit.position.x - 8) < 0.03, "Window panes physically close the facade apertures")
 	var exterior_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(0, 1.7, 17), Vector3(0, 1.7, 23)))
 	test.check(exterior_hit.is_empty(), "Former porch end wall no longer blocks exterior exploration")

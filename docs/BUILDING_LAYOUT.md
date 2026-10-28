@@ -8,6 +8,8 @@ A escada principal, ao norte do corredor, sobe 2,1 m no primeiro lance, retorna 
 
 A escada de serviço fica a oeste da administração e usa o mesmo retorno de dois lances. A passagem térrea segue sob o lance superior e o patamar, com altura livre para a cápsula do jogador, até a porta lateral da segurança. O bloqueio narrativo da escada principal continua obrigando essa rota no capítulo 2.
 
+Os patamares de serviço ocupam toda a largura da caixa, até x = −8 no limiar da administração. As bordas livres têm guarda-corpos com rodapé e colisão contínua, incluindo a frente do patamar superior sobre o lance inferior e a abertura central entre os lances. O caminho aberto do piso superior entra no lance leste, faz o retorno no patamar intermediário e desce pelo lance oeste. As faces inferiores dos lances têm fechamento estrutural; a passagem térrea preserva 1,85 m de altura livre física. Três luminárias montadas nas paredes iluminam os patamares e os degraus com focos direcionados e preenchimento local, acompanhando o apagão do prédio.
+
 O encontro da escada com os corredores tem paredes laterais e vergas completas, fechando também o espaço entre o forro do térreo e a laje superior. O patamar termina na borda do piso do andar, sem superfícies coplanares sobrepostas. Seu acabamento de ladrilho fica somente em cima, sobre uma face inferior de concreto/forro. O friso entre pavimentos acompanha o perímetro da fachada e não atravessa a escadaria.
 
 ## Exterior e aberturas
@@ -27,5 +29,7 @@ Saves novos incluem `map_revision: 2`. Saves sem esse campo mantêm flags, docum
 O modo `check` verifica a sintaxe dos scripts no Godot 4.0. O modo `test` percorre os dois capítulos, incluindo subida e descida dos dois lances principais, reparo de energia, rede, gravações isoladas, bloqueio da escada, retorno pela escada de serviço e finais. A suíte de arquitetura verifica a projeção dos objetos no novo piso, suporte da laje, fechamento lateral/superior das portas da escada, ausência de pisos sobrepostos na transição, face inferior do patamar, colisão de vidro, acesso externo e migração de checkpoints.
 
 Os trechos de circulação usam o controlador real. Os testes reposicionam o jogador entre objetivos; não equivalem a uma partida manual contínua. Capturas são desenhadas explicitamente pelo renderizador; o modo de teste desliga o desenho automático para evitar que janelas minimizadas interrompam a suíte. O modo normal de jogo mantém renderização contínua.
+
+A escada de serviço também é percorrida nos dois sentidos, verificando os níveis dos patamares e a ausência de quedas livres entre quadros. Há testes físicos tentando caminhar contra as bordas protegidas, raios de suporte no antigo vão de 35 cm junto à porta, verificação da orientação das duas rampas e altura livre da passagem inferior.
 
 Ainda cabe avaliação com jogadores de orientação, conforto dos lances, legibilidade noturna, desempenho em outras placas e ritmo. As áreas urbanas além do perímetro são cenográficas; somente dois pisos do Vesper fazem parte da partida.

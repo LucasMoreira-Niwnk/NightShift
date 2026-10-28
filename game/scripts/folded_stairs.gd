@@ -3,6 +3,7 @@ extends Node3D
 const Art = preload("res://scripts/art.gd")
 var world: Node3D
 var warning: Label3D
+var service_lights: Array = []
 
 func _ready() -> void:
 	name = "Stairwells"
@@ -36,7 +37,7 @@ func pipe(a: Vector3, b: Vector3, radius: float, color: Color) -> void:
 	mesh.material_override = material
 	add_child(mesh)
 
-func flight(x: float, start_z: float, end_z: float, start_y: float, end_y: float) -> void:
+func flight(x: float, start_z: float, end_z: float, start_y: float, end_y: float, structural: bool = false) -> void:
 	var run := absf(end_z - start_z)
 	var rise := end_y - start_y
 	# Use a continuous collision ramp underneath twelve visible stair treads.
@@ -51,6 +52,11 @@ func flight(x: float, start_z: float, end_z: float, start_y: float, end_y: float
 	body.position = Vector3(x, (start_y + end_y) / 2 - 0.06 * cos(slope), (start_z + end_z) / 2 - 0.06 * sin(slope))
 	body.rotation.x = slope
 	add_child(body)
+	if structural:
+		# A continuous soffit makes the direction/read of the stair unambiguous
+		# from below. It stays shallow enough to preserve the ground passage.
+		var soffit := box(Vector3(x, (start_y + end_y) / 2 - 0.12, (start_z + end_z) / 2), Vector3(2.1, 0.16, sqrt(run * run + rise * rise)), "ceiling", false)
+		soffit.rotation.x = slope
 	for index in range(12):
 		var t := (index + 0.5) / 12.0
 		var height := lerpf(start_y, end_y, (index + 1.0) / 12.0)
@@ -76,6 +82,56 @@ func flight(x: float, start_z: float, end_z: float, start_y: float, end_y: float
 		rail_body.position = Vector3(edge, (start_y + end_y) / 2 + 0.53, (start_z + end_z) / 2)
 		rail_body.rotation.x = slope
 		add_child(rail_body)
+
+func landing_guard(a: Vector3, b: Vector3) -> void:
+	var middle := (a + b) / 2
+	var length := a.distance_to(b)
+	var size := Vector3(absf(b.x - a.x) + 0.09, 1.1, absf(b.z - a.z) + 0.09)
+	# A solid guard envelope closes the space between the visible uprights.
+	box(middle + Vector3.UP * 0.55, size, "metal").hide()
+	pipe(a + Vector3.UP * 1.05, b + Vector3.UP * 1.05, 0.032, Color(0.26, 0.3, 0.28))
+	pipe(a + Vector3.UP * 0.55, b + Vector3.UP * 0.55, 0.02, Color(0.2, 0.24, 0.22))
+	box(middle + Vector3.UP * 0.065, Vector3(size.x, 0.13, size.z), "metal", false)
+	var count := maxi(1, int(ceil(length / 0.65)))
+	for index in range(count + 1):
+		var foot := a.lerp(b, float(index) / count)
+		pipe(foot, foot + Vector3.UP * 1.05, 0.023, Color(0.2, 0.24, 0.22))
+
+func service_lamp(point: Vector3, target: Vector3, yaw: float) -> void:
+	var fixture := Node3D.new()
+	fixture.name = "ServiceWallFixture%d" % service_lights.size()
+	fixture.position = point
+	fixture.rotation.y = yaw
+	add_child(fixture)
+	Art.box(fixture, Vector3.ZERO, Vector3(0.38, 0.5, 0.08), Color(0.1, 0.13, 0.12))
+	var diffuser := Art.box(fixture, Vector3(0, 0, 0.065), Vector3(0.28, 0.34, 0.04), Color(0.7, 0.75, 0.67))
+	var glow := StandardMaterial3D.new()
+	glow.albedo_color = Color(0.7, 0.75, 0.67)
+	glow.emission_enabled = true
+	glow.emission = Color(0.32, 0.37, 0.28)
+	diffuser.material_override = glow
+	var lamp := SpotLight3D.new()
+	lamp.position = Vector3(0, 0, 0.13)
+	lamp.light_color = Color(0.86, 0.88, 0.76)
+	lamp.light_energy = 2.4
+	lamp.spot_range = 7.0
+	lamp.spot_angle = 70
+	lamp.spot_attenuation = 1.0
+	lamp.spot_angle_attenuation = 1.2
+	lamp.shadow_enabled = true
+	lamp.shadow_bias = 0.025
+	fixture.add_child(lamp)
+	lamp.look_at(target, Vector3.UP)
+	service_lights.append(lamp)
+	# A short-range bounce fills the fixture's own wall without the former
+	# room-wide omni spill through the two stair flights.
+	var bounce := OmniLight3D.new()
+	bounce.position = Vector3(0, 0, 0.18)
+	bounce.light_color = lamp.light_color
+	bounce.light_energy = 0.35
+	bounce.omni_range = 3.8
+	bounce.shadow_enabled = true
+	fixture.add_child(bounce)
 
 func light(point: Vector3, caption: String) -> void:
 	var lamp := OmniLight3D.new()
@@ -112,10 +168,21 @@ func main_stair() -> void:
 
 func service_stair() -> void:
 	landing(Vector3(-11.15, 0, -3.75), Vector2(6.3, 13.5))
-	landing(Vector3(-11.1, 2.1, -2.5), Vector2(5.5, 2.0))
-	landing(Vector3(-11.1, 4.2, -9.25), Vector2(5.5, 2.5))
-	flight(-12.3, -8, -3.5, 0, 2.1)
-	flight(-9.7, -3.5, -8, 2.1, 4.2)
+	# Both landings now reach the facade and the administration threshold.
+	# In particular, there must be no 35 cm slot before the upstairs door.
+	landing(Vector3(-11.1, 2.1, -2.5), Vector2(6.2, 2.0))
+	landing(Vector3(-11.1, 4.2, -9.25), Vector2(6.2, 2.5))
+	flight(-12.3, -8, -3.5, 0, 2.1, true)
+	flight(-9.7, -3.5, -8, 2.1, 4.2, true)
+	# Upper landing: only the eastern flight remains open for descent.
+	landing_guard(Vector3(-14.15, 4.2, -8), Vector3(-10.77, 4.2, -8))
+	landing_guard(Vector3(-8.63, 4.2, -8), Vector3(-8.05, 4.2, -8))
+	landing_guard(Vector3(-14.15, 4.2, -10.5), Vector3(-14.15, 4.2, -8))
+	# Half landing: close its end, outer edges and the gap between the flights.
+	landing_guard(Vector3(-14.15, 2.1, -1.55), Vector3(-8.05, 2.1, -1.55))
+	landing_guard(Vector3(-14.15, 2.1, -3.5), Vector3(-14.15, 2.1, -1.55))
+	landing_guard(Vector3(-8.05, 2.1, -3.5), Vector3(-8.05, 2.1, -1.55))
+	landing_guard(Vector3(-11.27, 2.1, -3.5), Vector3(-10.73, 2.1, -3.5))
 	for level in [0.0, 4.2]: world.architecture.window_wall(self, Vector3(-14.35, level + 1.5, -3.75), Vector3(0.2, 3, 13.5), [-3.7, 1.5, 4.3], 1.4)
 	box(Vector3(-14.35, 3.6, -3.75), Vector3(0.2, 1.2, 13.5), "wall")
 	box(Vector3(-11.15, 3.65, -10.6), Vector3(6.5, 7.3, 0.2), "wall")
@@ -123,11 +190,16 @@ func service_stair() -> void:
 	box(Vector3(-11.15, 7.35, -3.75), Vector3(6.5, 0.2, 13.7), "ceiling")
 	box(Vector3(-8, 1.5, -4), Vector3(0.2, 3, 4), "wall")
 	box(Vector3(-8, 5.7, -4), Vector3(0.2, 3, 2), "wall")
+	box(Vector3(-8, 3.57, -3.75), Vector3(0.2, 1.14, 13.5), "wall")
+	box(Vector3(-8, 6.95, -9), Vector3(0.2, 0.5, 1.5), "wall")
 	warning = world.add_sign("VOCÊ SEMPRE VOLTA\nPELO MESMO CAMINHO.", Vector3(-11.6, 5.9, -10.45))
 	warning.pixel_size = 0.0019
-	light(Vector3(-11.1, 6.9, -9), "ESCADA DE SERVIÇO / DESÇA")
-	light(Vector3(-11.1, 4.7, -2), "01 / PATAMAR")
-	light(Vector3(-9.4, 2.6, 1), "SEGURANÇA →")
+	service_lamp(Vector3(-14.18, 6.3, -5.6), Vector3(-10, 3.7, -6), PI / 2)
+	service_lamp(Vector3(-14.18, 3.9, -4.3), Vector3(-11.1, 2.2, -2.5), PI / 2)
+	service_lamp(Vector3(-14.18, 2.55, 1.9), Vector3(-9.2, 0.7, 1), PI / 2)
+	world.add_sign("ESCADA DE SERVIÇO\nTÉRREO / SEGURANÇA", Vector3(-10, 6.65, -10.45)).pixel_size = 0.0013
+	world.add_sign("PATAMAR\nCONTINUE DESCENDO", Vector3(-14.17, 3.0, -4.3), PI / 2).pixel_size = 0.0011
+	world.add_sign("SAÍDA / SEGURANÇA", Vector3(-14.17, 2.0, 1.9), PI / 2).pixel_size = 0.0012
 
 func is_main(point: Vector3) -> bool:
 	return point.x > -2.9 and point.x < 2.9 and point.z < -15.7 and point.z > -24.3

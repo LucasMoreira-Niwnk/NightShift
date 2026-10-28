@@ -34,6 +34,8 @@ func _ready() -> void:
 	add_child(root)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var mission := hud_card(root)
+	mission.name = "MissionData"
+	mission.hide()
 	mission.position = Vector2(24, 24)
 	mission.size = Vector2(540, 148)
 	var mission_column := VBoxContainer.new()
@@ -287,10 +289,7 @@ func document(heading: String, content: String, final: bool = false) -> void:
 func show_journal() -> void:
 	clear_panel()
 	title("Daniel Reis — Diário do turno")
-	var data = preload("res://scripts/chapter_data.gd")
-	var entries := {"protocol": ["Protocolo", data.PROTOCOL], "recording": ["Gravação 001", data.SUPERVISOR], "logbook": ["Livro de registros", data.LOGBOOK], "maintenance": ["Manutenção", data.MAINTENANCE], "diagram": ["Diagrama", data.DIAGRAM], "report": ["Relatório", data.REPORT]}
-	var extra = preload("res://scripts/chapter_two_data.gd")
-	entries.merge({"repair_note": ["Ordem de manutenção", extra.REPAIR_NOTE], "admin_notice": ["Aviso administrativo", extra.ADMIN_NOTICE], "network_log": ["Log de rede", extra.NETWORK_LOG], "meeting_minutes": ["Ata da reunião", extra.MINUTES], "access_log": ["Controle de acesso", extra.ACCESS], "henrique_photo": ["Henrique Almeida", extra.PHOTO], "failed_call": ["Ligação não completada", extra.CALL], "cam04_label": ["Etiqueta da CAM-04", "RACK 2B — PORTA 07"], "report2": ["Ocorrência 002", extra.report(game.chapter.has_flag("future_event_resisted"))]})
+	var entries := document_entries()
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
@@ -331,7 +330,7 @@ func close_modal() -> void:
 	modal = false
 	panel.hide()
 	for child in panel.get_parent().get_children():
-		if child != panel and child is CanvasItem: child.show()
+		if child != panel and child is CanvasItem and child.name != "MissionData": child.show()
 	modal_shade.hide()
 	game.set_player_control(not game.computer.active)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if game.computer.active else Input.MOUSE_MODE_CAPTURED
@@ -524,3 +523,12 @@ func show_ending(chapter_number: int = 1) -> void:
 	button("Sair", func(): get_tree().quit())
 	panel.show()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+func document_entries() -> Dictionary:
+	var data = preload("res://scripts/chapter_data.gd")
+	var entries := {"protocol": ["Protocolo", data.PROTOCOL], "recording": ["Gravação 001", data.SUPERVISOR], "logbook": ["Livro de registros", data.LOGBOOK], "maintenance": ["Manutenção", data.MAINTENANCE], "diagram": ["Diagrama", data.DIAGRAM], "report": ["Relatório", data.REPORT]}
+	var extra = preload("res://scripts/chapter_two_data.gd")
+	entries.merge({"repair_note": ["Ordem de manutenção", extra.REPAIR_NOTE], "admin_notice": ["Aviso administrativo", extra.ADMIN_NOTICE], "network_log": ["Log de rede", extra.NETWORK_LOG], "meeting_minutes": ["Ata da reunião", extra.MINUTES], "access_log": ["Controle de acesso", extra.ACCESS], "henrique_photo": ["Henrique Almeida", extra.PHOTO], "failed_call": ["Ligação não completada", extra.CALL], "cam04_label": ["Etiqueta da CAM-04", "RACK 2B — PORTA 07"], "report2": ["Ocorrência 002", extra.report(game.chapter.has_flag("future_event_resisted"))]})
+	for id in game.chapter.flags.get("document_records", {}):
+		entries[id] = game.chapter.flags.document_records[id]
+	return entries

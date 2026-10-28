@@ -76,7 +76,7 @@ func setup_hud_integrations() -> void:
 	# 1. Overlay global: grao de filme. O que Daniel ve nao e um monitor, entao
 	# nao ha curva nem varredura aqui — o tubo CRT fica nas telas de computador.
 	crt_overlay_layer = CanvasLayer.new()
-	crt_overlay_layer.layer = 25
+	crt_overlay_layer.layer = 8
 	add_child(crt_overlay_layer)
 	crt_overlay_layer.add_child(overlay_rect("res://shaders/film_grain.gdshader"))
 
@@ -99,6 +99,7 @@ func setup_hud_integrations() -> void:
 		tablet_layer.layer = 18
 		add_child(tablet_layer)
 		tablet_hud = tablet_scene.instantiate()
+		tablet_hud.game = self
 		tablet_hud.visible = false
 		tablet_layer.add_child(tablet_hud)
 
@@ -137,7 +138,7 @@ func _input(event: InputEvent) -> void:
 		elif ui.modal:
 			ui.close_modal()
 		elif computer.active:
-			computer.close()
+			if not computer.console.cancel_report(): computer.close()
 		else:
 			ui.toggle_pause()
 		get_viewport().set_input_as_handled()
@@ -149,9 +150,11 @@ func _input(event: InputEvent) -> void:
 			toggle_tablet()
 			get_viewport().set_input_as_handled()
 		elif not ui.paused and not ui.modal and not computer.active and event.physical_keycode == KEY_J:
+			if tablet_hud != null and tablet_hud.visible: toggle_tablet()
 			ui.show_journal()
 			get_viewport().set_input_as_handled()
 		elif event.physical_keycode == KEY_F1:
+			if tablet_hud != null and tablet_hud.visible: toggle_tablet()
 			toggle_hud_demo()
 			get_viewport().set_input_as_handled()
 		elif event.physical_keycode == KEY_F3:
@@ -220,11 +223,9 @@ func stop_debug_figures() -> void:
 func toggle_tablet() -> void:
 	if tablet_hud == null or ui.modal or computer.active:
 		return
-	if player.position.y > 3.5:
-		chapter.act_two.show_map()
-		return
 	var is_open = not tablet_hud.visible
 	tablet_hud.visible = is_open
+	if is_open: tablet_hud._process(0.0)
 	set_player_control(not is_open)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if is_open else Input.MOUSE_MODE_CAPTURED
 

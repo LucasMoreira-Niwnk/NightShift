@@ -20,6 +20,8 @@ var act_two = preload("res://scripts/chapter_two.gd").new()
 
 func collect_document(id: String, heading: String, content: String) -> void:
 	if not documents.has(id): documents.append(id)
+	if not flags.has("document_records"): flags.document_records = {}
+	flags.document_records[id] = [heading, content]
 	game.ui.document(heading, content)
 
 func _ready() -> void:

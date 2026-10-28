@@ -34,6 +34,8 @@ func run() -> void:
 	expansion.test = self
 	await get_tree().create_timer(0.8).timeout
 	check(game.player.is_on_floor(), "Player settles on entrance floor")
+	var tablet_cases = preload("res://scripts/tablet_console_tests.gd").new()
+	await tablet_cases.run(game, self)
 	check(game.player.position.z > 12, "Arrival begins outside reception")
 	var architecture_cases = preload("res://scripts/architecture_tests.gd").new()
 	await architecture_cases.run(game, self)

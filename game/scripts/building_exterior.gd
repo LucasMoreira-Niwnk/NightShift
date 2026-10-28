@@ -110,10 +110,10 @@ func build() -> void:
 	for x in [-4.5, 4.5]:
 		box(Vector3(x, 7.9, -4), Vector3(2.1, 0.8, 1.4), Color(0.25, 0.29, 0.27))
 		for z in range(7): Art.box(self, Vector3(x, 8.32, -4.55 + z * 0.18), Vector3(1.9, 0.015, 0.06), Color(0.09, 0.13, 0.12))
-	var sign: Label3D = world.add_sign("V E S P E R", Vector3(0, 6.5, 12.5))
+	var sign: Label3D = world.add_sign("EDIFÍCIO VESPER", Vector3(0, 6.5, 12.5))
 	sign.pixel_size = 0.007
 	sign.modulate = Color(0.53, 0.68, 0.61)
-	world.add_sign("SETOR ADMINISTRATIVO / ACESSO RESTRITO", Vector3(0, 5.8, 12.5)).pixel_size = 0.0013
+	world.add_sign("ADMINISTRAÇÃO PREDIAL · DESDE 1968", Vector3(0, 5.8, 12.5)).pixel_size = 0.0013
 	building_shell = false
 	var envelope := preload("res://scripts/facade_details.gd").new()
 	envelope.world = world
@@ -254,7 +254,18 @@ func details() -> void:
 	box(Vector3(8.8, 0.45, 16), Vector3(0.55, 0.9, 0.55), Color(0.1, 0.15, 0.12)).hide()
 	box(Vector3(8.22, 1.1, 5), Vector3(0.25, 1.1, 0.7), Color(0.2, 0.27, 0.23))
 	for z in [4.78, 5.22]: world.staircases.pipe(Vector3(8.25, 0, z), Vector3(8.25, 2.7, z), 0.025, Color(0.25, 0.3, 0.26))
-	var plaque: Label3D = world.add_sign("VESPER\nESTACIONAMENTO PRIVATIVO\nVISITANTES / IDENTIFIQUE-SE", Vector3(9, 1.7, 23))
+	var plaque: Label3D = world.add_sign("EDIFÍCIO VESPER\nPÁTIO EXCLUSIVO DE FUNCIONÁRIOS\nVISITANTES: APRESENTAR-SE À PORTARIA", Vector3(9, 1.7, 23))
 	plaque.pixel_size = 0.0015
-	Art.box(self, Vector3(9, 1.7, 22.95), Vector3(1.6, 0.65, 0.05), Color(0.07, 0.13, 0.11))
+	# Enamel backing follows the dimensions of the actual lettering.
 	world.staircases.pipe(Vector3(9, 0, 23), Vector3(9, 1.4, 23), 0.04, Color(0.18, 0.25, 0.2))
+	var traffic := MeshInstance3D.new()
+	var disc := QuadMesh.new()
+	disc.size = Vector2(0.85,0.85)
+	traffic.mesh = disc
+	traffic.position = Vector3(7.7,2.0,23)
+	var enamel := ShaderMaterial.new()
+	enamel.shader = preload("res://shaders/aged_enamel.gdshader")
+	enamel.set_shader_parameter("traffic_symbol",true)
+	traffic.material_override = enamel
+	add_child(traffic)
+	world.staircases.pipe(Vector3(7.7,0,23),Vector3(7.7,1.8,23),0.035,Color(0.22,0.17,0.11))

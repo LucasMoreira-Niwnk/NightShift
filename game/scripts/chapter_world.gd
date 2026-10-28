@@ -72,7 +72,7 @@ func _ready() -> void:
 
 	make_door("entrance", Vector3(0, 0, 12), "entrada do Vesper")
 	doors.entrance.rotation.y = 0
-	add_sign("VESPER\nSETOR ADMINISTRATIVO", Vector3(0, 2.8, 12.15)).pixel_size = 0.0011
+	add_sign("EDIFÍCIO VESPER · 1968\nPORTARIA / ACESSO DE FUNCIONÁRIOS", Vector3(0, 2.8, 12.15)).pixel_size = 0.0011
 	wall(Vector3(-4, 1.5, 4), Vector3(4, 3, 0.2))
 	# Security extends two metres beyond reception: seal its exposed rear edge.
 	wall(Vector3(-7, 1.5, 4), Vector3(2, 3, 0.2))
@@ -160,16 +160,16 @@ func _ready() -> void:
 	add_clock(Vector3(-3.2, 2.28, -1.86))
 	add_clock(Vector3(1.86, 2.28, -1), -PI / 2)
 	Art.box(self, Vector3(-4.8, 2.6, 4.14), Vector3(1.5, 0.25, 0.05), Color(0.06, 0.1, 0.085))
-	var reception_sign := add_sign("VESPER / RECEPÇÃO", Vector3(-4.8, 2.6, 4.18))
+	var reception_sign := add_sign("PORTARIA · TÉRREO\nIDENTIFICAÇÃO E ENTREGA DE CHAVES", Vector3(-4.8, 2.6, 4.18))
 	reception_sign.pixel_size = 0.0013
 	var direction_plaque := Art.box(self, Vector3(3.5,2.25,4.14),Vector3(2.2,0.35,0.05),Color(0.06,0.1,0.085))
 	direction_plaque.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var direction_sign := add_sign("SEGURANÇA ←   |   ARQUIVO →\nTÉCNICA ← / FUNDO", Vector3(3.5,2.25,4.18))
+	var direction_sign := add_sign("← VIGILÂNCIA / RAMAL 000   ·   ARQUIVO MORTO →\nMANUTENÇÃO ELÉTRICA: FUNDO DO CORREDOR ←", Vector3(3.5,2.25,4.18))
 	direction_sign.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	direction_sign.pixel_size = 0.0013
-	add_sign("ARQUIVO", Vector3(5, 2.6, -9.8))
-	add_sign("SEGURANÇA", Vector3(-5, 2.6, -1.8))
-	add_sign("SALA TÉCNICA", Vector3(-5, 2.6, -13.8))
+	add_sign("ARQUIVO MORTO\nREGISTROS · 1968–2008", Vector3(5, 2.6, -9.8))
+	add_sign("POSTO DE VIGILÂNCIA\nACESSO RESERVADO AO PLANTONISTA", Vector3(-5, 2.6, -1.8))
+	add_sign("MANUTENÇÃO ELÉTRICA\nQUADRO F1 · SOMENTE AUTORIZADOS", Vector3(-5, 2.6, -13.8))
 	figure = preload("res://scripts/memesis.gd").new()
 	add_child(figure)
 	figure.position = Vector3(0, 0, -13)
@@ -377,6 +377,7 @@ func decorate_item(body: Node3D, id: String, size: Vector3) -> void:
 
 func add_sign(text: String, location: Vector3, angle: float = 0) -> Label3D:
 	var label := Label3D.new()
+	label.set_script(preload("res://scripts/aged_sign.gd"))
 	label.text = text
 	label.position = location
 	label.rotation.y = angle

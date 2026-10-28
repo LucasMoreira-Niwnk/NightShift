@@ -38,6 +38,7 @@ var participants_button: Button
 var delete_button: Button
 var pause_clip: Button
 var clip_seek: HSlider
+var console: Control
 
 func _ready() -> void:
 	name = "SecurityComputer"
@@ -127,7 +128,7 @@ func part(location: Vector3, size: Vector3, color: Color) -> void:
 
 func build_overlay() -> void:
 	var canvas := CanvasLayer.new()
-	canvas.layer = 5
+	canvas.layer = 9
 	add_child(canvas)
 	overlay = Control.new()
 	overlay.theme = preload("res://scripts/ui_style.gd").theme()
@@ -300,6 +301,18 @@ void fragment(){
 		tube_material.set_shader_parameter("chromatic_aberration", 0.9)
 		tube.material = tube_material
 	overlay.add_child(tube)
+	# Keep the old controls as backend bindings for saves/tests, out of view.
+	var legacy := Control.new()
+	for child in overlay.get_children():
+		overlay.remove_child(child)
+		legacy.add_child(child)
+	overlay.add_child(legacy)
+	legacy.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	legacy.hide()
+	console = preload("res://scripts/huds/security_console.gd").new()
+	console.computer = self
+	console.game = game
+	overlay.add_child(console)
 	overlay.hide()
 
 func chapter_button(text: String, action: Callable) -> Button:
@@ -333,6 +346,8 @@ func interact() -> void:
 func close() -> void:
 	if recording != null and recording.active: stop_recording()
 	active = false
+	console.cancel_report()
+	console.feedback = ""
 	overlay.hide()
 	reflection.hide()
 	game.set_player_control(not game.ui.modal and not game.ui.paused and not game.ui.ending)

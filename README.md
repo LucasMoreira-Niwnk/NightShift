@@ -51,7 +51,7 @@ A fachada ganhou pilares e embasamentos de concreto, vergas e molduras nas janel
 
 ### Capítulo 1 — O Primeiro Turno
 
-A partida começa diante da entrada do Vesper. Abra a porta, leia o envelope no balcão, entre na segurança e siga os objetivos no alto da tela. Pegue a lanterna na mesa para ver a mão e o item em primeira pessoa. A sequência contém oito cenas, três puzzles, anomalias, documentos e conclusão. Esc permite salvar/carregar checkpoint e ajustar o áudio. J abre o diário com documentos e mensagens coletados.
+A partida começa diante da entrada do Vesper. Abra a porta, leia o envelope no balcão, entre na segurança e consulte as dicas no tablet (Tab/M). Pegue a lanterna na mesa para ver a mão e o item em primeira pessoa. A sequência contém oito cenas, três puzzles, anomalias, documentos e conclusão. Esc permite salvar/carregar checkpoint e ajustar o áudio. J abre o diário com documentos e mensagens coletados.
 
 O primeiro ato agora inclui eventos de olhar e de retorno da ronda, entrada e escadaria, terminal inicialmente desligado, identificação dos elementos nas imagens, sons posicionais, interferências, impressora e escolha de investigar ou ignorar o telefone no encerramento. Veja a matriz de implementação e as limitações em [docs/ACT_1_ACCEPTANCE.md](docs/ACT_1_ACCEPTANCE.md).
 
@@ -67,7 +67,7 @@ Fontes, autores, adaptações e limites: [game/assets/audio/vesper/SOURCES.md](g
 
 ### HUD
 
-A HUD mostra o objetivo e o progresso das oito cenas no canto superior esquerdo; cômodo, horário narrativo e estado real da lanterna no direito. Os equipamentos coletados aparecem embaixo. A mira reage quando há algo interativo e exibe o comando E. Mensagens possuem fundo de contraste e desaparecem após alguns segundos; o objetivo permanece disponível. Documentos e pausa ocultam a HUD para facilitar a leitura. Não há indicadores fictícios de vida ou bateria.
+Os objetivos ficam nas dicas do tablet (Tab/M); cômodo, horário narrativo e estado real da lanterna permanecem no canto direito. O tablet inclui planta dos dois pisos e exterior, posição/direção de Daniel, portas, câmeras, zoom e histórico das notas já lidas, preservadas no checkpoint. Os equipamentos coletados aparecem embaixo. A mira reage quando há algo interativo e exibe o comando E. Mensagens possuem fundo de contraste e desaparecem após alguns segundos; a dica permanece disponível no tablet. Documentos e pausa ocultam a HUD para facilitar a leitura. Não há indicadores fictícios de vida ou bateria.
 
 Veja `docs/CHAPTER_1.md` para o percurso completo de validação, arquitetura, checkpoints e limitações.
 

@@ -111,3 +111,36 @@ git merge feature/huds-nightshift
 ```bash
 git push -u origin feature/huds-nightshift
 ```
+
+
+## Integração de gameplay — 28/10/2026
+
+`hud_tablet.gd` usa o estado real do capítulo: dicas, notas lidas do checkpoint,
+conteúdo original salvo em `flags.document_records`, mensagens e ocorrências.
+`live_floor_map.gd` projeta X/Z no mapa dos dois pisos e exterior, com direção,
+portas e lentes. O norte aponta para a esquerda para aproveitar a tela horizontal.
+O seletor permite acompanhar o piso automaticamente ou consultar outro piso;
+zoom centra na posição de Daniel. Tab/M e Esc devolvem o controle ao jogador.
+
+O monitor usa `security_console.gd`, conectado ao backend existente de
+`computer.gd`. Os três painéis usam imagens reais; a câmera selecionada reutiliza
+o feed original e os outros dois usam viewports de 384×216, desligados fora do
+terminal. CAM-04/05 respeitam o desbloqueio da rede. Reprodução, zoom, inspeções,
+reflexo, interferência, relatórios e ações do capítulo 2 continuam ligados às regras
+existentes. REPORTAR INCIDENTE abre os três tipos e fixa a câmera do reporte ao
+abrir; cancelar não envia ocorrência. Os controles antigos ficam ocultos como
+bindings de compatibilidade, sem uma segunda interface interativa na tela.
+
+`computer.console.set_contaminated(active, message)` permite aos eventos
+narrativos ativar a interface contaminada. O estágio 6 já a aciona, sem timers de
+spoilers. O modo muda a cor, as mensagens e os rótulos sobre os feeds reais.
+As cenas demo originais permanecem acessíveis por F1.
+
+O grão global fica abaixo das interfaces de texto (camada 8), o monitor na 9,
+documentos na 10 e tablet na 18. O monitor conserva suas próprias scanlines.
+As placas usam `aged_sign.gd`/`aged_enamel.gdshader`: esmalte gasto, oxidação,
+filete vermelho e parafusos, além da sinalização circular do estacionamento.
+
+`tablet_console_tests.gd`, chamado pela suíte dos capítulos, verifica os dois
+pisos, projeção de posição, notas reais, posse do input, seleção/cancelamento de
+incidentes e ativação da interface contaminada. Capturas ficam em `.local/`.

@@ -93,7 +93,7 @@ func _ready() -> void:
 	Art.box(voice, Vector3(0, 0.6, 0.07), Vector3(0.85, 0.5, 0.025), Color(0.26, 0.32, 0.29))
 	window_shadow = Art.box(voice, Vector3(-0.35, 0.6, 0.09), Vector3(0.17, 0.4, 0.01), Color(0.01, 0.018, 0.015))
 	window_shadow.hide()
-	for entry in [["ADMINISTRAÇÃO", Vector3(-4.5, 2.5, -34.8)], ["TI / COMPONENTES", Vector3(-6.5, 2.5, -46.8)], ["SALA DE REUNIÕES", Vector3(6, 2.5, -44.8)], ["2º ANDAR\nADMINISTRAÇÃO →  |  ← REUNIÕES\nTI — FUNDO À DIREITA", Vector3(0, 2.5, -27.0)]]:
+	for entry in [["ADMINISTRAÇÃO PREDIAL\nEXPEDIENTE ENCERRADO ÀS 18H", Vector3(-4.5, 2.5, -34.8)], ["TECNOLOGIA E MANUTENÇÃO\nRACK 2B / ESTOQUE DE FUSÍVEIS", Vector3(-6.5, 2.5, -46.8)], ["SALA DO CONSELHO\nREUNIÕES / LIVRO DE ATAS", Vector3(6, 2.5, -44.8)], ["PAVIMENTO ADMINISTRATIVO\nADMINISTRAÇÃO →   ·   ← SALA DO CONSELHO\nTI / RACK 2B: FUNDO À DIREITA", Vector3(0, 2.5, -27.0)]]:
 		add_label(entry[0], entry[1], 0, 0.0015)
 	# Continuous slabs and facade close unused service voids between rooms.
 	block(Vector3(0, -0.15, -38), Vector3(20, 0.3, 24), "upper_floor")

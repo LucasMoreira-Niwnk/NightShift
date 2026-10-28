@@ -10,6 +10,15 @@ func run(game: Node, test: Node) -> void:
 		var point: Vector3 = game.world.objects[id].global_position
 		test.check(absf(point.x) < 8 and point.z > -14 and point.z < 10 and point.y > 4.2, "Upper evidence lies within stacked footprint: " + id)
 	var space: PhysicsDirectSpaceState3D = game.world.get_world_3d().direct_space_state
+	# Regression for daylight slots between the ground ceiling and upper slab.
+	for y in [3.3,3.85]:
+		var front_seal := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(5,y,12.8),Vector3(5,y,11.5)))
+		var side_seal := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(8.8,y,8),Vector3(7.4,y,8)))
+		test.check(not front_seal.is_empty() and not side_seal.is_empty(), "Facade plenum closes front and side at " + str(y))
+	var corner_joint := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(8.8,2,12.8),Vector3(7.7,2,11.7)))
+	test.check(not corner_joint.is_empty(), "Front corner has a joined pier without diagonal daylight slit")
+	var canopy_post := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(2.9,3.0,16.0),Vector3(2.9,3.0,15.0)))
+	test.check(not canopy_post.is_empty(), "Canopy post reaches underside of slab")
 	var floor_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(4, 6, -5), Vector3(4, 3.9, -5)))
 	test.check(not floor_hit.is_empty() and absf(floor_hit.position.y - 4.2) < 0.02, "Upper floor has physical support above archive")
 	# Regressions for the visible slots around the staircase doorway and slabs.

@@ -52,3 +52,12 @@ Ainda cabe avaliação com jogadores de orientação, conforto dos lances, legib
 A pintura externa distingue o térreo em tom mineral quente e o andar superior em verde acinzentado desbotado. As molduras de concreto são construídas ao redor das aberturas existentes. Não há aumento de pavimentos nem alteração da planta interna. Pilares e apoios novos têm colisão, mantendo livres a porta principal, a passagem de serviço e os percursos das escadas; frisos, molduras e revestimentos são detalhes visuais. Não foram adicionadas luzes, bibliotecas ou downloads ao jogo.
 
 Capturas técnicas em `.local/facade-front.png`, `.local/facade-corner.png`, `.local/facade-entry.png` e `.local/facade-side.png`, com grão/HUD ocultados apenas para inspecionar os materiais.
+
+
+## Correção dos encontros estruturais
+
+O fechamento entre os pavimentos agora ocupa a faixa de 3,0 a 4,2 m nas faces expostas do térreo. Uma laje completa o trecho de 2,2 m entre a fachada recuada do segundo andar e os pilares do pórtico; a faixa antes aberta sob a cornija não permite enxergar o interior. As quinas dianteiras usam um único pilar de seção quadrada, substituindo os dois pilares desencontrados. Vigas laterais e frontais compartilham altura e perfil.
+
+Os pilares estreitos, frisos e a laje antiga da marquise que ficaram sob a versão nova foram removidos. Os apoios da marquise alcançam a face inferior da laje. Base, faixa entre pisos e coroamento da escada de serviço retornam pelas paredes cegas, que também receberam uma grelha de ventilação. Os tubos de descida foram transferidos para trás, com suportes e afastamento das cornijas. O letreiro tem travessas de fixação aos pilares.
+
+A suíte de arquitetura verifica por raios físicos o fechamento da faixa entre pisos, a quina sem fresta diagonal e o encontro do apoio com a marquise. Capturas de inspeção: `.local/facade-joint-right.png`, `.local/facade-joint-left.png` e `.local/facade-tower.png`.

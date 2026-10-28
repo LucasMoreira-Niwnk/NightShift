@@ -27,22 +27,28 @@ func block(point: Vector3, size: Vector3, finish: String = "concrete", solid: bo
 
 func build() -> void:
 	# Full-height piers define the portico; the entrance stays 2.4 m clear.
-	for x in [-7.8,-1.45,1.45,7.8]:
+	for x in [-1.45,1.45]:
 		block(Vector3(x,3.67,12.25),Vector3(0.46,7.34,0.52),"concrete",true)
-		block(Vector3(x,0.37,12.27),Vector3(0.62,0.74,0.62),"plinth")
+		block(Vector3(x,0.37,12.25),Vector3(0.62,0.74,0.62),"plinth")
 		block(Vector3(x,7.28,12.25),Vector3(0.65,0.24,0.7))
+	# A single square pier wraps each front corner. There is no second offset
+	# side pier leaving a slit or a thin remnant through the concrete face.
+	for x in [-8.0,8.0]:
+		block(Vector3(x,3.67,12.15),Vector3(0.72,7.34,0.72),"concrete",true).name="FrontCornerPier"
+		block(Vector3(x,0.37,12.15),Vector3(0.84,0.74,0.84),"plinth")
+		block(Vector3(x,7.28,12.15),Vector3(0.84,0.24,0.84))
 	# Deep string courses, caps and a metal drip edge read at street distance.
 	for y in [3.57,7.42]:
 		block(Vector3(0,y,12.32),Vector3(16.95,0.34,0.58))
 		block(Vector3(0,y+0.19,12.38),Vector3(17.0,0.045,0.67),"metal")
 	for side in [-1.0,1.0]:
 		var x: float = side*8.25
-		for z in ([4.0,11.75] if side<0 else [-13.5,-9.7,-2.2,3.8,11.75]):
+		for z in ([4.0] if side<0 else [-13.5,-9.7,-2.2,3.8]):
 			block(Vector3(x,3.65,z),Vector3(0.48,7.3,0.42),"concrete",true)
 			block(Vector3(x,0.3,z),Vector3(0.57,0.6,0.58),"plinth")
 		for y in [3.57,7.42]:
-			block(Vector3(x,y,-2),Vector3(0.45,0.28,28.7))
-			block(Vector3(x,y+0.16,-2),Vector3(0.51,0.035,28.75),"metal")
+			block(Vector3(x,y,-1.86),Vector3(0.45,0.34,28.42))
+			block(Vector3(x,y+0.19,-1.86),Vector3(0.51,0.045,28.42),"metal")
 	# A masonry skirt terminates the render above splash water and debris.
 	for x in [-4.55,4.55]: block(Vector3(x,0.31,12.16),Vector3(6.8,0.62,0.16),"plinth")
 	block(Vector3(8.16,0.31,-2),Vector3(0.16,0.62,28),"plinth")
@@ -52,18 +58,30 @@ func build() -> void:
 	block(Vector3(-14.48,0.38,-3.75),Vector3(0.15,0.76,13.7),"stone")
 	block(Vector3(-14.48,7.42,-3.75),Vector3(0.45,0.3,14.0))
 	for z in [-10.4,3.0]: block(Vector3(-14.48,3.65,z),Vector3(0.4,7.3,0.42),"concrete",true)
+	# Return the same base, belt and coping around both blind tower end walls.
+	for z in [-10.72,3.22]:
+		block(Vector3(-11.25,0.38,z),Vector3(6.5,0.76,0.16),"stone")
+		for y in [3.57,7.42]:
+			block(Vector3(-11.25,y,z),Vector3(6.9,0.34,0.38))
+			block(Vector3(-11.25,y+0.19,z),Vector3(7.0,0.045,0.44),"metal")
+		block(Vector3(-8.17,3.65,z),Vector3(0.42,7.3,0.38),"concrete",true)
+	# A vent gives the blind stair wall a purpose without inventing an opening.
+	block(Vector3(-11.8,1.55,3.25),Vector3(1.15,0.7,0.1),"metal")
+	for i in range(8): block(Vector3(-11.8,1.29+i*0.075,3.32),Vector3(1.0,0.025,0.04),"plinth")
 	# Reinforced canopy: a thick edge, substantial posts and restrained ribs.
 	block(Vector3(0,3.2,14),Vector3(6.9,0.34,4.8))
 	block(Vector3(0,3.4,14),Vector3(7.0,0.06,4.9),"metal")
 	block(Vector3(0,3.02,16.35),Vector3(6.9,0.36,0.28),"plinth")
 	for x in [-2.9,2.9]:
-		block(Vector3(x,1.46,15.5),Vector3(0.34,2.92,0.34),"concrete",true)
+		block(Vector3(x,1.52,15.5),Vector3(0.34,3.04,0.34),"concrete",true)
 		block(Vector3(x,0.22,15.5),Vector3(0.5,0.44,0.5),"plinth")
-	for x in [-2.2,0.0,2.2]: block(Vector3(x,2.97,14.3),Vector3(0.09,0.11,3.6),"metal")
+	for x in [-2.2,0.0,2.2]: block(Vector3(x,3.04,14.3),Vector3(0.09,0.06,3.6),"metal")
 	# Recessed entrance and a central sign panel between the structural piers.
 	for x in [-1.05,1.05]: block(Vector3(x,1.35,12.22),Vector3(0.21,2.7,0.35))
 	block(Vector3(0,2.73,12.22),Vector3(2.31,0.18,0.35))
 	block(Vector3(0,6.15,12.38),Vector3(2.2,2.2,0.18),"metal")
+	for x in [-1.2,1.2]:
+		for y in [5.4,6.9]: block(Vector3(x,y,12.38),Vector3(0.36,0.08,0.12),"metal")
 	for x in [-0.97,0.97]:
 		for y in [5.2,7.08]:
 			var bolt := Art.rounded_box(self,Vector3(x,y,12.49),Vector3(0.035,0.035,0.018),Color(0.25,0.24,0.18),0.008)

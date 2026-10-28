@@ -83,24 +83,33 @@ func build() -> void:
 			box(Vector3(x, 1.5, -12), Vector3(0.2, 3, 4), Color(0.22, 0.25, 0.23))
 			box(Vector3(x, 1.5, 3), Vector3(0.2, 3, 2), Color(0.22, 0.25, 0.23))
 	for x in [-5.5, 5.5]: box(Vector3(x, 1.5, -16), Vector3(5, 3, 0.2), Color(0.22, 0.25, 0.23))
-	# Facade cornice is a perimeter trim, not a plate through the stairwell.
-	for x in [-8.15, 8.15]: box(Vector3(x, 3.55, -2), Vector3(0.3, 0.25, 28.6), Color(0.12, 0.16, 0.16))
-	box(Vector3(0, 3.55, 12.15), Vector3(16.6, 0.25, 0.3), Color(0.12, 0.16, 0.16))
-	for x in [-5.65, 5.65]: box(Vector3(x, 3.55, -16.15), Vector3(5.3, 0.25, 0.3), Color(0.12, 0.16, 0.16))
+	# Rear trim remains here; front/side structural members have one owner in
+	# facade_details.gd, avoiding nested beams and obsolete narrow piers.
+	for x in [-5.65,5.65]: box(Vector3(x,3.55,-16.15),Vector3(5.3,0.25,0.3),Color(0.12,0.16,0.16))
+	# Close the inter-storey plenum behind the cornice, not just its silhouette.
+	world.box(self,Vector3(8,3.6,-2),Vector3(0.2,1.2,28),"wall_cream")
+	for z_length in [[7.6,8.8],[-13.4,5.2]]:
+		world.box(self,Vector3(-8,3.6,z_length[0]),Vector3(0.2,1.2,z_length[1]),"wall_cream")
+	world.box(self,Vector3(0,3.6,12),Vector3(16,1.2,0.2),"wall_cream")
+	for x in [-5.5,5.5]: world.box(self,Vector3(x,3.6,-16),Vector3(5,1.2,0.2),"wall_cream")
+	# The recessed upper rooms stop at z=10. Carry their slab to the portico
+	# piers at z=12, with a continuous underside and no open ceiling slot.
+	world.box(self,Vector3(0,4.05,11.1),Vector3(16.2,0.3,2.2),"ceiling")
 	box(Vector3(0, 7.45, -2), Vector3(16.6, 0.25, 28.6), Color(0.12, 0.16, 0.16))
 	# Roof parapets and flashings.
 	for x in [-8.15, 8.15]: box(Vector3(x, 7.85, -2), Vector3(0.2, 0.7, 28.5), Color(0.24, 0.26, 0.23))
 	for z in [-16.15, 12.15]: box(Vector3(0, 7.85, z), Vector3(16.5, 0.7, 0.2), Color(0.24, 0.26, 0.23))
-	for x in [-7.8, -0.95, 0.95, 7.8]:
-		box(Vector3(x, 3.7, 12.2), Vector3(0.18, 7.3, 0.22), Color(0.19, 0.23, 0.21))
-	for x in [-8.25, 8.25]:
-		for z in [-15.7, 11.7]:
-			world.staircases.pipe(Vector3(x, 0.1, z), Vector3(x, 7.5, z), 0.055, Color(0.21, 0.24, 0.23))
+	# Downpipes are rear-mounted, clear of the cornice rather than buried in
+	# the front corner piers. Short stand-offs connect them back to the wall.
+	for side in [-1.0,1.0]:
+		var pipe_x: float = side*8.62
+		world.staircases.pipe(Vector3(pipe_x,0.1,-15.7),Vector3(pipe_x,7.65,-15.7),0.055,Color(0.21,0.24,0.23))
+		world.staircases.pipe(Vector3(side*8.13,7.65,-15.7),Vector3(pipe_x,7.65,-15.7),0.055,Color(0.21,0.24,0.23))
+		for height in [0.8,2.7,4.8,6.8]:
+			world.staircases.pipe(Vector3(side*8.1,height,-15.7),Vector3(pipe_x,height,-15.7),0.018,Color(0.13,0.17,0.15))
 	for x in [-4.5, 4.5]:
 		box(Vector3(x, 7.9, -4), Vector3(2.1, 0.8, 1.4), Color(0.25, 0.29, 0.27))
 		for z in range(7): Art.box(self, Vector3(x, 8.32, -4.55 + z * 0.18), Vector3(1.9, 0.015, 0.06), Color(0.09, 0.13, 0.12))
-	box(Vector3(0, 3.05, 14), Vector3(6.5, 0.18, 4.5), Color(0.1, 0.15, 0.14))
-	for x in [-2.9, 2.9]: box(Vector3(x, 1.45, 15.5), Vector3(0.16, 2.9, 0.16), Color(0.22, 0.28, 0.26))
 	var sign: Label3D = world.add_sign("V E S P E R", Vector3(0, 6.5, 12.5))
 	sign.pixel_size = 0.007
 	sign.modulate = Color(0.53, 0.68, 0.61)

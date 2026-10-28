@@ -142,11 +142,14 @@ func light(point: Vector3, caption: String) -> void:
 	lamp.shadow_enabled = true
 	add_child(lamp)
 	Art.box(self, point + Vector3(0, 0.1, 0), Vector3(0.7, 0.08, 0.22), Color(0.5, 0.6, 0.53))
-	var sign_point := point - Vector3(0, 0.35, 0)
-	Art.box(self, sign_point, Vector3(1.65, 0.3, 0.06), Color(0.045, 0.09, 0.075))
-	for side in [-1.0, 1.0]:
-		var label: Label3D = world.add_sign(caption, sign_point + Vector3(0, 0, side * 0.04), PI if side < 0 else 0.0)
-		label.pixel_size = 0.0012
+	var side := 1.0 if point.x > 0 else -1.0
+	var sign_point := Vector3(side * 2.86, point.y - 0.55, point.z)
+	var plaque := Art.box(self, sign_point, Vector3(0.04,0.3,1.65),Color(0.12,0.17,0.14))
+	plaque.name = "WallWayfinding"
+	plaque.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var label: Label3D = world.add_sign(caption, sign_point - Vector3(side * 0.03,0,0), -side * PI/2)
+	label.pixel_size = 0.0012
+	label.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 func main_stair() -> void:
 	landing(Vector3(0, 0, -17), Vector2(5.8, 2.4))

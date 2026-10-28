@@ -140,6 +140,11 @@ static func architectural(kind: String) -> ShaderMaterial:
 			style = 1
 			tint = Color(0.6, 0.76, 0.65)
 		"floor_concrete": style = 2
+		"ceiling":
+			source = "worn_cracked_plaster"
+			style = 6
+			tint = Color(0.84, 0.85, 0.81)
+			scale = 0.55
 		"wall_cream", "wall_green", "wall_concrete", "facade":
 			source = "worn_cracked_plaster"
 			style = 5
@@ -157,6 +162,10 @@ static func architectural(kind: String) -> ShaderMaterial:
 	if not kind in ["floor_reception", "floor_archive", "upper_floor"]:
 		material.set_shader_parameter("base_color", decay_map(source,"diff"))
 		material.set_shader_parameter("base_normal", decay_map(source,"nor_gl"))
+	if kind in ["wall_cream", "wall_green", "wall_concrete", "facade", "ceiling"]:
+		var plaster := "res://assets/textures/PaintedPlaster017/PaintedPlaster017_1K-JPG_"
+		material.set_shader_parameter("base_color",load(plaster+"Color.jpg"))
+		material.set_shader_parameter("base_normal",load(plaster+"NormalGL.jpg"))
 	material.set_shader_parameter("rough_map", decay_map(source,"rough"))
 	material.set_shader_parameter("ao_map", decay_map(source,"ao"))
 	material.set_shader_parameter("facade_color", decay_map("worn_mossy_plasterwall","diff"))
@@ -190,4 +199,11 @@ static func photographic(asset: String, meters: float = 2.0) -> StandardMaterial
 	material.uv1_world_triplanar = true
 	material.uv1_scale = Vector3.ONE / meters
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	return material
+
+
+static func fitting(color: Color, glazed: bool = false) -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://shaders/aged_glass.gdshader") if glazed else preload("res://shaders/aged_fittings.gdshader")
+	material.set_shader_parameter("paint", color)
 	return material

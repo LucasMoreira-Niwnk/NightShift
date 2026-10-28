@@ -32,31 +32,23 @@ func _ready() -> void:
 	box.size = Vector3(1.5, 2.5, 0.15)
 	mesh.mesh = box
 	mesh.position = Vector3(0.75, 1.25, 0)
-	var material := preload("res://scripts/materials.gd").surface("metal")
-	mesh.material_override = material
 	pivot.add_child(mesh)
-	var art = preload("res://scripts/art.gd")
-	mesh.material_override = preload("res://scripts/materials.gd").surface("wood")
+	mesh.material_override = preload("res://scripts/materials.gd").fitting(Color(0.24,0.28,0.22))
 	if glazed:
-		var glass := StandardMaterial3D.new()
-		glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		glass.albedo_color = Color(0.16, 0.24, 0.23, 0.22)
-		glass.cull_mode = BaseMaterial3D.CULL_DISABLED
-		glass.roughness = 0.2
-		mesh.material_override = glass
+		mesh.material_override = preload("res://scripts/materials.gd").fitting(Color(0.3,0.32,0.28),true)
 		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		for x in [0.04, 1.46]: art.box(pivot, Vector3(x, 1.25, 0), Vector3(0.08, 2.5, 0.17), Color(0.12, 0.17, 0.15))
-		for y in [0.06, 1.0, 2.45]: art.box(pivot, Vector3(0.75, y, 0), Vector3(1.5, 0.09, 0.17), Color(0.12, 0.17, 0.15))
+		for x in [0.04, 1.46]: aged_box(pivot, Vector3(x, 1.25, 0), Vector3(0.08, 2.5, 0.17), Color(0.12, 0.17, 0.15))
+		for y in [0.06, 1.0, 2.45]: aged_box(pivot, Vector3(0.75, y, 0), Vector3(1.5, 0.09, 0.17), Color(0.12, 0.17, 0.15))
 	# The visual frame sits outside the existing clear opening.
 	for x in [-0.8, 0.8]:
-		art.box(self, Vector3(x, 1.25, 0), Vector3(0.1, 2.6, 0.24), Color(0.09, 0.13, 0.12))
-	art.box(self, Vector3(0, 2.55, 0), Vector3(1.7, 0.1, 0.24), Color(0.09, 0.13, 0.12))
+		aged_box(self, Vector3(x, 1.25, 0), Vector3(0.1, 2.6, 0.24), Color(0.09, 0.13, 0.12))
+	aged_box(self, Vector3(0, 2.55, 0), Vector3(1.7, 0.1, 0.24), Color(0.09, 0.13, 0.12))
 	for side in [-1.0, 1.0]:
 		for y in ([] if glazed else [0.65, 1.6]):
-			art.box(pivot, Vector3(0.75, y, side * 0.08), Vector3(1.15, 0.65, 0.025), Color(0.14, 0.19, 0.16))
-		art.box(pivot, Vector3(1.3, 1.15, side * 0.1), Vector3(0.1, 0.24, 0.025), Color(0.38, 0.4, 0.34))
-		art.box(handle, Vector3(-0.09, 0, side * 0.15), Vector3(0.24, 0.045, 0.06), Color(0.54, 0.54, 0.45))
-		art.box(pivot, Vector3(0.75, 2.15, side * 0.09), Vector3(0.95, 0.22, 0.025), Color(0.045, 0.07, 0.06))
+			aged_box(pivot, Vector3(0.75, y, side * 0.08), Vector3(1.15, 0.65, 0.025), Color(0.14, 0.19, 0.16))
+		aged_box(pivot, Vector3(1.3, 1.15, side * 0.1), Vector3(0.1, 0.24, 0.025), Color(0.38, 0.4, 0.34))
+		aged_box(handle, Vector3(-0.09, 0, side * 0.15), Vector3(0.24, 0.045, 0.06), Color(0.54, 0.54, 0.45))
+		aged_box(pivot, Vector3(0.75, 2.15, side * 0.09), Vector3(0.95, 0.22, 0.025), Color(0.045, 0.07, 0.06))
 		var label := Label3D.new()
 		label.shaded = true
 		label.text = display_name.to_upper()
@@ -67,7 +59,7 @@ func _ready() -> void:
 		label.outline_size = 0
 		pivot.add_child(label)
 	for y in [0.35, 1.25, 2.2]:
-		art.box(pivot, Vector3(0.03, y, 0), Vector3(0.08, 0.16, 0.21), Color(0.3, 0.33, 0.29))
+		aged_box(pivot, Vector3(0.03, y, 0), Vector3(0.08, 0.16, 0.21), Color(0.3, 0.33, 0.29))
 	collider = CollisionShape3D.new()
 	var shape := BoxShape3D.new()
 	shape.size = box.size
@@ -109,3 +101,8 @@ func set_open(value: bool) -> void:
 	await animation.finished
 	if not value: operated.emit(false)
 	moving = false
+
+func aged_box(parent: Node3D, point: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
+	var mesh := preload("res://scripts/art.gd").box(parent,point,size,color)
+	mesh.material_override = preload("res://scripts/materials.gd").fitting(color)
+	return mesh

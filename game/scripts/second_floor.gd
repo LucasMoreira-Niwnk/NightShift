@@ -111,7 +111,9 @@ func block(point: Vector3, size: Vector3, kind: String = "wall", collision: bool
 
 func wall(point: Vector3, size: Vector3) -> void:
 	block(point, size, "wall_cream" if point.z > -36 else "wall_green")
-	Art.box(self, Layout.upper_point(Vector3(point.x, 0.5, point.z)), Vector3(size.x * 0.8 + 0.015, 1, size.z + 0.015), Color(0.13, 0.2, 0.18))
+	var panel := preload("res://scripts/materials.gd").architectural("wall_green")
+	panel.set_shader_parameter("tint", Color(0.3,0.4,0.35))
+	Art.box(self, Layout.upper_point(Vector3(point.x, 0.5, point.z)), Vector3(size.x * 0.8 + 0.015, 1, size.z + 0.015), Color(0.13, 0.2, 0.18), panel)
 
 func partition(x: float, start: float, end: float, opening: float) -> void:
 	wall(Vector3(x, 1.5, (start + opening - 0.75) / 2), Vector3(0.2, 3, opening - 0.75 - start))
@@ -129,7 +131,8 @@ func room(point: Vector3, size: Vector2) -> void:
 	add_child(light)
 	lights.append(light)
 	world.interior_lights.append(light)
-	Art.model(self, "lampSquareCeiling", Layout.upper_point(point + Vector3.UP * 2.8), Vector3(0.8, 0.2, 0.8))
+	var fixture := Art.model(self, "lampSquareCeiling", Layout.upper_point(point + Vector3.UP * 2.8), Vector3(0.8, 0.2, 0.8))
+	world.disable_fixture_shadows(fixture)
 	var emergency := OmniLight3D.new()
 	emergency.position = Layout.upper_point(point + Vector3.UP * 2.4)
 	emergency.light_color = Color(1, 0.1, 0.04)

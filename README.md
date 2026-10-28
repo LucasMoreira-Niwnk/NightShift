@@ -45,6 +45,8 @@ Pisos e paredes variam por ambiente: lajota clara na recepção/corredores, vin�
 
 Na falha do disjuntor do capítulo 1 e no apagão do capítulo 2, as luminárias dos dois pisos, escadas e terreno, incluindo as lâmpadas emissivas, se apagam. A lanterna continua a bateria. O terminal preserva CCTV/documentos pelo nobreak, mas seu halo de luz também apaga. A iluminação natural e o fenômeno Mêmesis seguem independentes da rede elétrica. O reparo completo do fusível/disjuntores restaura a alimentação; checkpoints preservam a condição de apagão.
 
+A revisão das superfícies unifica as faces externas e substitui a camada de fachada excessivamente escura por reboco pintado com fissuras finas e umidade. Poeira interna e asfalto recebem tratamentos separados; poças são áreas molhadas irregulares no próprio material do chão. Portas e janelas têm pintura fosca e depósitos de sujeira, e o teto usa reboco pintado. Placas de direção ficam nas paredes e as carcaças das luminárias não projetam sombras sobre sua própria luz.
+
 ### Capítulo 1 — O Primeiro Turno
 
 A partida começa diante da entrada do Vesper. Abra a porta, leia o envelope no balcão, entre na segurança e siga os objetivos no alto da tela. Pegue a lanterna na mesa para ver a mão e o item em primeira pessoa. A sequência contém oito cenas, três puzzles, anomalias, documentos e conclusão. Esc permite salvar/carregar checkpoint e ajustar o áudio. J abre o diário com documentos e mensagens coletados.

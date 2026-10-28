@@ -53,8 +53,9 @@ func _ready() -> void:
 	dressing = preload("res://scripts/set_dressing.gd").new()
 	for kind in ["tile", "wall", "metal", "wood", "ceiling"]:
 		materials[kind] = Materials.surface(kind)
-	for kind in ["floor_reception", "floor_security", "floor_archive", "floor_concrete", "upper_floor", "wall_cream", "wall_green", "wall_concrete", "facade", "asphalt", "pavers"]:
+	for kind in ["floor_reception", "floor_security", "floor_archive", "floor_concrete", "upper_floor", "wall_cream", "wall_green", "wall_concrete", "facade", "asphalt", "pavers", "ceiling"]:
 		materials[kind] = Materials.architectural(kind)
+	materials.wall = materials.wall_cream
 	architecture = preload("res://scripts/building_exterior.gd").new()
 	architecture.world = self
 	add_child(architecture)
@@ -161,10 +162,10 @@ func _ready() -> void:
 	Art.box(self, Vector3(-4.8, 2.6, 4.14), Vector3(1.5, 0.25, 0.05), Color(0.06, 0.1, 0.085))
 	var reception_sign := add_sign("VESPER / RECEPÇÃO", Vector3(-4.8, 2.6, 4.18))
 	reception_sign.pixel_size = 0.0013
-	Art.box(self, Vector3(0, 2.65, 3), Vector3(2.2, 0.35, 0.08), Color(0.06, 0.1, 0.085))
-	for x in [-0.8, 0.8]:
-		Art.box(self, Vector3(x, 2.91, 3), Vector3(0.025, 0.18, 0.025), Color(0.17, 0.2, 0.17))
-	var direction_sign := add_sign("SEGURANÇA ←   |   ARQUIVO →\nTÉCNICA ← / FUNDO", Vector3(0, 2.65, 3.05))
+	var direction_plaque := Art.box(self, Vector3(3.5,2.25,4.14),Vector3(2.2,0.35,0.05),Color(0.06,0.1,0.085))
+	direction_plaque.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var direction_sign := add_sign("SEGURANÇA ←   |   ARQUIVO →\nTÉCNICA ← / FUNDO", Vector3(3.5,2.25,4.18))
+	direction_sign.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	direction_sign.pixel_size = 0.0013
 	add_sign("ARQUIVO", Vector3(5, 2.6, -9.8))
 	add_sign("SEGURANÇA", Vector3(-5, 2.6, -1.8))
@@ -264,8 +265,8 @@ func wall(location: Vector3, size: Vector3) -> void:
 	box(self, location, size, kind)
 	if size.y > 2.9:
 		var lower := Vector3(size.x + 0.012, 1.05, size.z + 0.012)
-		var panel := Materials.surface("wall")
-		panel.albedo_color = Color(0.16, 0.24, 0.22)
+		var panel := Materials.architectural("wall_green")
+		panel.set_shader_parameter("tint", Color(0.3, 0.4, 0.35))
 		Art.box(self, Vector3(location.x, 0.525, location.z), lower, Color.WHITE, panel)
 		Art.box(self, Vector3(location.x, 0.08, location.z), Vector3(size.x + 0.035, 0.16, size.z + 0.035), Color(0.065, 0.085, 0.075))
 		Art.box(self, Vector3(location.x, 1.07, location.z), Vector3(size.x + 0.025, 0.055, size.z + 0.025), Color(0.09, 0.13, 0.12))
@@ -301,7 +302,8 @@ func room(label: String, center: Vector3, size: Vector2) -> void:
 			add_child(extra)
 			interior_lights.append(extra)
 			corridor_lights.append(extra)
-	Art.model(self, "lampSquareCeiling", center + Vector3(0, 2.7, 0), Vector3(0.8, 0.3, 0.8))
+	var fixture := Art.model(self, "lampSquareCeiling", center + Vector3(0, 2.7, 0), Vector3(0.8, 0.3, 0.8))
+	disable_fixture_shadows(fixture)
 
 func make_door(id: String, location: Vector3, label: String) -> void:
 	var door := Door.new()
@@ -515,3 +517,9 @@ func capture_building_power() -> void:
 
 func independent_effect(node: Node) -> bool:
 	return figure.is_ancestor_of(node) or (figure_volume != null and figure_volume.is_ancestor_of(node))
+
+func disable_fixture_shadows(fixture: Node3D) -> void:
+	# The point light sits inside this decorative housing. Its mesh must not
+	# occlude the emitter and project an oversized black patch on the ceiling.
+	for part in fixture.find_children("*", "GeometryInstance3D", true, false):
+		part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

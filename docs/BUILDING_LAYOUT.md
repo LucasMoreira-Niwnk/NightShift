@@ -33,3 +33,13 @@ Os trechos de circulação usam o controlador real. Os testes reposicionam o jog
 A escada de serviço também é percorrida nos dois sentidos, verificando os níveis dos patamares e a ausência de quedas livres entre quadros. Há testes físicos tentando caminhar contra as bordas protegidas, raios de suporte no antigo vão de 35 cm junto à porta, verificação da orientação das duas rampas e altura livre da passagem inferior.
 
 Ainda cabe avaliação com jogadores de orientação, conforto dos lances, legibilidade noturna, desempenho em outras placas e ritmo. As áreas urbanas além do perímetro são cenográficas; somente dois pisos do Vesper fazem parte da partida.
+
+
+## Revisão de superfícies e iluminação — 28/10/2026
+
+- Peças antigas do tipo `wall`, vergas e rodapés do segundo andar passam pelo material arquitetônico. A seleção de faces externas inclui as torres das escadas; as faces internas preservam sua pintura. A fachada usa pintura de reboco com fissuras finas, envelhecimento mineral e umidade localizada, com menor presença de alvenaria exposta e sem a camada escura uniforme anterior.
+- A poeira interna é mais translúcida e restrita aos cantos; não cobre mais o asfalto externo. O ruído espacial usa hash sem seno para evitar artefatos nas manchas. O estacionamento preserva a textura fotográfica de asfalto e detritos.
+- As três poças deixam de ser cilindros opacos. Áreas irregulares de umidade são misturadas à cor, normal e rugosidade do próprio piso, sem degrau, disco preto ou colisão extra. Não se trata de uma simulação de água com profundidade ou reflexos completos do cenário.
+- Vidros recebem depósitos nas bordas, escorridos e opacidade discreta; a visão para os cômodos permanece aberta. Caixilhos e portas usam pintura fosca, pequenos pontos de perda de tinta e oxidação pouco contrastada. Vãos, colisões e animações das portas não mudaram.
+- O teto tem reboco pintado e manchas de infiltração discretas. As carcaças decorativas das luminárias deixam de bloquear seu próprio ponto de luz. A sinalização de direção da recepção e das escadas passa às paredes, sem sombras projetadas; não há placas suspensas abaixo dessas fontes.
+- Todos os recursos visuais utilizados já estavam incluídos no projeto. Prévia técnica em `.local/material-*.png` usa os materiais reais, com HUD e grão de filme ocultados somente no script de captura para facilitar a inspeção. Os efeitos de imagem do jogo permanecem inalterados.

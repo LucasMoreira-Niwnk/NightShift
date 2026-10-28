@@ -4,15 +4,18 @@ const Art = preload("res://scripts/art.gd")
 var world: Node3D
 var window_count := 0
 var building_shell := false
-var glass: StandardMaterial3D
+var glass: ShaderMaterial
+var frame_material: ShaderMaterial
 
 func _ready() -> void:
 	name = "VesperExterior"
-	glass = StandardMaterial3D.new()
-	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	glass.albedo_color = Color(0.21, 0.32, 0.33, 0.18)
-	glass.roughness = 0.21
-	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
+	glass = preload("res://scripts/materials.gd").fitting(Color(0.3,0.32,0.28),true)
+	frame_material = preload("res://scripts/materials.gd").fitting(Color(0.18,0.22,0.19))
+
+func frame_box(parent: Node3D, point: Vector3, size: Vector3, _color: Color) -> MeshInstance3D:
+	var mesh := Art.box(parent, point, size, Color.WHITE)
+	mesh.material_override = frame_material
+	return mesh
 
 func box(point: Vector3, size: Vector3, color: Color, collision: bool = true) -> MeshInstance3D:
 	return world.box(self, point, size, "facade" if building_shell else "exterior", collision, color)
@@ -38,22 +41,19 @@ func window_wall(parent: Node3D, center: Vector3, size: Vector3, openings: Array
 		middle.y = (sill + head) / 2
 		var frame := Color(0.12, 0.17, 0.16)
 		for edge in [-1.0, 1.0]:
-			Art.box(parent, middle + direction * (edge * width / 2), Vector3(0.085, head - sill + 0.14, 0.085), frame)
+			frame_box(parent, middle + direction * (edge * width / 2), Vector3(0.085, head - sill + 0.14, 0.085), frame)
 		for height in [sill, head]:
 			var point := middle
 			point.y = height
-			Art.box(parent, point, Vector3(width + 0.16, 0.09, 0.22) if along_x else Vector3(0.22, 0.09, width + 0.16), frame)
+			frame_box(parent, point, Vector3(width + 0.16, 0.09, 0.22) if along_x else Vector3(0.22, 0.09, width + 0.16), frame)
 		var pane_size := Vector3(width, head - sill, 0.025) if along_x else Vector3(0.025, head - sill, width)
 		var pane: MeshInstance3D = world.box(parent, middle, pane_size, "glass", true)
 		pane.material_override = glass
 		pane.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		Art.box(parent, middle, Vector3(0.04, head - sill, 0.065) if along_x else Vector3(0.065, head - sill, 0.04), frame)
-		Art.box(parent, middle - Vector3.UP * 0.2, Vector3(width, 0.035, 0.065) if along_x else Vector3(0.065, 0.035, width), frame)
+		frame_box(parent, middle, Vector3(0.04, head - sill, 0.065) if along_x else Vector3(0.065, head - sill, 0.04), frame)
+		frame_box(parent, middle - Vector3.UP * 0.2, Vector3(width, 0.035, 0.065) if along_x else Vector3(0.065, 0.035, width), frame)
 		# Projecting stone sill, drip edge and discreet grime streaks.
-		Art.box(parent, middle + Vector3.UP * (sill - middle.y - 0.08), Vector3(width + 0.28, 0.12, 0.38) if along_x else Vector3(0.38, 0.12, width + 0.28), Color(0.29, 0.31, 0.28))
-		for index in range(9):
-			var offset := -width / 2 + (index + 0.5) * width / 9
-			Art.box(parent, middle + direction * offset + normal * 0.018, Vector3(0.006, 0.18 + (index % 4) * 0.17, 0.006), Color(0.13, 0.2, 0.19, 0.6))
+		frame_box(parent, middle + Vector3.UP * (sill - middle.y - 0.08), Vector3(width + 0.28, 0.12, 0.38) if along_x else Vector3(0.38, 0.12, width + 0.28), Color(0.29, 0.31, 0.28))
 		window_count += 1
 		cursor = right
 	if cursor < length / 2:
@@ -227,22 +227,7 @@ func details() -> void:
 			Art.box(self, Vector3(x, 0.58, 18.25 + index * 0.16), Vector3(2.05, 0.07, 0.12), Color(0.18, 0.2, 0.14))
 			Art.box(self, Vector3(x, 0.82 + index * 0.12, 18.15), Vector3(2.05, 0.08, 0.055), Color(0.18, 0.2, 0.14))
 		world.box(self, Vector3(x, 0.48, 18.55), Vector3(2.1, 0.96, 0.85), "metal").hide()
-	for point in [Vector3(3.5, 0.001, 24), Vector3(-14, 0.001, 23), Vector3(20, 0.001, 29)]:
-		var puddle := MeshInstance3D.new()
-		var disc := CylinderMesh.new()
-		disc.top_radius = 1.7
-		disc.bottom_radius = 1.7
-		disc.height = 0.003
-		disc.radial_segments = 48
-		puddle.mesh = disc
-		puddle.position = point
-		puddle.scale.z = 0.45
-		var wet := StandardMaterial3D.new()
-		wet.albedo_color = Color(0.025, 0.044, 0.052)
-		wet.roughness = 0.12
-		wet.metallic = 0.25
-		puddle.material_override = wet
-		add_child(puddle)
+	# Water is blended into the ground material, without raised opaque discs.
 	Art.model(self, "trashcan", Vector3(8.8, 0, 16), Vector3(0.65, 1.0, 0.65))
 	box(Vector3(8.8, 0.45, 16), Vector3(0.55, 0.9, 0.55), Color(0.1, 0.15, 0.12)).hide()
 	box(Vector3(8.22, 1.1, 5), Vector3(0.25, 1.1, 0.7), Color(0.2, 0.27, 0.23))

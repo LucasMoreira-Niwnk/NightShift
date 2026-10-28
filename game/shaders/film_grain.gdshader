@@ -18,16 +18,23 @@ uniform float grain_amount : hint_range(0.0, 0.5) = 0.075;
 uniform float grain_size : hint_range(1.0, 4.0) = 1.5;
 uniform float shadow_bias : hint_range(0.0, 1.0) = 0.65;
 uniform float vignette_strength : hint_range(0.0, 1.0) = 0.3;
-uniform float gate_flicker : hint_range(0.0, 0.2) = 0.035;
+uniform float gate_flicker : hint_range(0.0, 0.2) = 0.012;
+// Cadencia do grao: quantas vezes por segundo o padrao e re-sorteado. Precisa
+// ficar bem abaixo da taxa de quadros, senao cada quadro cai num sorteio novo
+// e o grao ferve em vez de granular. Medido a 17 fps nesta cena, 5 Hz segura
+// cada padrao por uns tres quadros.
+uniform float grain_fps : hint_range(1.0, 60.0) = 5.0;
 
 float hash(vec2 seed) {
 	return fract(sin(dot(seed, vec2(12.9898, 78.233))) * 43758.5453123);
 }
 
 void fragment() {
-	// Uma amostra por célula de grão, re-sorteada a cada quadro.
+	// Uma amostra por célula de grão, re-sorteada a cada fotograma — não a cada
+	// quadro renderizado, senão o grão ferve em vez de granular.
 	vec2 cell = floor(FRAGCOORD.xy / grain_size);
-	float roll = hash(cell + vec2(fract(TIME) * 311.7, fract(TIME * 1.7) * 71.3));
+	float frame = floor(TIME * grain_fps);
+	float roll = hash(cell + vec2(frame * 13.73, frame * 7.31));
 	float grain = roll - 0.5;
 
 	// Emulsão suja: o grão pesa mais onde a imagem já está escura.

@@ -5,7 +5,7 @@ var chapter: Node
 var game: Node
 var signal_lost := false
 var monitor_power := true
-var screen_material: StandardMaterial3D
+var screen_material: ShaderMaterial
 var picture: TextureRect
 var status_label: Label
 var report_category: OptionButton
@@ -80,9 +80,8 @@ func build_monitor() -> void:
 	screen.position = Vector3(0, 0.45, 0.096)
 	# CCTV excludes layer 2 to avoid a recursive image of its own monitor.
 	screen.layers = 2
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_texture = feed.get_texture()
+	var material := crt_material()
+	tube_feed(material, feed.get_texture())
 	screen_material = material
 	screen.material_override = material
 	add_child(screen)
@@ -104,13 +103,24 @@ func build_monitor() -> void:
 		image.layers = 2
 		var bezel = preload("res://scripts/art.gd")
 		bezel.rounded_box(self, image.position - Vector3(0, 0, 0.04), Vector3(0.65, 0.4, 0.07), Color(0.035, 0.045, 0.04))
-		var surface := StandardMaterial3D.new()
-		surface.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		surface.albedo_color = Color(0.04, 0.06, 0.05)
+		var surface := crt_material()
+		tube_feed(surface, null)
 		image.material_override = surface
 		add_child(image)
 		channel_screens.append(surface)
 	game.world.dressing.terminal(self)
+
+# Todo vidro de monitor passa pelo mesmo tubo: curvatura, varredura e vinheta
+# na propria textura da tela, nao na tela do jogo.
+func crt_material() -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = load("res://shaders/crt_screen.gdshader")
+	return material
+
+# Sem sinal o tubo fica apagado, nao preto chapado: e o brilho que cai.
+func tube_feed(material: ShaderMaterial, texture: Texture2D) -> void:
+	material.set_shader_parameter("feed", texture)
+	material.set_shader_parameter("brightness", 1.0 if texture != null else 0.0)
 
 func part(location: Vector3, size: Vector3, color: Color) -> void:
 	preload("res://scripts/art.gd").rounded_box(self, location, size, color)
@@ -277,6 +287,19 @@ void fragment(){
 	clip_seek.step = 0.05
 	clip_seek.value_changed.connect(func(value: float): recording.seek(value))
 	chapter_actions.add_child(clip_seek)
+	# O tubo tambem cobre a interface em tela cheia: a curva vale para a tela
+	# inteira do terminal, nao so para a imagem da camera.
+	var tube := ColorRect.new()
+	tube.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tube.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var tube_shader = load("res://shaders/crt.gdshader")
+	if tube_shader:
+		var tube_material := ShaderMaterial.new()
+		tube_material.shader = tube_shader
+		tube_material.set_shader_parameter("curvature", 3.4)
+		tube_material.set_shader_parameter("chromatic_aberration", 0.9)
+		tube.material = tube_material
+	overlay.add_child(tube)
 	overlay.hide()
 
 func chapter_button(text: String, action: Callable) -> Button:
@@ -322,11 +345,10 @@ func select_camera(index: int) -> void:
 	if is_instance_valid(feed) and channel_screens.size() == 3 and monitor_power:
 		var frame := feed.get_texture().get_image()
 		if frame != null and not frame.is_empty():
-			channel_screens[previous % 3].albedo_texture = ImageTexture.create_from_image(frame)
+			tube_feed(channel_screens[previous % 3], ImageTexture.create_from_image(frame))
 	selected = posmod(index, camera_names.size())
 	if channel_screens.size() == 3 and monitor_power:
-		channel_screens[selected % 3].albedo_texture = feed.get_texture()
-		channel_screens[selected % 3].albedo_color = Color.WHITE
+		tube_feed(channel_screens[selected % 3], feed.get_texture())
 	security_camera.position = camera_positions[selected]
 	security_camera.look_at(camera_targets[selected], Vector3.UP)
 	if chapter != null and chapter.stage == 6 and selected == 0 and chapter.has_flag("reflection_seen"):
@@ -365,25 +387,24 @@ func set_monitor_power(powered: bool) -> void:
 	monitor_power = powered
 	if monitor_glow != null: monitor_glow.visible = powered and game.world.interior_powered
 	if screen_material != null:
-		screen_material.albedo_texture = feed.get_texture() if powered else null
-		screen_material.albedo_color = Color.WHITE if powered else Color(0.015, 0.02, 0.02)
+		tube_feed(screen_material, feed.get_texture() if powered else null)
 	for surface in channel_screens:
-		surface.albedo_color = Color.WHITE if powered else Color(0.015, 0.02, 0.02)
-		surface.albedo_texture = null
-	if powered and channel_screens.size() == 3: channel_screens[selected % 3].albedo_texture = feed.get_texture()
+		tube_feed(surface, null)
+	if powered and channel_screens.size() == 3:
+		tube_feed(channel_screens[selected % 3], feed.get_texture())
 
 func play_recording(kind: String) -> void:
 	recording.play(kind)
 	feed.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	picture.texture = recording.viewport.get_texture()
-	screen_material.albedo_texture = picture.texture
+	tube_feed(screen_material, picture.texture)
 	update_status()
 
 func stop_recording() -> void:
 	recording.stop()
 	feed.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	picture.texture = feed.get_texture()
-	screen_material.albedo_texture = feed.get_texture()
+	tube_feed(screen_material, feed.get_texture())
 
 func show_reflection() -> void:
 	if reflecting: return

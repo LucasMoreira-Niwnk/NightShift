@@ -182,21 +182,21 @@ tracks/12/enabled = true
 tracks/12/path = NodePath("ArmRig/arms/Skeleton3D:finger_thumb1.r")
 tracks/12/interp = 1
 tracks/12/loop_wrap = true
-tracks/12/keys = PackedFloat32Array(0, 1, 0, 0, 0.247404, 0.968912)
+tracks/12/keys = PackedFloat32Array(0, 1, -0.0171919, 0.467643, 0.455618, 0.75725)
 tracks/13/type = "rotation_3d"
 tracks/13/imported = false
 tracks/13/enabled = true
 tracks/13/path = NodePath("ArmRig/arms/Skeleton3D:finger_thumb2.r")
 tracks/13/interp = 1
 tracks/13/loop_wrap = true
-tracks/13/keys = PackedFloat32Array(0, 1, 0, 0, 0.342898, 0.939373)
+tracks/13/keys = PackedFloat32Array(0, 1, -0.221816, 0.0578812, -0.0387775, 0.972596)
 tracks/14/type = "rotation_3d"
 tracks/14/imported = false
 tracks/14/enabled = true
 tracks/14/path = NodePath("ArmRig/arms/Skeleton3D:finger_thumb3.r")
 tracks/14/interp = 1
 tracks/14/loop_wrap = true
-tracks/14/keys = PackedFloat32Array(0, 1, 0, 0, 0.149438, 0.988771)
+tracks/14/keys = PackedFloat32Array(0, 1, 0.542117, 0.209312, -0.246275, 0.775659)
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_7c82r"]
 _data = {
@@ -344,21 +344,21 @@ bones/17/parent = 4
 bones/17/rest = Transform3D(0.72907, -0.453771, 0.512395, 0.651186, 0.690388, -0.315152, -0.210745, 0.563433, 0.79883, -0.0726175, 0.168883, 0.247217)
 bones/17/enabled = true
 bones/17/position = Vector3(-0.0726175, 0.168883, 0.247217)
-bones/17/rotation = Quaternion(0, 0, 0.247404, 0.968912)
+bones/17/rotation = Quaternion(-0.0171919, 0.467643, 0.455618, 0.75725)
 bones/17/scale = Vector3(1, 1, 1)
 bones/18/name = "finger_thumb2.r"
 bones/18/parent = 17
 bones/18/rest = Transform3D(0.99029, -0.0348142, -0.13459, 0.0762274, 0.945602, 0.31627, 0.116258, -0.323458, 0.939073, -1.11759e-08, 0.401626, 2.98023e-08)
 bones/18/enabled = true
 bones/18/position = Vector3(-1.11759e-08, 0.401626, 2.98023e-08)
-bones/18/rotation = Quaternion(0, 0, 0.342898, 0.939373)
+bones/18/rotation = Quaternion(-0.221816, 0.0578812, -0.0387775, 0.972596)
 bones/18/scale = Vector3(1, 1, 1)
 bones/19/name = "finger_thumb3.r"
 bones/19/parent = 18
 bones/19/rest = Transform3D(0.998225, -0.00428515, 0.0594012, -0.00895111, 0.975283, 0.220778, -0.058879, -0.220918, 0.973514, -2.08616e-07, 0.28123, -1.19209e-07)
 bones/19/enabled = true
 bones/19/position = Vector3(-2.08616e-07, 0.28123, -1.19209e-07)
-bones/19/rotation = Quaternion(0, 0, 0.149438, 0.988771)
+bones/19/rotation = Quaternion(0.542117, 0.209312, -0.246275, 0.775659)
 bones/19/scale = Vector3(1, 1, 1)
 bones/20/name = "socket.r"
 bones/20/parent = 4
@@ -396,7 +396,7 @@ cast_shadow = 0
 mesh = ExtResource("2_b3upy")
 
 [node name="Lanterna" type="Node3D" parent="."]
-transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 0.0302762, 0.0364835, -0.063972)
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 0.0302762, 0.0364835, -0.0335032)
 
 [node name="led_flashlight" type="Node3D" parent="Lanterna"]
 transform = Transform3D(1.37504, 0, 0, 0, 1.37489, 0, 0, 0, 1.37358, -0.108076, 0, 0)

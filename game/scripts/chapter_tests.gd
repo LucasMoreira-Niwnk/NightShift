@@ -140,6 +140,8 @@ func run() -> void:
 			var rotation: Quaternion = pose_animation.track_get_key_value(track, key)
 			if not rotation.is_normalized(): valid_rotations = false
 	check(valid_rotations, "Authored finger rotations are normalized")
+	var thumb_fit: Dictionary = preload("res://scripts/hand_pose_tests.gd").thumb_clearance(game.player.hand)
+	check(thumb_fit.samples > 0 and thumb_fit.clearance > 0.0005, "Skinned thumb wraps outside the flashlight body with clearance")
 	check(game.player.hand.scene_file_path == "res://scenes/mao_lanterna.tscn", "Player equips the authored hand scene")
 	check(not game.player.hand.has_node("Preview"), "Hand preview environment is removed from gameplay")
 	var edited_hand = load("res://scenes/mao_lanterna.tscn").instantiate()

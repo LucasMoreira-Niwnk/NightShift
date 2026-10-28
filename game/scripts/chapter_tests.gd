@@ -122,6 +122,21 @@ func run() -> void:
 	game.player.interaction_target().interact()
 	check(game.player.hand.visible and game.player.flashlight.visible, "FPV hand and flashlight equipped")
 	check(game.player.hand.skeleton != null, "Imported right-hand skeleton loaded")
+	var right_skeleton: Skeleton3D = game.player.hand.skeleton
+	var right_only := true
+	for bone in range(right_skeleton.get_bone_count()):
+		if right_skeleton.get_bone_name(bone).ends_with(".l"): right_only = false
+	check(right_only and right_skeleton.find_bone("wrist.r") >= 0, "Hand scene contains only the right-arm skeleton")
+	var right_mesh: MeshInstance3D = right_skeleton.get_node("arms_mesh")
+	check(right_mesh.transform.is_equal_approx(Transform3D.IDENTITY) and right_skeleton.global_transform.basis.determinant() > 0, "Right hand is neither mirrored nor displaced from its skin")
+	var pose_animation: Animation = game.player.hand.get_node("PoseAnimation").get_animation("Pegada")
+	var valid_rotations := true
+	for track in range(pose_animation.get_track_count()):
+		if pose_animation.track_get_type(track) != Animation.TYPE_ROTATION_3D: continue
+		for key in range(pose_animation.track_get_key_count(track)):
+			var rotation: Quaternion = pose_animation.track_get_key_value(track, key)
+			if not rotation.is_normalized(): valid_rotations = false
+	check(valid_rotations, "Authored finger rotations are normalized")
 	check(game.player.hand.scene_file_path == "res://scenes/mao_lanterna.tscn", "Player equips the authored hand scene")
 	check(not game.player.hand.has_node("Preview"), "Hand preview environment is removed from gameplay")
 	var edited_hand = load("res://scenes/mao_lanterna.tscn").instantiate()

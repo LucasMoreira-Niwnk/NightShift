@@ -2,7 +2,7 @@
 
 Recursos nativos do Godot usados por `res://scenes/mao_lanterna.tscn`.
 
-- `ArmRig_arms_Skeleton3D_arms_mesh.res`: derivado de `../wrad_arms/right_arm.glb`, WRAD Arms (CC0), com o material local usado pelo projeto.
+- `right_hand_mesh.res`: derivado de `../wrad_arms/right_arm.glb`, WRAD Arms (CC0), com o material local usado pelo projeto. Contém somente os 390 vértices referenciados pelos triângulos do braço direito; os vértices sem uso foram removidos. A cena usa apenas 23 ossos da cadeia direita, sem o esqueleto esquerdo nem controladores auxiliares do arquivo original.
 - `Lanterna_*.res`: partes de `../flashlight/led_flashlight.glb`, Innerscene (CC0), com as texturas locais. Créditos e licenças originais permanecem nessas pastas.
 - `UniformSleeve.res`: manga criada no projeto.
 

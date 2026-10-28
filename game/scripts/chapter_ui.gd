@@ -415,8 +415,7 @@ func toggle_pause() -> void:
 	button("Nova partida", func():
 		get_tree().paused = false
 		get_tree().reload_current_scene())
-	button("Áudio e legendas", show_audio_settings)
-	button("Dificuldade — desconforto", show_discomfort_settings)
+	button("Configurações", show_settings)
 	button("Sair do jogo", func(): get_tree().quit())
 	panel.show()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -465,20 +464,29 @@ func show_discomfort_settings() -> void:
 	slider_row("Limiar de giro", effect.threshold, 120.0, 900.0, 10.0, " °/s", func(value: float): effect.threshold = value)
 	slider_row("Atraso do pico", effect.stutter_ms, 0.0, 25.0, 1.0, " ms", func(value: float): effect.stutter_ms = value)
 	button("Testar agora", func(): effect.test_pulse())
+	button("Voltar", show_settings)
 	button("Continuar", toggle_pause)
+
+func show_settings() -> void:
+	clear_panel()
+	title("CONFIGURAÇÕES")
+	button("Som", show_audio_settings)
+	button("Dificuldade — desconforto", show_discomfort_settings)
+	button("Continuar", toggle_pause)
+
+# Tres controles so: o de efeitos cobre tambem o leito de ambiente, que o
+# jogador ouve como efeito e nao como trilha.
+const VOLUME_ROWS := [["Volume master", "Master"], ["Efeitos sonoros", "Efeitos,Ambiente"], ["Músicas", "Musicas"]]
 
 func show_audio_settings() -> void:
 	clear_panel()
-	title("Áudio — legendas sempre ativas")
-	for bus_name in ["Ambiente", "Efeitos"]:
-		label_at(column, Vector2.ZERO, bus_name, 18)
-		var slider := HSlider.new()
-		slider.min_value = 0
-		slider.max_value = 1
-		slider.step = 0.01
-		slider.value = db_to_linear(AudioServer.get_bus_volume_db(AudioServer.get_bus_index(bus_name)))
-		slider.value_changed.connect(func(value: float): game.sound.set_volume(bus_name, value))
-		column.add_child(slider)
+	title("SOM — legendas sempre ativas")
+	for row in VOLUME_ROWS:
+		var text: String = row[0]
+		var buses: String = row[1]
+		var first: String = buses.split(",")[0]
+		slider_row(text, db_to_linear(AudioServer.get_bus_volume_db(AudioServer.get_bus_index(first))), 0.0, 1.0, 0.01, "", func(value: float): game.sound.set_volume(buses, value))
+	button("Voltar", show_settings)
 	button("Continuar", toggle_pause)
 
 func reset_ending() -> void:

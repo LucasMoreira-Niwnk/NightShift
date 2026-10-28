@@ -129,6 +129,7 @@ func room(point: Vector3, size: Vector2) -> void:
 	add_child(light)
 	lights.append(light)
 	world.interior_lights.append(light)
+	world.pulse_light(light)
 	Art.model(self, "lampSquareCeiling", Layout.upper_point(point + Vector3.UP * 2.8), Vector3(0.8, 0.2, 0.8))
 	var emergency := OmniLight3D.new()
 	emergency.position = Layout.upper_point(point + Vector3.UP * 2.4)

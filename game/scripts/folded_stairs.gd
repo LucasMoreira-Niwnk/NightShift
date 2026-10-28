@@ -141,6 +141,7 @@ func light(point: Vector3, caption: String) -> void:
 	lamp.omni_range = 6.5
 	lamp.shadow_enabled = true
 	add_child(lamp)
+	world.pulse_light(lamp)
 	Art.box(self, point + Vector3(0, 0.1, 0), Vector3(0.7, 0.08, 0.22), Color(0.5, 0.6, 0.53))
 	var sign_point := point - Vector3(0, 0.35, 0)
 	Art.box(self, sign_point, Vector3(1.65, 0.3, 0.06), Color(0.045, 0.09, 0.075))

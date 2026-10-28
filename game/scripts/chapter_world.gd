@@ -39,6 +39,15 @@ var staircases: Node3D
 var upper: Node3D
 var fuse_visual: Node3D
 var camera_mounts: Array = []
+var drifting_fog: Node3D
+
+# Camada visual exclusiva do 2o andar. O andar sai do cull_mask da camera do
+# jogador em vez de `visible = false`, porque o feed do CCTV compartilha o
+# mesmo World3D (cull_mask 5) e precisa continuar enxergando a CAM-04.
+const UPPER_LAYER := 8
+# Acima disto o jogador esta no 2o andar. Escadas contam como comodo proprio:
+# de dentro do vao os dois niveis aparecem juntos.
+const UPPER_FLOOR_Y := 2.0
 
 func _ready() -> void:
 	dressing = preload("res://scripts/set_dressing.gd").new()
@@ -204,6 +213,11 @@ func _ready() -> void:
 	environment.environment.glow_intensity = 0.55
 	environment.environment.glow_bloom = 0.05
 	add_child(environment)
+	# Bolhas de nevoa vagando num raio de 10 m do jogador: clima sem custo de
+	# geometria. Depende do volumetric_fog_enabled ligado acima.
+	drifting_fog = preload("res://scripts/drifting_fog.gd").new()
+	drifting_fog.game = game
+	add_child(drifting_fog)
 	staircases = preload("res://scripts/folded_stairs.gd").new()
 	staircases.world = self
 	add_child(staircases)
@@ -219,6 +233,7 @@ func _ready() -> void:
 	preload("res://scripts/security_camera_layout.gd").install(self)
 	architecture.build()
 	capture_building_power()
+	tag_upper_layer(upper)
 
 func box(parent: Node3D, location: Vector3, size: Vector3, kind: String = "wall", collision: bool = true, color: Color = Color.WHITE) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
@@ -407,6 +422,7 @@ func set_interior_power(powered: bool) -> void:
 		game.computer.monitor_glow.visible = powered and game.computer.monitor_power
 
 func _process(delta: float) -> void:
+	update_floor_culling()
 	if corridor_lights.is_empty(): return
 	rhythm_time += delta
 	var step := int(rhythm_time / RHYTHM_STEP) % CORRIDOR_RHYTHM.length()
@@ -456,6 +472,22 @@ func add_floor_plan(location: Vector3, angle: float, id: String) -> void:
 	board.add_child(collision)
 	floor_plans.append(board)
 
+
+func tag_upper_layer(node: Node) -> void:
+	# Malhas e luzes ja movidas de proposito para a camada do jogador (2) ou do
+	# CCTV (4) ficam como estao; so o que esta no padrao ganha a camada do andar.
+	for child in node.get_children():
+		if child is VisualInstance3D and child.layers == 1:
+			child.layers |= UPPER_LAYER
+		tag_upper_layer(child)
+
+func update_floor_culling() -> void:
+	if game.player == null: return
+	var point: Vector3 = game.player.global_position
+	# Visivel da rua tambem, senao as janelas do 2o andar ficariam vazias.
+	var sees_upper: bool = point.y > UPPER_FLOOR_Y or staircases.is_main(point) or staircases.is_service(point) or is_outdoors(point)
+	var mask: int = game.player.camera.cull_mask
+	game.player.camera.cull_mask = (mask | UPPER_LAYER) if sees_upper else (mask & ~UPPER_LAYER)
 
 func is_outdoors(point: Vector3) -> bool:
 	if absf(point.x) < 8.15 and point.z > -16.15 and point.z < 12: return false

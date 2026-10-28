@@ -22,8 +22,11 @@ func _ready() -> void:
 	camera = Camera3D.new()
 	camera.position.y = 1.6
 	camera.current = true
-	camera.cull_mask = 3
+	camera.cull_mask = 3 | preload("res://scripts/hand.gd").FPV_LAYER
 	camera.near = 0.03
+	# ponytail: predio fechado, o mais longe que se ve e a fachada do outro lado
+	# do estacionamento. 4000 (padrao) so paga culling a mais. Knob de calibragem.
+	camera.far = 70.0
 	add_child(camera)
 	ray = RayCast3D.new()
 	ray.target_position = Vector3(0, 0, -2.5)

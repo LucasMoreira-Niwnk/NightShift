@@ -1,6 +1,10 @@
 extends Node3D
 
 const Art = preload("res://scripts/art.gd")
+# Camada exclusiva do braco em primeira pessoa. A camada 2 e compartilhada com
+# as telas do computador, entao o desconforto precisa de um bit proprio para
+# redesenhar a mao sem arrastar as CCTV junto.
+const FPV_LAYER := 16
 const PALM_AXIS := Vector3(0, 1, 0)
 const WRIST_ROLL := 0.0
 const FINGER_CURL := [0.75, 1.1, 0.8]
@@ -81,7 +85,7 @@ func find_lens(node: Node3D) -> Vector3:
 
 func fpv_layer(node: Node) -> void:
 	if node is MeshInstance3D:
-		node.layers = 2
+		node.layers = 2 | FPV_LAYER
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for child in node.get_children(): fpv_layer(child)
 

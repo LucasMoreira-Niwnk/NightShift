@@ -417,10 +417,56 @@ func toggle_pause() -> void:
 		get_tree().paused = false
 		get_tree().reload_current_scene())
 	button("Áudio e legendas", show_audio_settings)
+	button("Dificuldade — desconforto", show_discomfort_settings)
 	button("Sair do jogo", func(): get_tree().quit())
 	panel.show()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	game.set_player_control(false)
+
+func toggle_row(text: String, pressed: bool, callback: Callable) -> CheckButton:
+	var control := CheckButton.new()
+	control.text = text
+	control.button_pressed = pressed
+	control.toggled.connect(callback)
+	column.add_child(control)
+	return control
+
+func slider_row(text: String, value: float, minimum: float, maximum: float, step: float, suffix: String, callback: Callable) -> HSlider:
+	var caption := label_at(column, Vector2.ZERO, "%s: %s%s" % [text, snappedf(value, step), suffix], 18)
+	var slider := HSlider.new()
+	slider.min_value = minimum
+	slider.max_value = maximum
+	slider.step = step
+	slider.value = value
+	slider.value_changed.connect(func(changed: float):
+		caption.text = "%s: %s%s" % [text, snappedf(changed, step), suffix]
+		callback.call(changed))
+	column.add_child(slider)
+	return slider
+
+func show_discomfort_settings() -> void:
+	var effect = game.discomfort
+	clear_panel()
+	panel.anchor_top = 0.04
+	panel.anchor_bottom = 0.96
+	title("Dificuldade — desconforto")
+	label_at(column, Vector2.ZERO, "Girar a câmera acima do limiar deixa um rastro curto na tela. Em teste: nenhuma opção está amarrada a um nível ainda.", 16)
+	var presets := HBoxContainer.new()
+	column.add_child(presets)
+	for preset_name in effect.PRESETS:
+		button(preset_name, func():
+			effect.apply_preset(preset_name)
+			show_discomfort_settings(), presets)
+	toggle_row("Sistema de desconforto ativo", effect.enabled, func(on: bool): effect.enabled = on)
+	toggle_row("Rastro temporal (ghosting)", effect.trail_enabled, func(on: bool): effect.trail_enabled = on)
+	toggle_row("Rastro só em vermelho/azul (aberração dinâmica)", effect.chroma_only, func(on: bool): effect.chroma_only = on)
+	toggle_row("Pico de frametime (experimental — atrasa o jogo)", effect.stutter_enabled, func(on: bool): effect.stutter_enabled = on)
+	slider_row("Opacidade do rastro", effect.trail_alpha, 0.0, 0.8, 0.05, "", func(value: float): effect.trail_alpha = value)
+	slider_row("Duração do rastro", effect.trail_ms, 50.0, 400.0, 10.0, " ms", func(value: float): effect.trail_ms = value)
+	slider_row("Limiar de giro", effect.threshold, 120.0, 900.0, 10.0, " °/s", func(value: float): effect.threshold = value)
+	slider_row("Atraso do pico", effect.stutter_ms, 0.0, 25.0, 1.0, " ms", func(value: float): effect.stutter_ms = value)
+	button("Testar agora", func(): effect.test_pulse())
+	button("Continuar", toggle_pause)
 
 func show_audio_settings() -> void:
 	clear_panel()

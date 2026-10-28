@@ -8,6 +8,7 @@ var ui: CanvasLayer
 var sound: Node
 var director: Node
 var shadows: Node3D
+var discomfort: CanvasLayer
 
 var tablet_hud: Control = null
 var hud_minimal: Control = null
@@ -48,6 +49,9 @@ func _ready() -> void:
 	shadows.game = self
 	shadows.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(shadows)
+	discomfort = preload("res://scripts/discomfort.gd").new()
+	discomfort.game = self
+	add_child(discomfort)
 	director = preload("res://scripts/event_director.gd").new()
 	director.game = self
 	director.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -56,6 +60,10 @@ func _ready() -> void:
 	# Inicializa integrações de HUD (CRT, Scanlines, Tablet móvel e Demo)
 	setup_hud_integrations()
 
+	# Sem isto o estado da etapa 0 so chegava ao mundo no primeiro advance(), e o
+	# corredor ficava com a energia desligada ate a primeira interacao: as luzes
+	# so comecavam a piscar depois que o jogador mexia em alguma coisa.
+	chapter.apply_world()
 	chapter.refresh()
 	ui.say("14 de novembro de 2008 — 23h57\nEdifício Vesper. Daniel Reis, seu primeiro turno começa agora.\n[Tab] Consultar Tablet  |  [F1] Alternar HUDs  |  [F2] Grão de filme")
 	if OS.get_cmdline_user_args().has("--smoke-test"):

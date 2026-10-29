@@ -1,0 +1,172 @@
+[gd_scene load_steps=3 format=3 uid="uid://hud_cctv_nightshift"]
+
+[ext_resource type="Script" path="res://scripts/huds/hud_cctv.gd" id="1_cctv"]
+[ext_resource type="PackedScene" uid="uid://camera_feed_nightshift" path="res://scenes/huds/camera_feed.tscn" id="2_feed"]
+
+[node name="HUDCCTV" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_cctv")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.04, 0.07, 1)
+
+[node name="MainLayout" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Header" type="HBoxContainer" parent="MainLayout/VBox"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0, 1, 0.533333, 1)
+theme_override_font_sizes/font_size = 20
+text = "VESPER SECURITY NETWORK"
+
+[node name="Operator" type="Label" parent="MainLayout/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.18, 0.6, 0.35, 1)
+theme_override_font_sizes/font_size = 14
+text = "OPERADOR: REIS, D."
+
+[node name="VSeparator" type="VSeparator" parent="MainLayout/VBox/Header"]
+layout_mode = 2
+
+[node name="ClockLabel" type="Label" parent="MainLayout/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0.533333, 1)
+theme_override_font_sizes/font_size = 16
+text = "00:17:42"
+
+[node name="FeedGrid" type="HBoxContainer" parent="MainLayout/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="Cam1" parent="MainLayout/VBox/FeedGrid" instance=ExtResource("2_feed")]
+layout_mode = 2
+cam_name = "CAM-01"
+cam_location = "RECEPÇÃO"
+cam_status = "AO VIVO"
+
+[node name="Cam2" parent="MainLayout/VBox/FeedGrid" instance=ExtResource("2_feed")]
+layout_mode = 2
+cam_name = "CAM-02"
+cam_location = "CORREDOR"
+cam_status = "AO VIVO"
+
+[node name="Cam3" parent="MainLayout/VBox/FeedGrid" instance=ExtResource("2_feed")]
+layout_mode = 2
+cam_name = "CAM-03"
+cam_location = "ARQUIVO"
+cam_status = "INSTÁVEL"
+center_text = "⚠ FALHA DE SINCRONIZAÇÃO"
+
+[node name="StatusBar" type="HBoxContainer" parent="MainLayout/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="IncidentPanel" type="PanelContainer" parent="MainLayout/VBox/StatusBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout/VBox/StatusBar/IncidentPanel"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/VBox/StatusBar/IncidentPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.8, 0.4, 1)
+theme_override_font_sizes/font_size = 12
+text = "ÚLTIMO INCIDENTE"
+
+[node name="IncidentText" type="Label" parent="MainLayout/VBox/StatusBar/IncidentPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0.533333, 1)
+theme_override_font_sizes/font_size = 14
+text = "#0047 — Objeto deslocado (CAM-03)"
+
+[node name="IncidentSub" type="Label" parent="MainLayout/VBox/StatusBar/IncidentPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.6, 0.4, 1)
+theme_override_font_sizes/font_size = 11
+text = "Registrado: 00:14:22 | Status: PENDENTE"
+
+[node name="RondaPanel" type="PanelContainer" parent="MainLayout/VBox/StatusBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout/VBox/StatusBar/RondaPanel"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/VBox/StatusBar/RondaPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.8, 0.4, 1)
+theme_override_font_sizes/font_size = 12
+text = "STATUS DA RONDA"
+
+[node name="HBox" type="HBoxContainer" parent="MainLayout/VBox/StatusBar/RondaPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Tag1" type="Label" parent="MainLayout/VBox/StatusBar/RondaPanel/VBox/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0.533333, 1)
+theme_override_font_sizes/font_size = 12
+text = "[ Recepção ✓ ]"
+
+[node name="Tag2" type="Label" parent="MainLayout/VBox/StatusBar/RondaPanel/VBox/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0.533333, 1)
+theme_override_font_sizes/font_size = 12
+text = "[ Corredor ✓ ]"
+
+[node name="Tag3" type="Label" parent="MainLayout/VBox/StatusBar/RondaPanel/VBox/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.1, 1)
+theme_override_font_sizes/font_size = 12
+text = "[ Arquivo ⏳ ]"
+
+[node name="ActionBar" type="HBoxContainer" parent="MainLayout/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BtnReport" type="Button" parent="MainLayout/VBox/ActionBar"]
+layout_mode = 2
+text = "▶ REPORTAR INCIDENTE"
+
+[node name="BtnSwitch" type="Button" parent="MainLayout/VBox/ActionBar"]
+layout_mode = 2
+text = "◀▶ ALTERNAR CÂMERA"
+
+[node name="BtnReportTurno" type="Button" parent="MainLayout/VBox/ActionBar"]
+layout_mode = 2
+text = "📋 RELATÓRIO DO TURNO"
+
+[node name="BtnRamal" type="Button" parent="MainLayout/VBox/ActionBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+text = "☎ RAMAL 000"

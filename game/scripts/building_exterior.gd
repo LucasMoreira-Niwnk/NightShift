@@ -1,0 +1,324 @@
+extends Node3D
+
+const Art = preload("res://scripts/art.gd")
+var world: Node3D
+var window_count := 0
+var building_shell := false
+var glass: ShaderMaterial
+var frame_material: ShaderMaterial
+var surround_material: StandardMaterial3D
+
+func _ready() -> void:
+	name = "VesperExterior"
+	glass = preload("res://scripts/materials.gd").fitting(Color(0.3,0.32,0.28),true)
+	surround_material = preload("res://scripts/materials.gd").photographic("concrete_floor_worn_001",1.7)
+	surround_material.albedo_color = Color(0.69,0.71,0.66)
+	surround_material.normal_scale = 0.4
+	frame_material = preload("res://scripts/materials.gd").fitting(Color(0.18,0.22,0.19))
+
+func frame_box(parent: Node3D, point: Vector3, size: Vector3, _color: Color) -> MeshInstance3D:
+	var mesh := Art.box(parent, point, size, Color.WHITE)
+	mesh.material_override = frame_material
+	return mesh
+
+func box(point: Vector3, size: Vector3, color: Color, collision: bool = true) -> MeshInstance3D:
+	return world.box(self, point, size, "facade" if building_shell else "exterior", collision, color)
+
+# Walls are built around apertures; the transparent pane owns its own collider.
+func window_wall(parent: Node3D, center: Vector3, size: Vector3, openings: Array, width: float) -> void:
+	var along_x := size.x > size.z
+	var length: float = size.x if along_x else size.z
+	var direction := Vector3.RIGHT if along_x else Vector3.BACK
+	var normal := Vector3.BACK if along_x else Vector3.RIGHT
+	var low := center.y - size.y / 2
+	var sill := low + 0.85
+	var head := low + 2.65
+	var cursor := -length / 2
+	for value in openings:
+		var left: float = float(value) - width / 2
+		var right: float = float(value) + width / 2
+		if left > cursor:
+			wall_piece(parent, center + direction * ((cursor + left) / 2), size, left - cursor, size.y)
+		wall_piece(parent, center + direction * float(value) + Vector3.UP * (0.85 / 2 - size.y / 2), size, width, 0.85)
+		wall_piece(parent, center + direction * float(value) + Vector3.UP * ((2.65 + size.y) / 2 - size.y / 2), size, width, size.y - 2.65)
+		var middle := center + direction * float(value)
+		middle.y = (sill + head) / 2
+		var frame := Color(0.12, 0.17, 0.16)
+		for edge in [-1.0, 1.0]:
+			frame_box(parent, middle + direction * (edge * width / 2), Vector3(0.085, head - sill + 0.14, 0.085), frame)
+		for height in [sill, head]:
+			var point := middle
+			point.y = height
+			frame_box(parent, point, Vector3(width + 0.16, 0.09, 0.22) if along_x else Vector3(0.22, 0.09, width + 0.16), frame)
+		var pane_size := Vector3(width, head - sill, 0.025) if along_x else Vector3(0.025, head - sill, width)
+		var pane: MeshInstance3D = world.box(parent, middle, pane_size, "glass", true)
+		pane.material_override = glass
+		pane.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		frame_box(parent, middle, Vector3(0.04, head - sill, 0.065) if along_x else Vector3(0.065, head - sill, 0.04), frame)
+		frame_box(parent, middle - Vector3.UP * 0.2, Vector3(width, 0.035, 0.065) if along_x else Vector3(0.065, 0.035, width), frame)
+		# Projecting stone sill, drip edge and discreet grime streaks.
+		frame_box(parent, middle + Vector3.UP * (sill - middle.y - 0.08), Vector3(width + 0.28, 0.12, 0.38) if along_x else Vector3(0.38, 0.12, width + 0.28), Color(0.29, 0.31, 0.28))
+		# Concrete reveals sit outside the aperture, leaving the glass unobstructed.
+		var header_point := middle + Vector3.UP*(head-middle.y+0.14)
+		var header := Art.box(parent,header_point,Vector3(width+0.42,0.18,0.34) if along_x else Vector3(0.34,0.18,width+0.42),Color.WHITE,surround_material)
+		header.name = "WindowConcreteLintel"
+		for side in [-1.0,1.0]:
+			Art.box(parent,middle+direction*(side*(width/2+0.12)),Vector3(0.14,head-sill+0.2,0.28) if along_x else Vector3(0.28,head-sill+0.2,0.14),Color.WHITE,surround_material)
+		window_count += 1
+		cursor = right
+	if cursor < length / 2:
+		wall_piece(parent, center + direction * ((cursor + length / 2) / 2), size, length / 2 - cursor, size.y)
+
+func wall_piece(parent: Node3D, point: Vector3, size: Vector3, length: float, height: float) -> void:
+	if height <= 0 or length <= 0: return
+	world.box(parent, point, Vector3(length, height, size.z) if size.x > size.z else Vector3(size.x, height, length), "wall_cream")
+
+func build() -> void:
+	building_shell = true
+	# Structural shell connects the occupied rooms into one two-storey volume.
+	world.box(self, Vector3(0, -0.3, -2), Vector3(16.4, 0.4, 28.4), "wall")
+	for x in [-8, 8]:
+		box(Vector3(x, 1.5, -15), Vector3(0.2, 3, 2), Color(0.22, 0.25, 0.23))
+		if x > 0:
+			box(Vector3(x, 1.5, -12), Vector3(0.2, 3, 4), Color(0.22, 0.25, 0.23))
+			box(Vector3(x, 1.5, 3), Vector3(0.2, 3, 2), Color(0.22, 0.25, 0.23))
+	for x in [-5.5, 5.5]: box(Vector3(x, 1.5, -16), Vector3(5, 3, 0.2), Color(0.22, 0.25, 0.23))
+	# Rear trim remains here; front/side structural members have one owner in
+	# facade_details.gd, avoiding nested beams and obsolete narrow piers.
+	for x in [-5.65,5.65]: box(Vector3(x,3.55,-16.15),Vector3(5.3,0.25,0.3),Color(0.12,0.16,0.16))
+	# Close the inter-storey plenum behind the cornice, not just its silhouette.
+	world.box(self,Vector3(8,3.6,-2),Vector3(0.2,1.2,28),"wall_cream")
+	for z_length in [[7.6,8.8],[-13.4,5.2]]:
+		world.box(self,Vector3(-8,3.6,z_length[0]),Vector3(0.2,1.2,z_length[1]),"wall_cream")
+	world.box(self,Vector3(0,3.6,12),Vector3(16,1.2,0.2),"wall_cream")
+	for x in [-5.5,5.5]: world.box(self,Vector3(x,3.6,-16),Vector3(5,1.2,0.2),"wall_cream")
+	# The recessed upper rooms stop at z=10. Carry their slab to the portico
+	# piers at z=12, with a continuous underside and no open ceiling slot.
+	world.box(self,Vector3(0,4.05,11.1),Vector3(16.2,0.3,2.2),"ceiling")
+	box(Vector3(0, 7.45, -2), Vector3(16.6, 0.25, 28.6), Color(0.12, 0.16, 0.16))
+	# Roof parapets and flashings.
+	for x in [-8.15, 8.15]: box(Vector3(x, 7.85, -2), Vector3(0.2, 0.7, 28.5), Color(0.24, 0.26, 0.23))
+	for z in [-16.15, 12.15]: box(Vector3(0, 7.85, z), Vector3(16.5, 0.7, 0.2), Color(0.24, 0.26, 0.23))
+	# Downpipes are rear-mounted, clear of the cornice rather than buried in
+	# the front corner piers. Short stand-offs connect them back to the wall.
+	for side in [-1.0,1.0]:
+		var pipe_x: float = side*8.62
+		world.staircases.pipe(Vector3(pipe_x,0.1,-15.7),Vector3(pipe_x,7.65,-15.7),0.055,Color(0.21,0.24,0.23))
+		world.staircases.pipe(Vector3(side*8.13,7.65,-15.7),Vector3(pipe_x,7.65,-15.7),0.055,Color(0.21,0.24,0.23))
+		for height in [0.8,2.7,4.8,6.8]:
+			world.staircases.pipe(Vector3(side*8.1,height,-15.7),Vector3(pipe_x,height,-15.7),0.018,Color(0.13,0.17,0.15))
+	for x in [-4.5, 4.5]:
+		box(Vector3(x, 7.9, -4), Vector3(2.1, 0.8, 1.4), Color(0.25, 0.29, 0.27))
+		for z in range(7): Art.box(self, Vector3(x, 8.32, -4.55 + z * 0.18), Vector3(1.9, 0.015, 0.06), Color(0.09, 0.13, 0.12))
+	var sign: Label3D = world.add_sign("EDIFÍCIO VESPER", Vector3(0, 6.5, 12.5))
+	sign.pixel_size = 0.007
+	sign.modulate = Color(0.53, 0.68, 0.61)
+	world.add_sign("ADMINISTRAÇÃO PREDIAL · DESDE 1968", Vector3(0, 5.8, 12.5)).pixel_size = 0.0013
+	building_shell = false
+	var envelope := preload("res://scripts/facade_details.gd").new()
+	envelope.world = world
+	add_child(envelope)
+	world.dressing.decay(self)
+	world.dressing.abandoned_site(self)
+	grounds()
+	street()
+	weather()
+
+func grounds() -> void:
+	world.box(self, Vector3(0, -0.18, 0), Vector3(62, 0.3, 80), "asphalt")
+	world.box(self, Vector3(0, -0.055, 17), Vector3(18, 0.1, 10), "pavers")
+	for x in range(-8, 9):
+		Art.box(self, Vector3(x, 0.001, 17), Vector3(0.018, 0.012, 10), Color(0.09, 0.12, 0.11))
+	for z in range(13, 23): Art.box(self, Vector3(0, 0.003, z), Vector3(18, 0.014, 0.018), Color(0.09, 0.12, 0.11))
+	for x in [-6.5, 6.5]:
+		box(Vector3(x, 0.32, 14.5), Vector3(1.9, 0.64, 2.6), Color(0.19, 0.22, 0.2))
+		box(Vector3(x, 0.65, 14.5), Vector3(1.65, 0.03, 2.35), Color(0.055, 0.07, 0.045), false)
+		for index in range(6): world.dressing.plant(self, Vector3(x + (index % 2) * 0.5 - 0.25, 0.66, 13.8 + (index / 2) * 0.65), 0.65, index + 22, false)
+	for x in [-23.0, -19.0, 14.0, 18.0, 22.0]:
+		for offset in [-1.65, 1.65]:
+			var marking := Art.box(self, Vector3(x + offset, 0.008, 20), Vector3(0.08, 0.016, 5.5), Color.WHITE)
+			var paint := ShaderMaterial.new()
+			paint.shader = preload("res://shaders/weathered_road_paint.gdshader")
+			paint.set_shader_parameter("dirt",preload("res://scripts/materials.gd").decay_map("worn_asphalt","ao"))
+			marking.material_override = paint
+		box(Vector3(x, 0.075, 17.5), Vector3(2.5, 0.15, 0.18), Color(0.24, 0.26, 0.23))
+	car(Vector3(-19, 0, 20), Color(0.19, 0.24, 0.22))
+	car(Vector3(18, 0, 20), Color(0.12, 0.14, 0.18))
+	for x in [-28.0, 28.0]:
+		for z in [-30.0, -12.0, 7.0, 25.0]: tree(Vector3(x, 0, z))
+	# Perimeter is physical, including behind the new stair towers.
+	for x in [-30.0, 30.0]: fence(Vector3(x, 1.1, 0), 78, PI / 2)
+	for z in [-39.0, 39.0]: fence(Vector3(0, 1.1, z), 60, 0)
+	for x in [-11.0, 11.0]:
+		for z in [16.5, 28.0]: lamp(Vector3(x, 0, z))
+	details()
+	for x in [-2.0, 2.0]:
+		box(Vector3(x, 0.45, 17), Vector3(0.15, 0.9, 0.15), Color(0.13, 0.18, 0.16))
+		Art.box(self, Vector3(x, 0.7, 17), Vector3(0.16, 0.05, 0.16), Color(0.65, 0.62, 0.4))
+
+func car(point: Vector3, color: Color) -> void:
+	world.dressing.vehicle(self, point, color, int(abs(point.x) * 10))
+	world.box(self, point + Vector3.UP * 0.65, Vector3(1.9, 1.3, 4.2), "metal").hide()
+
+func fence(point: Vector3, length: float, angle: float) -> void:
+	var root := Node3D.new()
+	add_child(root)
+	root.position = point
+	root.rotation.y = angle
+	var instance := MultiMeshInstance3D.new()
+	var bars := MultiMesh.new()
+	bars.transform_format = MultiMesh.TRANSFORM_3D
+	var bar := BoxMesh.new()
+	bar.size = Vector3(0.025, 2.2, 0.025)
+	var metal := StandardMaterial3D.new()
+	metal.albedo_color = Color(0.11, 0.16, 0.15)
+	metal.metallic = 0.6
+	bar.material = metal
+	bars.mesh = bar
+	bars.instance_count = int(length / 0.32) + 1
+	for index in range(bars.instance_count): bars.set_instance_transform(index, Transform3D(Basis.IDENTITY, Vector3(-length / 2 + index * 0.32, 0, 0)))
+	instance.multimesh = bars
+	root.add_child(instance)
+	for y in [-0.8, 0.8]: Art.box(root, Vector3(0, y, 0), Vector3(length, 0.05, 0.05), Color(0.13, 0.18, 0.17))
+	world.box(root, Vector3.ZERO, Vector3(length, 2.3, 0.1), "metal").hide()
+
+func lamp(point: Vector3) -> void:
+	world.staircases.pipe(point, point + Vector3.UP * 5.2, 0.075, Color(0.1, 0.14, 0.13))
+	# A carcaca nao sombreia: ela fica logo acima da lampada e, com sombra, tapa
+	# o proprio cone — sobrava so o que vazava pelas bordas.
+	var casing := Art.rounded_box(self, point + Vector3.UP * 5.2, Vector3(0.65, 0.12, 0.4), Color(0.3, 0.35, 0.31), 0.05)
+	casing.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Mesma receita das luminarias de dentro (chapter_world.room): OmniLight com
+	# sombra e bias curto. E a unica forma que nunca mostrou os retangulos de
+	# luz do cluster — spot com cone largo mostra, em qualquer GPU.
+	var light := OmniLight3D.new()
+	light.position = point + Vector3.UP * 5.12
+	light.light_color = Color(0.8, 0.67, 0.44)
+	light.light_energy = 3.8
+	light.omni_range = 17
+	light.shadow_enabled = true
+	light.shadow_bias = 0.04
+	add_child(light)
+	reflector(point + Vector3.UP * 5.22)
+	bulb(point + Vector3.UP * 5.12)
+
+## O bulbo aceso dentro da cupula: sem ele a luminaria aparece apagada mesmo
+## com a poca no chao, porque a lampada em si nao tem corpo. Entra sozinho no
+## registro de energia (capture_building_power varre materiais com emissao).
+func bulb(point: Vector3) -> void:
+	var glass := StandardMaterial3D.new()
+	glass.albedo_color = Color(0.95, 0.86, 0.64)
+	glass.emission_enabled = true
+	glass.emission = Color(1.0, 0.87, 0.6)
+	glass.emission_energy_multiplier = 4.0
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.09
+	sphere.height = 0.14
+	sphere.radial_segments = 12
+	sphere.rings = 6
+	var lamp_glass := MeshInstance3D.new()
+	lamp_glass.mesh = sphere
+	lamp_glass.material_override = glass
+	lamp_glass.position = point
+	# Sem sombra: o bulbo esta no meio do facho e tapava a propria luz.
+	lamp_glass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(lamp_glass)
+
+## Refletor de verdade: uma cupula opaca em volta da lampada. Como a omni
+## projeta sombra, e a geometria que decide para onde a luz vai — sem spot, sem
+## cone de shader. O que escapa pela boca da cupula e o facho.
+func reflector(point: Vector3) -> void:
+	var shell := CylinderMesh.new()
+	shell.top_radius = 0.06
+	shell.bottom_radius = 0.58
+	shell.height = 0.26
+	shell.radial_segments = 20
+	shell.rings = 1
+	var metal := StandardMaterial3D.new()
+	metal.albedo_color = Color(0.22, 0.26, 0.24)
+	metal.metallic = 0.4
+	metal.roughness = 0.35
+	# Sem cara traseira cortada: por baixo se ve o interior da cupula.
+	metal.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var cover := MeshInstance3D.new()
+	cover.mesh = shell
+	cover.material_override = metal
+	cover.position = point
+	add_child(cover)
+
+func tree(point: Vector3) -> void:
+	world.dressing.tree(self, point, int(abs(point.z) * 10))
+
+func street() -> void:
+	for index in range(7):
+		var x := -54.0 + index * 18
+		var height := 10.0 + (index % 3) * 4
+		box(Vector3(x, height / 2, 49), Vector3(14, height, 13), Color(0.04, 0.055, 0.06), false)
+		for floor in range(int(height / 3)):
+			for column in range(5):
+				Art.box(self, Vector3(x - 5 + column * 2.5, 2 + floor * 3, 42.45), Vector3(1.2, 1.4, 0.02), Color(0.11, 0.14, 0.13) if (floor + column + index) % 4 == 0 else Color(0.014, 0.025, 0.03))
+	for z in [32.0, 34.0, 36.0]:
+		for x in range(-26, 27, 4): Art.box(self, Vector3(x, -0.01, z), Vector3(2.2, 0.015, 0.08), Color(0.35, 0.34, 0.26))
+
+func weather() -> void:
+	var moon := DirectionalLight3D.new()
+	moon.rotation_degrees = Vector3(-55, -28, 0)
+	moon.light_color = Color(0.35, 0.49, 0.62)
+	moon.light_energy = 0.28
+	moon.shadow_enabled = true
+	add_child(moon)
+	# CPU particles work with Compatibility; rain stays outside the roof footprint.
+	for data in [[Vector3(0, 7, 27.5), Vector3(27, 1, 10.5)], [Vector3(21, 7, -8), Vector3(11, 1, 25)], [Vector3(-24, 7, -8), Vector3(6, 1, 25)], [Vector3(0, 7, -32), Vector3(28, 1, 6)]]:
+		var rain := CPUParticles3D.new()
+		rain.position = data[0]
+		rain.amount = 380
+		rain.lifetime = 1.25
+		rain.preprocess = 1.25
+		rain.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		rain.emission_box_extents = data[1]
+		rain.direction = Vector3(0.05, -1, 0.04)
+		rain.spread = 3
+		rain.initial_velocity_min = 8
+		rain.initial_velocity_max = 10
+		rain.gravity = Vector3(0, -2, 0)
+		var drop := BoxMesh.new()
+		drop.size = Vector3(0.008, 0.18, 0.008)
+		var material := StandardMaterial3D.new()
+		material.albedo_color = Color(0.23, 0.31, 0.35)
+		drop.material = material
+		rain.mesh = drop
+		add_child(rain)
+
+
+func details() -> void:
+	# Drain channels, slatted benches and utility hardware reinforce human scale.
+	for x in [-7.8, 7.8]:
+		box(Vector3(x, 0.008, 19), Vector3(0.35, 0.018, 3.8), Color(0.025, 0.035, 0.032), false)
+		for index in range(24): Art.box(self, Vector3(x, 0.022, 17.2 + index * 0.15), Vector3(0.3, 0.02, 0.035), Color(0.22, 0.25, 0.22))
+	for x in [-5.0, 5.0]:
+		for z in [18.3, 18.9]:
+			for offset in [-0.8, 0.8]: box(Vector3(x + offset, 0.28, z), Vector3(0.09, 0.56, 0.09), Color(0.1, 0.14, 0.12))
+		for index in range(5):
+			Art.box(self, Vector3(x, 0.58, 18.25 + index * 0.16), Vector3(2.05, 0.07, 0.12), Color(0.18, 0.2, 0.14))
+			Art.box(self, Vector3(x, 0.82 + index * 0.12, 18.15), Vector3(2.05, 0.08, 0.055), Color(0.18, 0.2, 0.14))
+		world.box(self, Vector3(x, 0.48, 18.55), Vector3(2.1, 0.96, 0.85), "metal").hide()
+	# Water is blended into the ground material, without raised opaque discs.
+	Art.model(self, "trashcan", Vector3(8.8, 0, 16), Vector3(0.65, 1.0, 0.65))
+	box(Vector3(8.8, 0.45, 16), Vector3(0.55, 0.9, 0.55), Color(0.1, 0.15, 0.12)).hide()
+	box(Vector3(8.22, 1.1, 5), Vector3(0.25, 1.1, 0.7), Color(0.2, 0.27, 0.23))
+	for z in [4.78, 5.22]: world.staircases.pipe(Vector3(8.25, 0, z), Vector3(8.25, 2.7, z), 0.025, Color(0.25, 0.3, 0.26))
+	var plaque: Label3D = world.add_sign("EDIFÍCIO VESPER\nPÁTIO EXCLUSIVO DE FUNCIONÁRIOS\nVISITANTES: APRESENTAR-SE À PORTARIA", Vector3(9, 1.7, 23))
+	plaque.pixel_size = 0.0015
+	# Enamel backing follows the dimensions of the actual lettering.
+	world.staircases.pipe(Vector3(9, 0, 23), Vector3(9, 1.4, 23), 0.04, Color(0.18, 0.25, 0.2))
+	var traffic := MeshInstance3D.new()
+	var disc := QuadMesh.new()
+	disc.size = Vector2(0.85,0.85)
+	traffic.mesh = disc
+	traffic.position = Vector3(7.7,2.0,23)
+	var enamel := ShaderMaterial.new()
+	enamel.shader = preload("res://shaders/aged_enamel.gdshader")
+	enamel.set_shader_parameter("traffic_symbol",true)
+	traffic.material_override = enamel
+	add_child(traffic)
+	world.staircases.pipe(Vector3(7.7,0,23),Vector3(7.7,1.8,23),0.035,Color(0.22,0.17,0.11))

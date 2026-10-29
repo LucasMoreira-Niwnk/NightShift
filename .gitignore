@@ -5,3 +5,15 @@ builds/
 *.tmp
 .DS_Store
 Thumbs.db
+**/.godot/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.vscode/
+.idea/
+
+# Material de trabalho fora do projeto Godot
+/Rhuan analizes/
+graphify-out/

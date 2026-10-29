@@ -188,27 +188,63 @@ func lamp(point: Vector3) -> void:
 	# o proprio cone — sobrava so o que vazava pelas bordas.
 	var casing := Art.rounded_box(self, point + Vector3.UP * 5.2, Vector3(0.65, 0.12, 0.4), Color(0.3, 0.35, 0.31), 0.05)
 	casing.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var light := SpotLight3D.new()
-	# Na cabeca do poste: 2 cm sob a carcaca, que tem base em 5.14.
+	# Mesma receita das luminarias de dentro (chapter_world.room): OmniLight com
+	# sombra e bias curto. E a unica forma que nunca mostrou os retangulos de
+	# luz do cluster — spot com cone largo mostra, em qualquer GPU.
+	var light := OmniLight3D.new()
 	light.position = point + Vector3.UP * 5.12
-	light.rotation.x = -PI / 2
 	light.light_color = Color(0.8, 0.67, 0.44)
-	# Mais energia que a omni de 3.8: o cone joga tudo para baixo, mas tambem
-	# cobre bem menos area do que uma lampada que irradiava para todo lado.
-	light.light_energy = 9.0
-	light.spot_range = 30
-	# Cone de 85 graus (170 de abertura total) so para a borda nao cortar seco.
-	light.spot_angle = 85.0
-	light.spot_attenuation = 1.0
-	# Dentro desses 85 graus a luz util acaba em ~65: o expoente 7 deixa menos
-	# de 0.1% da intensidade de la para fora. Knob de calibragem.
-	light.spot_angle_attenuation = 7.0
+	light.light_energy = 3.8
+	light.omni_range = 17
 	light.shadow_enabled = true
-	# Bias folgado: com cone largo cada texel cobre muita area, e a auto-sombra
-	# do proprio chao era o que apagava a poca quando a camera chegava perto.
-	light.shadow_bias = 0.2
-	light.shadow_normal_bias = 3.0
+	light.shadow_bias = 0.04
 	add_child(light)
+	reflector(point + Vector3.UP * 5.22)
+	bulb(point + Vector3.UP * 5.12)
+
+## O bulbo aceso dentro da cupula: sem ele a luminaria aparece apagada mesmo
+## com a poca no chao, porque a lampada em si nao tem corpo. Entra sozinho no
+## registro de energia (capture_building_power varre materiais com emissao).
+func bulb(point: Vector3) -> void:
+	var glass := StandardMaterial3D.new()
+	glass.albedo_color = Color(0.95, 0.86, 0.64)
+	glass.emission_enabled = true
+	glass.emission = Color(1.0, 0.87, 0.6)
+	glass.emission_energy_multiplier = 4.0
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.09
+	sphere.height = 0.14
+	sphere.radial_segments = 12
+	sphere.rings = 6
+	var lamp_glass := MeshInstance3D.new()
+	lamp_glass.mesh = sphere
+	lamp_glass.material_override = glass
+	lamp_glass.position = point
+	# Sem sombra: o bulbo esta no meio do facho e tapava a propria luz.
+	lamp_glass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(lamp_glass)
+
+## Refletor de verdade: uma cupula opaca em volta da lampada. Como a omni
+## projeta sombra, e a geometria que decide para onde a luz vai — sem spot, sem
+## cone de shader. O que escapa pela boca da cupula e o facho.
+func reflector(point: Vector3) -> void:
+	var shell := CylinderMesh.new()
+	shell.top_radius = 0.06
+	shell.bottom_radius = 0.58
+	shell.height = 0.26
+	shell.radial_segments = 20
+	shell.rings = 1
+	var metal := StandardMaterial3D.new()
+	metal.albedo_color = Color(0.22, 0.26, 0.24)
+	metal.metallic = 0.4
+	metal.roughness = 0.35
+	# Sem cara traseira cortada: por baixo se ve o interior da cupula.
+	metal.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var cover := MeshInstance3D.new()
+	cover.mesh = shell
+	cover.material_override = metal
+	cover.position = point
+	add_child(cover)
 
 func tree(point: Vector3) -> void:
 	world.dressing.tree(self, point, int(abs(point.z) * 10))

@@ -6,7 +6,7 @@ Capítulo jogável de terror psicológico 3D em primeira pessoa para Windows, fe
 
 - Clique em `Abrir Editor.cmd` para abrir o projeto diretamente no Godot.
 - No editor, pressione F6 para executar a cena aberta ou F5 para o projeto.
-- Clique em `Jogar.cmd` para atualizar a branch atual, preparar o cache e iniciar o jogo.
+- Clique em `Jogar.cmd` para atualizar a branch atual, preparar o cache e iniciar o jogo. Se houver divergência entre commits locais e remotos ou falha de conexão, o inicializador avisa e usa a versão local; a integração deve ser resolvida antes da publicação.
 - WASD move, mouse olha, E interage com portas e computador. F liga/desliga a lanterna. Esc pausa e libera o mouse.
 
 ### Editar a mão e a lanterna visualmente

@@ -1,0 +1,41 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/polyhaven/vintage_radio_transceiver/vintage_radio_transceiver_1k.gltf" id="1"]
+
+[node name="Model" instance=ExtResource("1")]
+
+[node name="vintage_radio_transceiver_cable" parent="."]
+visible = false
+
+[node name="vintage_radio_transceiver_antenna" parent="."]
+visible = false
+
+[node name="vintage_radio_transceiver_antenna_plug_a" parent="."]
+visible = false
+
+[node name="vintage_radio_transceiver_antenna_plug_b" parent="."]
+visible = false
+
+[node name="vintage_radio_transceiver_microphone" parent="."]
+visible = false
+
+[node name="vintage_radio_transceiver_microphone_plug" parent="."]
+visible = false
+
+[node name="vintage_radio_transceiver_morse_key_arm" parent="."]
+visible = false
+
+[node name="vintage_radio_transceiver_morse_key_base" parent="."]
+visible = false
+
+[node name="vintage_radio_transceiver_morse_key_plug" parent="."]
+visible = false
+
+[node name="vintage_radio_transceiver_speaker" parent="."]
+visible = false
+
+[node name="vintage_radio_transceiver_speaker_plug" parent="."]
+visible = false
+
+[node name="vintage_radio_transceiver_cables" parent="."]
+visible = false

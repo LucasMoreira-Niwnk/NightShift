@@ -30,8 +30,9 @@ func _ready() -> void:
 	update_state()
 
 func update_state() -> void:
-	var strength := clampf(source.light_energy/nominal,0,1) if source.visible and world.interior_powered else 0.0
+	var strength := clampf(source.light_energy/nominal,0,1) if is_instance_valid(source) and source.visible and world.interior_powered else 0.0
 	for entry in glow:
+		if is_instance_valid(source): entry.material.emission = source.light_color
 		entry.material.emission_enabled = strength > 0.001
 		entry.material.emission_energy_multiplier = strength*0.75
 		entry.material.albedo_color = entry.albedo * Color(lerpf(0.12,1.0,strength),lerpf(0.12,1.0,strength),lerpf(0.12,1.0,strength),1)

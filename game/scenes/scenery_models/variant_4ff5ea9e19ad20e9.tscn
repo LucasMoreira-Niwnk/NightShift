@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/polyhaven/binder_notebook/binder_notebook_1k.gltf" id="1"]
+
+[node name="Model" instance=ExtResource("1")]
+
+[node name="binder_notebook" parent="."]
+visible = false

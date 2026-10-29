@@ -9,6 +9,7 @@ var sound: Node
 var director: Node
 var shadows: Node3D
 var discomfort: CanvasLayer
+var scenery_applied := false
 
 var tablet_hud: Control = null
 var hud_minimal: Control = null
@@ -18,6 +19,8 @@ var hud_demo_layer: CanvasLayer = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	var authored := get_node_or_null("CenarioEditavel") as Node3D
+	if authored != null: authored.hide()
 	configure_input()
 	chapter = preload("res://scripts/chapter.gd").new()
 	chapter.game = self
@@ -66,11 +69,21 @@ func _ready() -> void:
 	chapter.apply_world()
 	chapter.refresh()
 	ui.say("14 de novembro de 2008 — 23h57\nEdifício Vesper. Daniel Reis, seu primeiro turno começa agora.\n[Tab] Consultar Tablet  |  [F1] Alternar HUDs  |  [F2] Grão de filme")
+	call_deferred("apply_authored_scenery")
 	if OS.get_cmdline_user_args().has("--smoke-test"):
 		var tests := preload("res://scripts/chapter_tests.gd").new()
 		tests.game = self
 		add_child(tests)
 		tests.call_deferred("run")
+
+func apply_authored_scenery() -> void:
+	var authored := get_node_or_null("CenarioEditavel") as Node3D
+	if authored == null: return
+	if not OS.get_cmdline_user_args().has("--bake-scenery"):
+		preload("res://scripts/scenery_layout.gd").new().apply(self,authored)
+		scenery_applied = true
+	authored.free()
+
 
 func setup_hud_integrations() -> void:
 	# 1. Overlay global: grao de filme. O que Daniel ve nao e um monitor, entao

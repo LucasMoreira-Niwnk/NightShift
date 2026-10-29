@@ -33,6 +33,7 @@ func run() -> void:
 	expansion.game = game
 	expansion.test = self
 	await get_tree().create_timer(0.8).timeout
+	check(game.scenery_applied and game.get_node_or_null("CenarioEditavel") == null,"Editable scenery is applied without duplicate preview collisions")
 	check(game.player.is_on_floor(), "Player settles on entrance floor")
 	var tablet_cases = preload("res://scripts/tablet_console_tests.gd").new()
 	await tablet_cases.run(game, self)

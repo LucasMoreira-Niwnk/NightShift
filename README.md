@@ -9,6 +9,19 @@ Capítulo jogável de terror psicológico 3D em primeira pessoa para Windows, fe
 - Clique em `Jogar.cmd` para atualizar a branch atual, preparar o cache e iniciar o jogo. Se houver divergência entre commits locais e remotos ou falha de conexão, o inicializador avisa e usa a versão local; a integração deve ser resolvida antes da publicação.
 - WASD move, mouse olha, E interage com portas e computador. F liga/desliga a lanterna. Esc pausa e libera o mouse.
 
+### Editar o cenário visualmente
+
+Abra **`game/scenes/cenario_editavel.tscn`** (`res://scenes/cenario_editavel.tscn`) no Godot. A cena já contém o prédio e o exterior e também aparece como instância dentro de `main.tscn`. Edite a cena original para salvar as mudanças.
+
+- Expanda `Predio`: há grupos do térreo, `Exterior`, `Escadas`, `SegundoAndar` e objetos do andar superior. Selecione o objeto na árvore e pressione **F** para enquadrá-lo. **W/E/R** alternam mover/girar/escalar no editor 3D. Para duplicar um objeto de cenário existente, use **Ctrl+D**.
+- Arraste um `.glb`, `.gltf` ou `.tscn` do painel **Arquivos** para o grupo do ambiente. Posicione-o, ajuste o tamanho e salve com **Ctrl+S**. Depois use **F5** para testar o jogo completo.
+- As colisões do mobiliário e dos blocos foram agrupadas aos seus elementos visuais. Mova/rotacione/escale o nó do conjunto. Ao alterar diretamente o tamanho de uma malha ou substituir um modelo, confira também sua `CollisionShape3D`. Em assets novos, selecione a malha e use o menu **Malha → Criar corpo estático de malha triangular** para adicionar colisão onde necessário.
+- `PreviewEdicao` fornece luz de trabalho para enxergar o mapa no editor e é descartado no jogo. Para variar o material de um único objeto, torne o recurso **Único** antes de modificá-lo.
+- É possível adicionar, mover e remover cenário e ajustar materiais/luzes. As piscadas e o apagão continuam sob controle do jogo; a intensidade configurada é a intensidade nominal da luz.
+- `ReferenciasDoRoteiro_NaoEditar`, `ReferenciaTerminal` e os nós com metadado `vesper_gameplay_reference` são referências visuais protegidas. Portas interativas, evidências, câmeras e relógios continuam ligados ao roteiro; não use esses nós para alterar a lógica nem remova os metadados `vesper_*`. Para decoração independente, adicione um asset novo pelo painel Arquivos, em vez de duplicar uma referência de gameplay.
+
+As edições salvas são aplicadas ao iniciar o jogo, sem manter uma segunda cópia das colisões. A geração por código continua como base da lógica. Para alterações visuais futuras, edite esta cena em vez dos geradores de geometria dos scripts. Não execute `tools/bake_scenery.gd` para atualizar alterações manuais: ele é uma ferramenta de migração e recusa sobrescrever uma cena existente sem a opção explícita de substituição. As pequenas cenas em `scenes/scenery_models/` apenas selecionam variantes de assets originais.
+
 ### Editar a mão e a lanterna visualmente
 
 Abra `game/scenes/mao_lanterna.tscn` (no Godot: `res://scenes/mao_lanterna.tscn`). A cena contém o braço, a manga, a lanterna, o esqueleto e a pose `Pegada`. F6 mostra o enquadramento em primeira pessoa com câmera e iluminação de prévia. O jogador instancia essa mesma cena ao equipar a lanterna.

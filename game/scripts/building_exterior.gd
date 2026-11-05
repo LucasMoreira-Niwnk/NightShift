@@ -183,24 +183,20 @@ func fence(point: Vector3, length: float, angle: float) -> void:
 	world.box(root, Vector3.ZERO, Vector3(length, 2.3, 0.1), "metal").hide()
 
 func lamp(point: Vector3) -> void:
-	world.staircases.pipe(point, point + Vector3.UP * 5.2, 0.075, Color(0.1, 0.14, 0.13))
-	# A carcaca nao sombreia: ela fica logo acima da lampada e, com sombra, tapa
-	# o proprio cone — sobrava so o que vazava pelas bordas.
-	var casing := Art.rounded_box(self, point + Vector3.UP * 5.2, Vector3(0.65, 0.12, 0.4), Color(0.3, 0.35, 0.31), 0.05)
-	casing.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	# Mesma receita das luminarias de dentro (chapter_world.room): OmniLight com
-	# sombra e bias curto. E a unica forma que nunca mostrou os retangulos de
-	# luz do cluster — spot com cone largo mostra, em qualquer GPU.
+	# Preserve the imported street-lamp model and collision, with the colleague's
+	# omni/reflector/bulb lighting at the height of this model's lantern.
 	var light := OmniLight3D.new()
-	light.position = point + Vector3.UP * 5.12
+	light.position = point + Vector3.UP * 4.75
 	light.light_color = Color(0.8, 0.67, 0.44)
 	light.light_energy = 3.8
 	light.omni_range = 17
 	light.shadow_enabled = true
 	light.shadow_bias = 0.04
 	add_child(light)
-	reflector(point + Vector3.UP * 5.22)
-	bulb(point + Vector3.UP * 5.12)
+	world.install_fixture(self,point,light,false,"street_lamp_01",Vector3(0.7,5.3,0.7))
+	world.box(self,point+Vector3.UP*2.6,Vector3(0.18,5.2,0.18),"metal").hide()
+	reflector(point + Vector3.UP * 4.85)
+	bulb(point + Vector3.UP * 4.75)
 
 ## O bulbo aceso dentro da cupula: sem ele a luminaria aparece apagada mesmo
 ## com a poca no chao, porque a lampada em si nao tem corpo. Entra sozinho no
@@ -234,6 +230,8 @@ func reflector(point: Vector3) -> void:
 	shell.height = 0.26
 	shell.radial_segments = 20
 	shell.rings = 1
+	# The reflector needs an open mouth; a bottom cap would trap the omni light.
+	shell.cap_bottom = false
 	var metal := StandardMaterial3D.new()
 	metal.albedo_color = Color(0.22, 0.26, 0.24)
 	metal.metallic = 0.4
@@ -296,11 +294,7 @@ func details() -> void:
 		box(Vector3(x, 0.008, 19), Vector3(0.35, 0.018, 3.8), Color(0.025, 0.035, 0.032), false)
 		for index in range(24): Art.box(self, Vector3(x, 0.022, 17.2 + index * 0.15), Vector3(0.3, 0.02, 0.035), Color(0.22, 0.25, 0.22))
 	for x in [-5.0, 5.0]:
-		for z in [18.3, 18.9]:
-			for offset in [-0.8, 0.8]: box(Vector3(x + offset, 0.28, z), Vector3(0.09, 0.56, 0.09), Color(0.1, 0.14, 0.12))
-		for index in range(5):
-			Art.box(self, Vector3(x, 0.58, 18.25 + index * 0.16), Vector3(2.05, 0.07, 0.12), Color(0.18, 0.2, 0.14))
-			Art.box(self, Vector3(x, 0.82 + index * 0.12, 18.15), Vector3(2.05, 0.08, 0.055), Color(0.18, 0.2, 0.14))
+		Art.model(self,"bench",Vector3(x,0,18.55),Vector3(2.05,1.3,0.85))
 		world.box(self, Vector3(x, 0.48, 18.55), Vector3(2.1, 0.96, 0.85), "metal").hide()
 	# Water is blended into the ground material, without raised opaque discs.
 	Art.model(self, "trashcan", Vector3(8.8, 0, 16), Vector3(0.65, 1.0, 0.65))

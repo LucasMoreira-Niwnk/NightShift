@@ -60,6 +60,13 @@ func _ready() -> void:
 		pivot.add_child(label)
 	for y in [0.35, 1.25, 2.2]:
 		aged_box(pivot, Vector3(0.03, y, 0), Vector3(0.08, 0.16, 0.21), Color(0.3, 0.33, 0.29))
+	if not glazed:
+		# Preserve the interactive hinge/handle, replacing only the visual asset.
+		for old in find_children("*","MeshInstance3D",true,false): old.hide()
+		var imported := preload("res://scripts/art.gd").imported(self,"interior_door",Vector3.ZERO,Vector3(1.7,2.6,0.24))
+		for part in imported.find_children("*","MeshInstance3D",true,false):
+			if part.name.begins_with("Frame"): continue
+			part.reparent(handle if part.name.begins_with("Latch") else pivot,true)
 	collider = CollisionShape3D.new()
 	var shape := BoxShape3D.new()
 	shape.size = box.size
@@ -73,9 +80,22 @@ func interact() -> void:
 		return
 	if forced_locked and not Engine.get_main_loop().has_meta("debug_free_roam"):
 		return
+	if is_open and viewer_in_doorway():
+		var game = get_tree().current_scene
+		if game != null and game.get("chapter") != null: game.chapter.say("Saia do vão da porta para fechá-la.")
+		return
 	if access.is_valid() and not access.call():
 		return
 	set_open(not is_open)
+
+# A colisão da folha volta assim que a porta começa a fechar. Com o jogador
+# parado no vão, a física o empurraria para dentro da parede ou de outro cômodo.
+# Só vale para o fechamento pedido pelo jogador; eventos do roteiro usam restore_open.
+func viewer_in_doorway() -> bool:
+	var viewer := get_viewport().get_camera_3d()
+	if viewer == null: return false
+	var local := to_local(viewer.global_position)
+	return absf(local.x) < 0.85 and absf(local.z) < 0.5 and local.y > -0.5 and local.y < 2.8
 
 func restore_open(value: bool) -> void:
 	if animation != null and animation.is_valid(): animation.kill()

@@ -45,6 +45,8 @@ O progresso é salvo ao concluir objetivos/interagir. Esc oferece salvar e carre
 
 O arquivo `user://chapter1.json` preserva estágio, objetivos, documentos coletados, inspeções, histórico, disjuntores, avanço da figura, posição, orientação e portas. Ao usar os atalhos ele fica em `.local/AppData/Godot/app_userdata/NIGHTSHIFT/`. A abertura direta do editor pode usar o perfil padrão do Windows. Os testes usam exclusivamente `chapter1-test.json`.
 
+Cada gravação escreve primeiro em `chapter1.json.tmp` e só então substitui o checkpoint; a versão anterior fica em `chapter1.bak.json`. Se o arquivo principal estiver ausente ou inválido, Carregar checkpoint usa a reserva e avisa na legenda. Ao carregar, listas de índices (`verified`, `power_sequence`) e `patch_port` voltam a ser inteiros, porque o JSON devolve todo número como float e o Godot 4 não considera `[2.0]` igual a `[2]`.
+
 ## Verificação
 
 Execute `tools/godot.ps1 -Mode check` e `-Mode test`. O teste percorre os oito estados com interações de gameplay, confirma os três puzzles, rejeição de reporte incorreto, idempotência de reportes, restauração de checkpoint, coleta da lanterna, alcance por raycast e renderização das câmeras. Também usa o controle real do personagem para verificar bloqueio da porta fechada e passagem pelas portas da segurança, arquivo e técnica. O restante usa posições controladas para alcançar os pontos; não substitui uma partida manual caminhando pela planta. As prévias são gravadas em `.local/chapter1-*.png`.

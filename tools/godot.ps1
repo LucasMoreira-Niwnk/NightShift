@@ -1,4 +1,4 @@
-param(
+﻿param(
     [ValidateSet('editor', 'run', 'check', 'test', 'prepare')]
     [string]$Mode = 'editor',
     [switch]$Offline
@@ -30,9 +30,27 @@ function Update-CurrentBranch {
     try {
         $env:GIT_TERMINAL_PROMPT = '0'
         $env:GCM_INTERACTIVE = 'Never'
-        & git -C $workspaceDirectory -c http.connectTimeout=10 -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 pull --ff-only
+        & git -C $workspaceDirectory -c http.connectTimeout=10 -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch
         if ($LASTEXITCODE -ne 0) {
-            throw 'Nao foi possivel atualizar a branch. Resolva a conexao/divergencia ou use -Offline para jogar a versao local.'
+            Write-Warning 'Nao foi possivel consultar o remoto. Usando a versao local; a atualizacao ficou pendente.'
+            return
+        }
+        $counts = & git -C $workspaceDirectory rev-list --left-right --count "HEAD...$upstream"
+        if ($LASTEXITCODE -ne 0) { throw 'Nao foi possivel comparar a branch local com o remoto.' }
+        $parts = ($counts.Trim() -split '\s+')
+        $ahead = [int]$parts[0]
+        $behind = [int]$parts[1]
+        if ($ahead -gt 0 -and $behind -gt 0) {
+            Write-Warning "Branches divergentes: $ahead commit(s) local(is) e $behind remoto(s). Usando a versao local; integre os commits antes de publicar."
+            return
+        }
+        if ($behind -eq 0) {
+            Write-Host 'Versao local atualizada em relacao ao remoto.'
+            return
+        }
+        & git -C $workspaceDirectory merge --ff-only $upstream
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning 'Atualizacao direta indisponivel. Usando a versao local; confira o estado do Git antes de publicar.'
         }
     } finally {
         $env:GIT_TERMINAL_PROMPT = $previousPrompt

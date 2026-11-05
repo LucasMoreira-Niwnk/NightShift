@@ -10,6 +10,7 @@ var doors: Dictionary = {}
 var corridor_lights: Array = []
 var interior_lights: Array = []
 var room_lights: Array = []
+var lighting_fixtures: Array = []
 var building_lights: Array = []
 var powered_materials: Array = []
 
@@ -55,6 +56,12 @@ func _ready() -> void:
 		materials[kind] = Materials.surface(kind)
 	for kind in ["floor_reception", "floor_security", "floor_archive", "floor_concrete", "upper_floor", "wall_cream", "wall_green", "wall_concrete", "facade", "asphalt", "pavers", "ceiling"]:
 		materials[kind] = Materials.architectural(kind)
+	materials.service_wall = Materials.photographic("concrete_floor_worn_001",2.4)
+	materials.service_wall.albedo_color = Color(0.68,0.7,0.65)
+	materials.service_wall.normal_scale = 0.55
+	materials.service_floor = Materials.photographic("concrete_floor_worn_001",1.3)
+	materials.service_floor.albedo_color = Color(0.49,0.51,0.47)
+	materials.service_floor.normal_scale = 0.8
 	materials.wall = materials.wall_cream
 	architecture = preload("res://scripts/building_exterior.gd").new()
 	architecture.world = self
@@ -100,15 +107,13 @@ func _ready() -> void:
 	make_door("technical", Vector3(-2, 0, -10), "sala técnica")
 	# Furniture and interactable evidence.
 	table(Vector3(-3.3, 0, 7.5), Vector2(3, 1.1))
-	table(Vector3(-6.5, 0, 0), Vector2(2.2, 1.3))
-	table(Vector3(-4.4, 0, -0.2), Vector2(1, 1))
-	Art.rounded_box(self, Vector3(-4.4, 1.23, -0.36), Vector3(0.72, 0.3, 0.45), Color(0.28, 0.29, 0.24), 0.04)
-	Art.rounded_box(self, Vector3(-4.4, 1.39, -0.36), Vector3(0.61, 0.035, 0.35), Color(0.12, 0.15, 0.13), 0.012)
-	Art.box(self, Vector3(-4.4, 1.16, -0.125), Vector3(0.5, 0.035, 0.02), Color(0.025, 0.035, 0.03))
+	table(Vector3(-6.5, 0, -1.2), Vector2(2.2, 1.3))
+	table(Vector3(-4.4, 0, -1.35), Vector2(1, 1))
+	Art.imported(self,"office_printer",Vector3(-4.4,1.08,-1.4),Vector3(0.72,0.36,0.55))
 	table(Vector3(5.5, 0, -7.8), Vector2(2.4, 1.2))
 	item("envelope", "Ler envelope e recolher crachá/chave", Vector3(-3.2, 1.086, 7.5), Vector3(0.6, 0.08, 0.4), Color(0.8, 0.72, 0.48))
-	item("flashlight", "Pegar lanterna", Vector3(-5.75, 1.11, -0.32), Vector3(0.07, 0.06, 0.25), Color(0.55, 0.58, 0.3))
-	item("recorder", "Ouvir gravação 001", Vector3(-7.25, 1.17, 0.3), Vector3(0.32, 0.18, 0.3), Color(0.3, 0.4, 0.42))
+	item("flashlight", "Pegar lanterna", Vector3(-5.75, 1.11, -1.1), Vector3(0.07, 0.06, 0.25), Color(0.55, 0.58, 0.3))
+	item("recorder", "Ouvir gravação 001", Vector3(-7.25, 1.17, -0.85), Vector3(0.32, 0.18, 0.3), Color(0.3, 0.4, 0.42))
 	item("logbook", "Ler livro de registros", Vector3(5.8, 1.125, -7.7), Vector3(0.5, 0.09, 0.4), Color(0.38, 0.17, 0.12))
 	item("maintenance", "Ler registro de manutenção", Vector3(4.9, 1.105, -7.7), Vector3(0.35, 0.05, 0.4), Color(0.72, 0.75, 0.62))
 	item("emergency", "Inspecionar saída de emergência", Vector3(1.84, 1.1, -13.4), Vector3(0.12, 2.2, 1.3), Color(0.17, 0.36, 0.25))
@@ -120,7 +125,7 @@ func _ready() -> void:
 	phone_display = add_sign("SEM LINHA", Vector3(-2.4, 1.31, 7.55))
 	phone_display.pixel_size = 0.00045
 	phone_display.font_size = 24
-	item("report", "Ler relatório impresso", Vector3(-4.4, 1.086, 0.15), Vector3(0.36, 0.06, 0.28), Color(0.85, 0.86, 0.75))
+	item("report", "Ler relatório impresso", Vector3(-4.4, 1.086, -0.93), Vector3(0.36, 0.06, 0.28), Color(0.85, 0.86, 0.75))
 	objects.report.hide()
 	objects.report.collision_layer = 0
 	chair = item("chair", "Examinar cadeira e marcas no piso", Vector3(5.5, 0, -6.5), Vector3(0.7, 0.55, 0.7), Color(0.26, 0.16, 0.1), false)
@@ -134,13 +139,13 @@ func _ready() -> void:
 		box(self, Vector3(7.4, 1, z), Vector3(0.9, 2, 1.1), "metal").hide()
 		dressing.shelf(self, Vector3(7.4, 0, z), -PI / 2, int(abs(z) * 10))
 	# Rolled back from the console so a standing operator has a clear view.
-	Art.model(self, "chairDesk", Vector3(-6.1, 0, 2.65), Vector3(0.6, 1.1, 0.6), PI)
-	box(self, Vector3(-6.1, 0.35, 2.65), Vector3(0.55, 0.7, 0.55), "metal").hide()
+	Art.model(self, "chairDesk", Vector3(-6.1, 0, 1.5), Vector3(0.6, 1.1, 0.6), PI)
+	box(self, Vector3(-6.1, 0.35, 1.5), Vector3(0.55, 0.7, 0.55), "metal").hide()
 	Art.external(self, "drawer_cabinet", Vector3(-4.1, 0, 3.55), Vector3(1.2, 1.25, 0.65), PI)
 	box(self, Vector3(-4.1, 0.625, 3.55), Vector3(1.2, 1.25, 0.65), "metal").hide()
-	Art.external(self, "desk_lamp_arm_01", Vector3(-7.25, 1.08, -0.3), Vector3(0.4, 0.65, 0.35))
+	Art.external(self, "desk_lamp_arm_01", Vector3(-7.25, 1.08, -1.35), Vector3(0.4, 0.65, 0.35))
 	var task_light := OmniLight3D.new()
-	task_light.position = Vector3(-7.15, 1.65, 0.1)
+	task_light.position = Vector3(-7.15, 1.65, -1.0)
 	task_light.light_color = Color(1, 0.8, 0.53)
 	task_light.light_energy = 0.55
 	task_light.omni_range = 2.0
@@ -154,6 +159,14 @@ func _ready() -> void:
 	for index in range(3):
 		Art.model(self, "cardboardBoxClosed", Vector3(-6.8 + index * 0.7, 0, -13.55), Vector3(0.55, 0.6, 0.55))
 		box(self, Vector3(-6.8 + index * 0.7, 0.3, -13.55), Vector3(0.55, 0.6, 0.55), "metal").hide()
+	# Imported dressing stays against walls and outside the walking routes.
+	Art.external(self,"korean_fire_extinguisher_01",Vector3(1.65,0.15,5.0),Vector3(0.25,0.65,0.24))
+	Art.external(self,"plastic_broom",Vector3(-7.55,0,-12.6),Vector3(0.35,1.4,0.18))
+	Art.external(self,"cardboard_box_01",Vector3(6.6,0,-9.4),Vector3(0.6,0.5,0.45))
+	Art.external(self,"stationery_supplies",Vector3(-3.9,1.08,7.5),Vector3(0.3,0.16,0.22))
+	Art.external(self,"office_notepads",Vector3(6.1,1.08,-7.9),Vector3(0.3,0.06,0.25))
+	Art.external(self,"clipboard",Vector3(-3.95,1.08,-1.3),Vector3(0.2,0.035,0.29))
+	Art.model(self,"cardboardBoxOpen",Vector3(-3.3,0,3.5),Vector3(0.6,0.5,0.55))
 	add_floor_plan(Vector3(-4.8, 1.55, 4.14), 0, "reception")
 	add_floor_plan(Vector3(-4.4, 1.55, -1.86), 0, "security")
 	add_clock(Vector3(-2.9, 2.28, 4.14))
@@ -310,8 +323,7 @@ func room(label: String, center: Vector3, size: Vector2) -> void:
 			add_child(extra)
 			interior_lights.append(extra)
 			corridor_lights.append(extra)
-	var fixture := Art.model(self, "lampSquareCeiling", center + Vector3(0, 2.7, 0), Vector3(0.8, 0.3, 0.8))
-	disable_fixture_shadows(fixture)
+	install_fixture(self,center+Vector3(0,2.72,0),light)
 
 ## O mesmo reator gagueja no predio inteiro: ter andar e escada no registro e o
 ## que faz a variacao existir fora do terreo.
@@ -369,10 +381,13 @@ func item(id: String, prompt: String, location: Vector3, size: Vector3, color: C
 
 func decorate_item(body: Node3D, id: String, size: Vector3) -> void:
 	if id == "phone":
-		Art.rounded_box(body, Vector3(0, size.y * 0.6, 0), Vector3(size.x * 1.1, 0.07, 0.09), Color(0.04, 0.055, 0.05))
-		for index in range(9):
-			Art.box(body, Vector3(-0.07 + (index % 3) * 0.06, size.y * 0.52, 0.03 + (index / 3) * 0.04), Vector3(0.035, 0.008, 0.025), Color(0.45, 0.46, 0.39))
+		for child in body.get_children():
+			if child is MeshInstance3D: child.hide()
+		Art.imported(body,"office_phone",Vector3(0,-size.y/2,0),Vector3(0.35,0.2,0.3))
 	elif id == "breakers":
+		for child in body.get_children():
+			if child is MeshInstance3D: child.hide()
+		Art.external(body,"power_box_01",Vector3(0,-size.y/2,0),Vector3(0.9,1.0,0.24),PI/2)
 		for index in range(4):
 			Art.box(body, Vector3(size.x * 0.51, -0.3 + index * 0.2, 0), Vector3(0.04, 0.12, 0.24), Color(0.06, 0.08, 0.075))
 			Art.box(body, Vector3(size.x * 0.6, -0.3 + index * 0.2, 0), Vector3(0.06, 0.05, 0.08), Color(0.56, 0.24, 0.12))
@@ -537,3 +552,15 @@ func disable_fixture_shadows(fixture: Node3D) -> void:
 	# occlude the emitter and project an oversized black patch on the ceiling.
 	for part in fixture.find_children("*", "GeometryInstance3D", true, false):
 		part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+func install_fixture(parent: Node3D, point: Vector3, source: Light3D, wall_mount: bool = false, asset: String = "", dimensions: Vector3 = Vector3.ZERO) -> Node3D:
+	var fixture := preload("res://scripts/lighting_fixture.gd").new()
+	fixture.source = source
+	fixture.world = self
+	fixture.wall_mount = wall_mount
+	fixture.model_asset = asset
+	fixture.model_dimensions = dimensions
+	fixture.position = point
+	parent.add_child(fixture)
+	lighting_fixtures.append(fixture)
+	return fixture

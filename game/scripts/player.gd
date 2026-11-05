@@ -3,6 +3,10 @@ extends CharacterBody3D
 const SPEED := 4.0
 const FLY_SPEED := 5.0
 const SENSITIVITY := 0.0025
+# Ajustados pelo menu Configurações > Controles e vídeo (game_settings.gd).
+var sensitivity := SENSITIVITY
+var invert_y := false
+var smoke_test := OS.get_cmdline_user_args().has("--smoke-test")
 var camera: Camera3D
 var ray: RayCast3D
 var controls_enabled := true
@@ -44,9 +48,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if has_flashlight and event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F:
 		flashlight.visible = not flashlight.visible
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		if OS.get_cmdline_user_args().has("--smoke-test"): return
-		rotate_y(-event.relative.x * SENSITIVITY)
-		camera.rotation.x = clampf(camera.rotation.x - event.relative.y * SENSITIVITY, -1.4, 1.4)
+		if smoke_test: return
+		rotate_y(-event.relative.x * sensitivity)
+		var vertical: float = event.relative.y * sensitivity * (-1.0 if invert_y else 1.0)
+		camera.rotation.x = clampf(camera.rotation.x - vertical, -1.4, 1.4)
 	if event.is_action_pressed("interact"):
 		var target := interaction_target()
 		if target != null:

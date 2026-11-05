@@ -244,7 +244,7 @@ func tick(delta: float) -> void:
 				chapter.flags.service_message_seen = true
 			elif chapter.has_flag("service_message_seen"): chapter.flags.service_looked_away = true
 			game.world.upper.warning.visible = not chapter.has_flag("service_message_gone")
-		if chapter.has_flag("service_crossed") and game.world.staircases.is_service(point) and point.y < 0.5 and point.z < -7:
+		if chapter.has_flag("service_crossed") and game.world.staircases.is_service(point) and point.y < 0.5 and point.z > 0 and point.x > -10:
 			chapter.flags.alternate_route_unlocked = true
 			chapter.advance(16)
 	if chapter.stage == 17 and chapter.has_flag("c2_final_report_read") and not game.ui.modal and not finish_pending:

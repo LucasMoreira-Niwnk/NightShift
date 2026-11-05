@@ -25,6 +25,12 @@ static func load_fitted(parent: Node3D, path: String, position: Vector3, dimensi
 	holder.rotation.y = angle
 	var instance := packed.instantiate() as Node3D
 	holder.add_child(instance)
+	if "pine_sapling_small" in path:
+		for part in instance.find_children("*","MeshInstance3D",true,false):
+			part.visible = part.name == "pine_sapling_small_a"
+	if "mounted_fluorescent_lights" in path:
+		for part in instance.find_children("*", "MeshInstance3D", true, false):
+			part.visible = part.name == "mounted_fluorescent_lights_a"
 	if "binder_notebook" in path:
 		select_closed_notebook(instance)
 	if "vintage_radio_transceiver" in path:
@@ -72,7 +78,8 @@ static func preserve_pbr(node: Node) -> void:
 			var original := node.get_active_material(index) as StandardMaterial3D
 			if original == null: continue
 			var material := StandardMaterial3D.new()
-			for property in ["albedo_color", "albedo_texture", "metallic", "metallic_texture", "metallic_texture_channel", "roughness", "roughness_texture", "roughness_texture_channel", "normal_enabled", "normal_texture", "normal_scale", "ao_enabled", "ao_texture", "ao_texture_channel", "transparency", "cull_mode"]:
+			material.resource_name = original.resource_name
+			for property in ["emission_enabled", "emission", "emission_texture", "emission_energy_multiplier", "albedo_color", "albedo_texture", "metallic", "metallic_texture", "metallic_texture_channel", "roughness", "roughness_texture", "roughness_texture_channel", "normal_enabled", "normal_texture", "normal_scale", "ao_enabled", "ao_texture", "ao_texture_channel", "transparency", "cull_mode"]:
 				material.set(property, original.get(property))
 			material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 			node.mesh.surface_set_material(index, material)
@@ -163,3 +170,7 @@ static func paper(parent: Node3D, size: Vector3, envelope: bool) -> void:
 	if envelope:
 		var fold := box(parent, Vector3(0, 0.012, -0.03), Vector3(size.x * 0.75, 0.005, size.z * 0.5), Color(0.47, 0.41, 0.27))
 		fold.rotation.y = 0.1
+
+
+static func imported(parent: Node3D, asset: String, point: Vector3, dimensions: Vector3, angle: float = 0) -> Node3D:
+	return load_fitted(parent,"res://assets/models/innerscene/"+asset+".glb",point,dimensions,angle,false)

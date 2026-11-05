@@ -1,0 +1,633 @@
+[gd_scene load_steps=25 format=3]
+
+[ext_resource type="Script" path="res://scripts/prop_slot.gd" id="1_prop"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_paper"]
+albedo_color = Color(0.74, 0.72, 0.62, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="Mat_cork"]
+albedo_color = Color(0.34, 0.25, 0.16, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_frame"]
+albedo_color = Color(0.17, 0.14, 0.1, 1)
+roughness = 0.75
+
+[sub_resource type="StandardMaterial3D" id="Mat_calendar"]
+albedo_color = Color(0.8, 0.79, 0.72, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="Box_0"]
+size = Vector3(1.1, 0.72, 0.02)
+
+[sub_resource type="BoxMesh" id="Box_1"]
+size = Vector3(1.18, 0.04, 0.03)
+
+[sub_resource type="BoxMesh" id="Box_2"]
+size = Vector3(0.04, 0.72, 0.03)
+
+[sub_resource type="BoxMesh" id="Box_3"]
+size = Vector3(0.26, 0.34, 0.004)
+
+[sub_resource type="BoxMesh" id="Box_4"]
+size = Vector3(0.22, 0.26, 0.004)
+
+[sub_resource type="BoxMesh" id="Box_5"]
+size = Vector3(0.24, 0.16, 0.004)
+
+[sub_resource type="BoxMesh" id="Box_6"]
+size = Vector3(0.21, 0.14, 0.004)
+
+[sub_resource type="BoxMesh" id="Box_7"]
+size = Vector3(0.9, 0.62, 0.02)
+
+[sub_resource type="BoxMesh" id="Box_8"]
+size = Vector3(0.98, 0.04, 0.03)
+
+[sub_resource type="BoxMesh" id="Box_9"]
+size = Vector3(0.04, 0.62, 0.03)
+
+[sub_resource type="BoxMesh" id="Box_10"]
+size = Vector3(0.22, 0.24, 0.004)
+
+[sub_resource type="BoxMesh" id="Box_11"]
+size = Vector3(0.2, 0.2, 0.004)
+
+[sub_resource type="BoxMesh" id="Box_12"]
+size = Vector3(0.2, 0.18, 0.004)
+
+[sub_resource type="BoxMesh" id="Box_13"]
+size = Vector3(0.4, 0.52, 0.004)
+
+[sub_resource type="BoxMesh" id="Box_14"]
+size = Vector3(0.8, 0.6, 0.02)
+
+[sub_resource type="BoxMesh" id="Box_15"]
+size = Vector3(0.88, 0.04, 0.03)
+
+[sub_resource type="BoxMesh" id="Box_16"]
+size = Vector3(0.04, 0.6, 0.03)
+
+[sub_resource type="BoxMesh" id="Box_17"]
+size = Vector3(0.42, 0.44, 0.004)
+
+[sub_resource type="BoxMesh" id="Box_18"]
+size = Vector3(0.2, 0.16, 0.004)
+
+[node name="Ambientacao" type="Node3D"]
+
+[node name="AmbientacaoTerreo" type="Node3D" parent="."]
+
+[node name="Copa" type="Node3D" parent="AmbientacaoTerreo"]
+
+[node name="CadeiraBancada" type="Node3D" parent="AmbientacaoTerreo/Copa"]
+transform = Transform3D(0.980067, 0, -0.198669, 0, 1, 0, 0.198669, 0, 0.980067, 6.85, 0, 1.95)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/SchoolChair_01/SchoolChair_01_1k.gltf"
+dimensions = Vector3(0.52, 0.92, 0.62)
+
+[node name="CadeiraBancada2" type="Node3D" parent="AmbientacaoTerreo/Copa"]
+transform = Transform3D(0.955336, 0, 0.29552, 0, 1, 0, -0.29552, 0, 0.955336, 5.35, 0, 1.9)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/SchoolChair_01/SchoolChair_01_1k.gltf"
+dimensions = Vector3(0.52, 0.92, 0.62)
+
+[node name="BancoParede" type="Node3D" parent="AmbientacaoTerreo/Copa"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.3, 0, -1.6)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/painted_wooden_bench/painted_wooden_bench_1k.gltf"
+dimensions = Vector3(1.165, 0.889, 0.497)
+
+[node name="CaixaCanto" type="Node3D" parent="AmbientacaoTerreo/Copa"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 7.35, 0, 0.3)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/cardboard_box_01/cardboard_box_01_1k.gltf"
+dimensions = Vector3(0.39, 0.34, 0.52)
+
+[node name="CaixaCantoTopo" type="Node3D" parent="AmbientacaoTerreo/Copa"]
+transform = Transform3D(0.169967, 0, 0.98545, 0, 1, 0, -0.98545, 0, 0.169967, 7.33, 0.34, 0.32)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/cardboard_box_01/cardboard_box_01_1k.gltf"
+dimensions = Vector3(0.33, 0.29, 0.44)
+solid = false
+
+[node name="CaixaLixo" type="Node3D" parent="AmbientacaoTerreo/Copa"]
+transform = Transform3D(0.988771, 0, 0.149438, 0, 1, 0, -0.149438, 0, 0.988771, 7.45, 0, -0.55)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/cardboard_box_01/cardboard_box_01_1k.gltf"
+dimensions = Vector3(0.3, 0.27, 0.4)
+solid = false
+
+[node name="PlantaSeca" type="Node3D" parent="AmbientacaoTerreo/Copa"]
+transform = Transform3D(0.825336, 0, 0.564642, 0, 1, 0, -0.564642, 0, 0.825336, 2.65, 0, 3.45)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/potted_plant_01/potted_plant_01_1k.gltf"
+dimensions = Vector3(0.5, 1.15, 0.54)
+
+[node name="Extintor" type="Node3D" parent="AmbientacaoTerreo/Copa"]
+transform = Transform3D(0.921061, 0, 0.389418, 0, 1, 0, -0.389418, 0, 0.921061, 2.35, 0, -1.65)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/korean_fire_extinguisher_01/korean_fire_extinguisher_01_1k.gltf"
+dimensions = Vector3(0.25, 0.59, 0.33)
+
+[node name="FicharioBancada" type="Node3D" parent="AmbientacaoTerreo/Copa"]
+transform = Transform3D(0.968912, 0, 0.247404, 0, 1, 0, -0.247404, 0, 0.968912, 5.6, 1.08, 2.85)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/binder_notebook/binder_notebook_1k.gltf"
+dimensions = Vector3(0.34, 0.03, 0.24)
+solid = false
+visible_parts = PackedStringArray("binder_notebook_closed")
+
+[node name="Almoxarifado" type="Node3D" parent="AmbientacaoTerreo"]
+
+[node name="EstanteNorte" type="Node3D" parent="AmbientacaoTerreo/Almoxarifado"]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -4.6, 0, -2.4)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/wooden_bookshelf_worn/wooden_bookshelf_worn_1k.gltf"
+dimensions = Vector3(1.3, 1.95, 0.55)
+
+[node name="CaixaPorta" type="Node3D" parent="AmbientacaoTerreo/Almoxarifado"]
+transform = Transform3D(0.995004, 0, 0.0998334, 0, 1, 0, -0.0998334, 0, 0.995004, -3, 0, -2.45)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/cardboard_box_01/cardboard_box_01_1k.gltf"
+dimensions = Vector3(0.39, 0.34, 0.52)
+
+[node name="CaixaPortaTopo" type="Node3D" parent="AmbientacaoTerreo/Almoxarifado"]
+transform = Transform3D(0.955336, 0, -0.29552, 0, 1, 0, 0.29552, 0, 0.955336, -3, 0.34, -2.42)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/cardboard_box_01/cardboard_box_01_1k.gltf"
+dimensions = Vector3(0.33, 0.29, 0.44)
+solid = false
+
+[node name="QuadroForca" type="Node3D" parent="AmbientacaoTerreo/Almoxarifado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.6, 1.25, -5.7)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/power_box_01/power_box_01_1k.gltf"
+dimensions = Vector3(0.46, 0.5, 0.4)
+
+[node name="Extintor" type="Node3D" parent="AmbientacaoTerreo/Almoxarifado"]
+transform = Transform3D(0.955336, 0, -0.29552, 0, 1, 0, 0.29552, 0, 0.955336, -2.4, 0, -5.6)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/korean_fire_extinguisher_01/korean_fire_extinguisher_01_1k.gltf"
+dimensions = Vector3(0.25, 0.59, 0.33)
+
+[node name="Prancheta" type="Node3D" parent="AmbientacaoTerreo/Almoxarifado"]
+transform = Transform3D(0.921061, 0, 0.389418, 0, 1, 0, -0.389418, 0, 0.921061, -6.6, 1.08, -5.3)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/clipboard/clipboard_1k.gltf"
+dimensions = Vector3(0.23, 0.042, 0.337)
+solid = false
+
+[node name="Papelaria" type="Node3D" parent="AmbientacaoTerreo/Almoxarifado"]
+transform = Transform3D(0.980067, 0, -0.198669, 0, 1, 0, 0.198669, 0, 0.980067, -5.45, 1.08, -5.55)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/stationery_supplies/stationery_supplies_1k.gltf"
+dimensions = Vector3(0.3, 0.164, 0.084)
+solid = false
+
+[node name="Seguranca" type="Node3D" parent="AmbientacaoTerreo"]
+
+[node name="Cadeira" type="Node3D" parent="AmbientacaoTerreo/Seguranca"]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -6.1, 0, 1.5)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/SchoolChair_01/SchoolChair_01_1k.gltf"
+dimensions = Vector3(0.52, 0.92, 0.62)
+solid = false
+
+[node name="CaixaArquivoMorto" type="Node3D" parent="AmbientacaoTerreo/Seguranca"]
+transform = Transform3D(0.980067, 0, 0.198669, 0, 1, 0, -0.198669, 0, 0.980067, -3.15, 0, 3.5)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/cardboard_box_01/cardboard_box_01_1k.gltf"
+dimensions = Vector3(0.45, 0.4, 0.6)
+solid = false
+
+[node name="CaixaLixo" type="Node3D" parent="AmbientacaoTerreo/Seguranca"]
+transform = Transform3D(0.995004, 0, -0.0998334, 0, 1, 0, 0.0998334, 0, 0.995004, -7.35, 0, 2.9)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/cardboard_box_01/cardboard_box_01_1k.gltf"
+dimensions = Vector3(0.3, 0.27, 0.4)
+solid = false
+
+[node name="Recepcao" type="Node3D" parent="AmbientacaoTerreo"]
+
+[node name="PlantaEntrada" type="Node3D" parent="AmbientacaoTerreo/Recepcao"]
+transform = Transform3D(-0.588501, 0, 0.808496, 0, 1, 0, -0.808496, 0, -0.588501, 4.8, 0, 5)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/potted_plant_01/potted_plant_01_1k.gltf"
+dimensions = Vector3(0.5, 1.15, 0.54)
+
+[node name="BancoEspera" type="Node3D" parent="AmbientacaoTerreo/Recepcao"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.6, 0, 4.42)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/painted_wooden_bench/painted_wooden_bench_1k.gltf"
+dimensions = Vector3(1.165, 0.889, 0.497)
+
+[node name="Corredor" type="Node3D" parent="AmbientacaoTerreo"]
+
+[node name="Extintor" type="Node3D" parent="AmbientacaoTerreo/Corredor"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 1.72, 0, -7.3)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/korean_fire_extinguisher_01/korean_fire_extinguisher_01_1k.gltf"
+dimensions = Vector3(0.25, 0.59, 0.33)
+
+[node name="Tecnica" type="Node3D" parent="AmbientacaoTerreo"]
+
+[node name="Caixa1" type="Node3D" parent="AmbientacaoTerreo/Tecnica"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -6.8, 0, -13.55)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/cardboard_box_01/cardboard_box_01_1k.gltf"
+dimensions = Vector3(0.41, 0.37, 0.55)
+
+[node name="Caixa2" type="Node3D" parent="AmbientacaoTerreo/Tecnica"]
+transform = Transform3D(-0.0799147, 0, 0.996802, 0, 1, 0, -0.996802, 0, -0.0799147, -6.1, 0, -13.55)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/cardboard_box_01/cardboard_box_01_1k.gltf"
+dimensions = Vector3(0.41, 0.37, 0.55)
+
+[node name="Caixa2Topo" type="Node3D" parent="AmbientacaoTerreo/Tecnica"]
+transform = Transform3D(0.921061, 0, 0.389418, 0, 1, 0, -0.389418, 0, 0.921061, -6.1, 0.37, -13.5)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/cardboard_box_01/cardboard_box_01_1k.gltf"
+dimensions = Vector3(0.33, 0.29, 0.44)
+solid = false
+
+[node name="Caixa3" type="Node3D" parent="AmbientacaoTerreo/Tecnica"]
+transform = Transform3D(0.0499792, 0, 0.99875, 0, 1, 0, -0.99875, 0, 0.0499792, -5.4, 0, -13.55)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/cardboard_box_01/cardboard_box_01_1k.gltf"
+dimensions = Vector3(0.41, 0.37, 0.55)
+
+[node name="QuadroForca2" type="Node3D" parent="AmbientacaoTerreo/Tecnica"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.6, 1.2, -13.7)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/power_box_01/power_box_01_1k.gltf"
+dimensions = Vector3(0.46, 0.5, 0.4)
+
+[node name="Arquivo" type="Node3D" parent="AmbientacaoTerreo"]
+
+[node name="CaixaArquivo" type="Node3D" parent="AmbientacaoTerreo/Arquivo"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, 0, -9.45)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/cardboard_box_01/cardboard_box_01_1k.gltf"
+dimensions = Vector3(0.41, 0.37, 0.55)
+
+[node name="CaixaArquivoTopo" type="Node3D" parent="AmbientacaoTerreo/Arquivo"]
+transform = Transform3D(0.939373, 0, 0.342898, 0, 1, 0, -0.342898, 0, 0.939373, 2.62, 0.37, -9.43)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/cardboard_box_01/cardboard_box_01_1k.gltf"
+dimensions = Vector3(0.33, 0.29, 0.44)
+solid = false
+
+[node name="Ambientacao2Andar" type="Node3D" parent="."]
+
+[node name="Pessoal" type="Node3D" parent="Ambientacao2Andar"]
+
+[node name="Cadeira" type="Node3D" parent="Ambientacao2Andar/Pessoal"]
+transform = Transform3D(0.968912, 0, 0.247404, 0, 1, 0, -0.247404, 0, 0.968912, 4.75, 4.2, 7.95)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/SchoolChair_01/SchoolChair_01_1k.gltf"
+dimensions = Vector3(0.52, 0.92, 0.62)
+
+[node name="Banco" type="Node3D" parent="Ambientacao2Andar/Pessoal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 4.2, 5.45)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/painted_wooden_bench/painted_wooden_bench_1k.gltf"
+dimensions = Vector3(1.165, 0.889, 0.497)
+
+[node name="Planta" type="Node3D" parent="Ambientacao2Andar/Pessoal"]
+transform = Transform3D(0.696707, 0, -0.717356, 0, 1, 0, 0.717356, 0, 0.696707, 7.45, 4.2, 9.45)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/potted_plant_01/potted_plant_01_1k.gltf"
+dimensions = Vector3(0.5, 1.15, 0.54)
+
+[node name="CaixaJanela" type="Node3D" parent="Ambientacao2Andar/Pessoal"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 2.25, 4.2, 9.6)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/cardboard_box_01/cardboard_box_01_1k.gltf"
+dimensions = Vector3(0.39, 0.34, 0.52)
+
+[node name="CaixaJanela2" type="Node3D" parent="Ambientacao2Andar/Pessoal"]
+transform = Transform3D(-0.0998334, 0, 0.995004, 0, 1, 0, -0.995004, 0, -0.0998334, 2.85, 4.2, 9.62)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/cardboard_box_01/cardboard_box_01_1k.gltf"
+dimensions = Vector3(0.33, 0.29, 0.44)
+
+[node name="Extintor" type="Node3D" parent="Ambientacao2Andar/Pessoal"]
+transform = Transform3D(0.877583, 0, 0.479426, 0, 1, 0, -0.479426, 0, 0.877583, 1.95, 4.2, 5.45)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/korean_fire_extinguisher_01/korean_fire_extinguisher_01_1k.gltf"
+dimensions = Vector3(0.25, 0.59, 0.33)
+
+[node name="Luminaria" type="Node3D" parent="Ambientacao2Andar/Pessoal"]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 6.45, 5.28, 9.1)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/desk_lamp_arm_01/desk_lamp_arm_01_1k.gltf"
+dimensions = Vector3(0.17, 0.62, 0.43)
+solid = false
+
+[node name="Corredor" type="Node3D" parent="Ambientacao2Andar"]
+
+[node name="Extintor" type="Node3D" parent="Ambientacao2Andar/Corredor"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -1.34, 4.2, -12.3)
+script = ExtResource("1_prop")
+asset = "res://assets/models/polyhaven/korean_fire_extinguisher_01/korean_fire_extinguisher_01_1k.gltf"
+dimensions = Vector3(0.25, 0.59, 0.33)
+
+[node name="QuadroAvisos" type="Node3D" parent="AmbientacaoTerreo/Corredor"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -1.89, 1.45, -7.2)
+
+[node name="Cortica" type="MeshInstance3D" parent="AmbientacaoTerreo/Corredor/QuadroAvisos"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.01)
+cast_shadow = 0
+material_override = SubResource("Mat_cork")
+mesh = SubResource("Box_0")
+
+[node name="Moldura0" type="MeshInstance3D" parent="AmbientacaoTerreo/Corredor/QuadroAvisos"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0.015)
+cast_shadow = 0
+material_override = SubResource("Mat_frame")
+mesh = SubResource("Box_1")
+
+[node name="Moldura1" type="MeshInstance3D" parent="AmbientacaoTerreo/Corredor/QuadroAvisos"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.38, 0.015)
+cast_shadow = 0
+material_override = SubResource("Mat_frame")
+mesh = SubResource("Box_1")
+
+[node name="Moldura2" type="MeshInstance3D" parent="AmbientacaoTerreo/Corredor/QuadroAvisos"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.57, 0, 0.015)
+cast_shadow = 0
+material_override = SubResource("Mat_frame")
+mesh = SubResource("Box_2")
+
+[node name="Moldura3" type="MeshInstance3D" parent="AmbientacaoTerreo/Corredor/QuadroAvisos"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.57, 0, 0.015)
+cast_shadow = 0
+material_override = SubResource("Mat_frame")
+mesh = SubResource("Box_2")
+
+[node name="Papel0" type="MeshInstance3D" parent="AmbientacaoTerreo/Corredor/QuadroAvisos"]
+transform = Transform3D(0.9998, -0.0199987, 0, 0.0199987, 0.9998, 0, 0, 0, 1, -0.36, 0.06, 0.024)
+cast_shadow = 0
+material_override = SubResource("Mat_paper")
+mesh = SubResource("Box_3")
+
+[node name="Texto0" type="Label3D" parent="AmbientacaoTerreo/Corredor/QuadroAvisos/Papel0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.0035)
+pixel_size = 0.0007
+shaded = true
+double_sided = false
+modulate = Color(0.13, 0.13, 0.11, 1)
+text = "COMUNICADO
+
+A partir de 01/11 a ronda
+noturna passa a ser feita
+por um único vigilante.
+
+— Administração"
+font_size = 22
+outline_size = 0
+
+[node name="Papel1" type="MeshInstance3D" parent="AmbientacaoTerreo/Corredor/QuadroAvisos"]
+transform = Transform3D(0.99955, 0.0299955, 0, -0.0299955, 0.99955, 0, 0, 0, 1, -0.04, 0.12, 0.024)
+cast_shadow = 0
+material_override = SubResource("Mat_paper")
+mesh = SubResource("Box_4")
+
+[node name="Texto1" type="Label3D" parent="AmbientacaoTerreo/Corredor/QuadroAvisos/Papel1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.0035)
+pixel_size = 0.0007
+shaded = true
+double_sided = false
+modulate = Color(0.13, 0.13, 0.11, 1)
+text = "ESCALA DE LIMPEZA
+NOV / 2008
+
+SEG · QUA · SEX
+06h às 08h"
+font_size = 22
+outline_size = 0
+
+[node name="Papel2" type="MeshInstance3D" parent="AmbientacaoTerreo/Corredor/QuadroAvisos"]
+transform = Transform3D(0.999888, -0.0149994, 0, 0.0149994, 0.999888, 0, 0, 0, 1, 0.3, 0.16, 0.024)
+cast_shadow = 0
+material_override = SubResource("Mat_paper")
+mesh = SubResource("Box_5")
+
+[node name="Texto2" type="Label3D" parent="AmbientacaoTerreo/Corredor/QuadroAvisos/Papel2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.0035)
+pixel_size = 0.0007
+shaded = true
+double_sided = false
+modulate = Color(0.13, 0.13, 0.11, 1)
+text = "PROIBIDO FUMAR
+NAS DEPENDÊNCIAS
+DO EDIFÍCIO"
+font_size = 22
+outline_size = 0
+
+[node name="Papel3" type="MeshInstance3D" parent="AmbientacaoTerreo/Corredor/QuadroAvisos"]
+transform = Transform3D(0.9998, 0.0199987, 0, -0.0199987, 0.9998, 0, 0, 0, 1, 0.27, -0.15, 0.024)
+cast_shadow = 0
+material_override = SubResource("Mat_paper")
+mesh = SubResource("Box_6")
+
+[node name="Texto3" type="Label3D" parent="AmbientacaoTerreo/Corredor/QuadroAvisos/Papel3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.0035)
+pixel_size = 0.0007
+shaded = true
+double_sided = false
+modulate = Color(0.13, 0.13, 0.11, 1)
+text = "Achados e perdidos:
+procurar a recepção."
+font_size = 22
+outline_size = 0
+
+[node name="QuadroCopa" type="Node3D" parent="AmbientacaoTerreo/Copa"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 2.11, 1.45, -0.9)
+
+[node name="Cortica" type="MeshInstance3D" parent="AmbientacaoTerreo/Copa/QuadroCopa"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.01)
+cast_shadow = 0
+material_override = SubResource("Mat_cork")
+mesh = SubResource("Box_7")
+
+[node name="Moldura0" type="MeshInstance3D" parent="AmbientacaoTerreo/Copa/QuadroCopa"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.33, 0.015)
+cast_shadow = 0
+material_override = SubResource("Mat_frame")
+mesh = SubResource("Box_8")
+
+[node name="Moldura1" type="MeshInstance3D" parent="AmbientacaoTerreo/Copa/QuadroCopa"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.33, 0.015)
+cast_shadow = 0
+material_override = SubResource("Mat_frame")
+mesh = SubResource("Box_8")
+
+[node name="Moldura2" type="MeshInstance3D" parent="AmbientacaoTerreo/Copa/QuadroCopa"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.47, 0, 0.015)
+cast_shadow = 0
+material_override = SubResource("Mat_frame")
+mesh = SubResource("Box_9")
+
+[node name="Moldura3" type="MeshInstance3D" parent="AmbientacaoTerreo/Copa/QuadroCopa"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.47, 0, 0.015)
+cast_shadow = 0
+material_override = SubResource("Mat_frame")
+mesh = SubResource("Box_9")
+
+[node name="Papel0" type="MeshInstance3D" parent="AmbientacaoTerreo/Copa/QuadroCopa"]
+transform = Transform3D(0.9998, -0.0199987, 0, 0.0199987, 0.9998, 0, 0, 0, 1, -0.25, 0.08, 0.024)
+cast_shadow = 0
+material_override = SubResource("Mat_paper")
+mesh = SubResource("Box_10")
+
+[node name="Texto0" type="Label3D" parent="AmbientacaoTerreo/Copa/QuadroCopa/Papel0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.0035)
+pixel_size = 0.0007
+shaded = true
+double_sided = false
+modulate = Color(0.13, 0.13, 0.11, 1)
+text = "COPA
+
+Cada um lava
+a própria xícara."
+font_size = 22
+outline_size = 0
+
+[node name="Papel1" type="MeshInstance3D" parent="AmbientacaoTerreo/Copa/QuadroCopa"]
+transform = Transform3D(0.99955, 0.0299955, 0, -0.0299955, 0.99955, 0, 0, 0, 1, 0.05, 0.11, 0.024)
+cast_shadow = 0
+material_override = SubResource("Mat_paper")
+mesh = SubResource("Box_11")
+
+[node name="Texto1" type="Label3D" parent="AmbientacaoTerreo/Copa/QuadroCopa/Papel1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.0035)
+pixel_size = 0.0007
+shaded = true
+double_sided = false
+modulate = Color(0.13, 0.13, 0.11, 1)
+text = "A geladeira será
+esvaziada toda
+sexta-feira."
+font_size = 22
+outline_size = 0
+
+[node name="Papel2" type="MeshInstance3D" parent="AmbientacaoTerreo/Copa/QuadroCopa"]
+transform = Transform3D(0.999888, -0.0149994, 0, 0.0149994, 0.999888, 0, 0, 0, 1, 0.27, -0.12, 0.024)
+cast_shadow = 0
+material_override = SubResource("Mat_paper")
+mesh = SubResource("Box_12")
+
+[node name="Texto2" type="Label3D" parent="AmbientacaoTerreo/Copa/QuadroCopa/Papel2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.0035)
+pixel_size = 0.0007
+shaded = true
+double_sided = false
+modulate = Color(0.13, 0.13, 0.11, 1)
+text = "Vaquinha do café
+R$ 5,00
+falar com a Marta"
+font_size = 22
+outline_size = 0
+
+[node name="Calendario" type="Node3D" parent="AmbientacaoTerreo/Copa"]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 4.2, 1.65, 3.89)
+
+[node name="Papel0" type="MeshInstance3D" parent="AmbientacaoTerreo/Copa/Calendario"]
+transform = Transform3D(1, -0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.024)
+cast_shadow = 0
+material_override = SubResource("Mat_calendar")
+mesh = SubResource("Box_13")
+
+[node name="Texto0" type="Label3D" parent="AmbientacaoTerreo/Copa/Calendario/Papel0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.0035)
+pixel_size = 0.0007
+shaded = true
+double_sided = false
+modulate = Color(0.13, 0.13, 0.11, 1)
+text = "NOVEMBRO 2008
+
+D  S  T  Q  Q  S  S
+                  1
+2  3  4  5  6  7  8
+9 10 11 12 13 [14] 15
+16 17 18 19 20 21 22
+23 24 25 26 27 28 29
+30"
+font_size = 26
+outline_size = 0
+
+[node name="EscalaPlantoes" type="Node3D" parent="Ambientacao2Andar/Pessoal"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 7.89, 5.65, 8)
+
+[node name="Cortica" type="MeshInstance3D" parent="Ambientacao2Andar/Pessoal/EscalaPlantoes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.01)
+cast_shadow = 0
+material_override = SubResource("Mat_cork")
+mesh = SubResource("Box_14")
+
+[node name="Moldura0" type="MeshInstance3D" parent="Ambientacao2Andar/Pessoal/EscalaPlantoes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.32, 0.015)
+cast_shadow = 0
+material_override = SubResource("Mat_frame")
+mesh = SubResource("Box_15")
+
+[node name="Moldura1" type="MeshInstance3D" parent="Ambientacao2Andar/Pessoal/EscalaPlantoes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.32, 0.015)
+cast_shadow = 0
+material_override = SubResource("Mat_frame")
+mesh = SubResource("Box_15")
+
+[node name="Moldura2" type="MeshInstance3D" parent="Ambientacao2Andar/Pessoal/EscalaPlantoes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.42, 0, 0.015)
+cast_shadow = 0
+material_override = SubResource("Mat_frame")
+mesh = SubResource("Box_16")
+
+[node name="Moldura3" type="MeshInstance3D" parent="Ambientacao2Andar/Pessoal/EscalaPlantoes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.42, 0, 0.015)
+cast_shadow = 0
+material_override = SubResource("Mat_frame")
+mesh = SubResource("Box_16")
+
+[node name="Papel0" type="MeshInstance3D" parent="Ambientacao2Andar/Pessoal/EscalaPlantoes"]
+transform = Transform3D(0.9998, -0.0199987, 0, 0.0199987, 0.9998, 0, 0, 0, 1, -0.12, 0.0, 0.024)
+cast_shadow = 0
+material_override = SubResource("Mat_paper")
+mesh = SubResource("Box_17")
+
+[node name="Texto0" type="Label3D" parent="Ambientacao2Andar/Pessoal/EscalaPlantoes/Papel0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.0035)
+pixel_size = 0.0007
+shaded = true
+double_sided = false
+modulate = Color(0.13, 0.13, 0.11, 1)
+text = "ESCALA DE PLANTÕES — NOV/2008
+
+12/11   —
+13/11   —
+14/11   D. REIS   00h–06h
+15/11
+16/11   "
+font_size = 22
+outline_size = 0
+
+[node name="Papel1" type="MeshInstance3D" parent="Ambientacao2Andar/Pessoal/EscalaPlantoes"]
+transform = Transform3D(0.99955, 0.0299955, 0, -0.0299955, 0.99955, 0, 0, 0, 1, 0.27, 0.14, 0.024)
+cast_shadow = 0
+material_override = SubResource("Mat_paper")
+mesh = SubResource("Box_18")
+
+[node name="Texto1" type="Label3D" parent="Ambientacao2Andar/Pessoal/EscalaPlantoes/Papel1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.0035)
+pixel_size = 0.0007
+shaded = true
+double_sided = false
+modulate = Color(0.13, 0.13, 0.11, 1)
+text = "Devolver as chaves
+ao responsável
+antes de sair."
+font_size = 22
+outline_size = 0

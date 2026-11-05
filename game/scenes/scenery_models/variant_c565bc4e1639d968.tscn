@@ -1,0 +1,23 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/polyhaven/mounted_fluorescent_lights/mounted_fluorescent_lights_1k.gltf" id="1"]
+
+[node name="Model" instance=ExtResource("1")]
+
+[node name="mounted_fluorescent_lights_f" parent="."]
+visible = false
+
+[node name="mounted_fluorescent_lights_d" parent="."]
+visible = false
+
+[node name="mounted_fluorescent_lights_b" parent="."]
+visible = false
+
+[node name="mounted_fluorescent_lights_g" parent="."]
+visible = false
+
+[node name="mounted_fluorescent_lights_e" parent="."]
+visible = false
+
+[node name="mounted_fluorescent_lights_c" parent="."]
+visible = false

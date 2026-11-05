@@ -1,0 +1,32 @@
+[
+  {
+    "name": "office_phone",
+    "url": "https://www.innerscene.com/tools/library/3d-parts/desk-call-office-phone-dbbf9f01",
+    "sha256": "6fdcb76cfb0ba0b4d3f3765bfc7f5c69888a035040f32c21e005aa69326b48de"
+  },
+  {
+    "name": "crt_monitor",
+    "url": "https://www.innerscene.com/tools/library/3d-parts/vintage-crt-television-3e630b92",
+    "sha256": "884f3fdfe45aef8b0f654d49b9841d75e3b4785cd9350e1feb6605addf05bb21"
+  },
+  {
+    "name": "sedan",
+    "url": "https://www.innerscene.com/tools/library/3d-parts/graphite-four-door-sedan-eed96d12",
+    "sha256": "feb0be31d153ddb42dc15ae52a651e214e85ab67e31bec4282b00f9d47c9b597"
+  },
+  {
+    "name": "interior_door",
+    "url": "https://www.innerscene.com/tools/library/3d-parts/flush-flush-interior-door-9f1bd691",
+    "sha256": "016b5cd52962419ca03f47d8f8d321503924be4eaf769e541e8657bcf3e9071c"
+  },
+  {
+    "name": "desktop_pc",
+    "url": "https://www.innerscene.com/tools/library/3d-parts/work-tower-desktop-pc-1e7897c7",
+    "sha256": "c056443808996e2d55cc75a733f64730bcd75c566388b037f5e24ac85ce3e6a4"
+  },
+  {
+    "name": "office_printer",
+    "url": "https://www.innerscene.com/tools/library/3d-parts/color-tank-ink-tank-printer-bf25b3de",
+    "sha256": "6b2949afb50d8c4c15744e7f803e858fdecc38f5c1eb175096356d9680292c87"
+  }
+]

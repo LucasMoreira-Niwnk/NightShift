@@ -44,6 +44,11 @@ func _draw() -> void:
 		rooms = [["CORREDOR • 2º",Rect2(-1.6,-14,3.2,24)],
 			["ADMINISTRAÇÃO",Rect2(-8,-13,6.4,8)], ["TI / REDE",Rect2(-8,-3,6.4,10)],
 			["REUNIÕES",Rect2(1.6,-9,6.4,14)]]
+	if upper:
+		rooms.append(["PESSOAL",Rect2(1.6,5,6.4,5)])
+	else:
+		rooms.append(["ALMOX.",Rect2(-8,-6,6,4)])
+		rooms.append(["COPA",Rect2(2,-2,6,6)])
 	rooms.append(["ESCADA PRINCIPAL",Rect2(-2,-25,4,9)])
 	rooms.append(["ESCADA SERVIÇO",Rect2(-12,-14,4,18)])
 	var font := ThemeDB.fallback_font

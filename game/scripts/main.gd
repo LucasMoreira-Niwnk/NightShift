@@ -9,6 +9,8 @@ var sound: Node
 var director: Node
 var shadows: Node3D
 var discomfort: CanvasLayer
+var scenery_applied := false
+var exploration: Node
 
 var tablet_hud: Control = null
 var hud_minimal: Control = null
@@ -16,8 +18,17 @@ var crt_overlay_layer: CanvasLayer = null
 var hud_demo_instance: Control = null
 var hud_demo_layer: CanvasLayer = null
 
+const Settings = preload("res://scripts/game_settings.gd")
+var settings: Dictionary = {}
+# F1/F3/F4/F5 são ferramentas de desenvolvimento (demo da HUD, vulto na frente,
+# portas destrancadas/voo livre). Rodando pelo editor ou pelo launcher o build é
+# de debug; num export de release elas ficam desligadas para o jogador.
+var debug_tools := OS.is_debug_build()
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	var authored := get_node_or_null("CenarioEditavel") as Node3D
+	if authored != null: authored.hide()
 	configure_input()
 	chapter = preload("res://scripts/chapter.gd").new()
 	chapter.game = self
@@ -39,7 +50,7 @@ func _ready() -> void:
 	computer.player = player
 	computer.chapter = chapter
 	computer.game = self
-	computer.position = Vector3(-6.5, 1.08, -0.18)
+	computer.position = Vector3(-6.5, 1.08, -1.35)
 	add_child(computer)
 	sound = preload("res://scripts/soundscape.gd").new()
 	sound.game = self
@@ -56,6 +67,8 @@ func _ready() -> void:
 	director.game = self
 	director.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(director)
+	settings = Settings.DEFAULTS.duplicate() if OS.get_cmdline_user_args().has("--smoke-test") else Settings.load_all()
+	Settings.apply(self, settings)
 
 	# Inicializa integrações de HUD (CRT, Scanlines, Tablet móvel e Demo)
 	setup_hud_integrations()
@@ -65,12 +78,30 @@ func _ready() -> void:
 	# so comecavam a piscar depois que o jogador mexia em alguma coisa.
 	chapter.apply_world()
 	chapter.refresh()
-	ui.say("14 de novembro de 2008 — 23h57\nEdifício Vesper. Daniel Reis, seu primeiro turno começa agora.\n[Tab] Consultar Tablet  |  [F1] Alternar HUDs  |  [F2] Grão de filme")
+	ui.say("14 de novembro de 2008 — 23h57\nEdifício Vesper. Daniel Reis, seu primeiro turno começa agora.\n[Tab] Tablet  |  [I] Bolsa de serviço  |  [J] Diário")
+	call_deferred("apply_authored_scenery")
 	if OS.get_cmdline_user_args().has("--smoke-test"):
 		var tests := preload("res://scripts/chapter_tests.gd").new()
 		tests.game = self
 		add_child(tests)
 		tests.call_deferred("run")
+
+func apply_authored_scenery() -> void:
+	var authored := get_node_or_null("CenarioEditavel") as Node3D
+	if authored == null: return
+	if not OS.get_cmdline_user_args().has("--bake-scenery"):
+		preload("res://scripts/scenery_layout.gd").new().apply(self,authored)
+		exploration = preload("res://scripts/exploration.gd").new()
+		exploration.game = self
+		add_child(exploration)
+		exploration.bind()
+		world.building_lights.clear()
+		world.powered_materials.clear()
+		world.capture_building_power()
+		world.set_interior_power(world.interior_powered)
+		scenery_applied = true
+	authored.free()
+
 
 func setup_hud_integrations() -> void:
 	# 1. Overlay global: grao de filme. O que Daniel ve nao e um monitor, entao
@@ -123,6 +154,26 @@ func configure_input() -> void:
 			key.physical_keycode = bindings[action]
 			InputMap.action_add_event(action, key)
 
+func update_setting(key: String, value) -> void:
+	settings[key] = value
+	Settings.apply(self, settings)
+	Settings.save_all(settings)
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT: pause_on_focus_loss()
+
+# Alt+Tab no meio da exploração abre a pausa, como em outros jogos de PC.
+# Terminal, tablet, documentos e finais ficam como estão: não estão em
+# movimento livre e cada um já tem sua própria forma de sair.
+func pause_on_focus_loss() -> void:
+	if ui == null or computer == null or player == null: return
+	if not bool(settings.get("pause_on_focus_loss", true)): return
+	if OS.get_cmdline_user_args().has("--smoke-test"): return
+	if ui.ending or ui.paused or ui.modal or computer.active: return
+	if tablet_hud != null and tablet_hud.visible: return
+	if hud_demo_layer != null and hud_demo_layer.visible: return
+	ui.toggle_pause()
+
 func set_player_control(enabled: bool) -> void:
 	player.controls_enabled = enabled
 	player.velocity = Vector3.ZERO
@@ -149,26 +200,31 @@ func _input(event: InputEvent) -> void:
 		elif not ui.paused and not ui.modal and not computer.active and (event.physical_keycode == KEY_TAB or event.physical_keycode == KEY_M):
 			toggle_tablet()
 			get_viewport().set_input_as_handled()
+		elif not ui.paused and not computer.active and event.physical_keycode == KEY_I:
+			if tablet_hud != null and tablet_hud.visible: toggle_tablet()
+			if ui.inventory_open: ui.close_modal()
+			elif not ui.modal: ui.show_inventory()
+			get_viewport().set_input_as_handled()
 		elif not ui.paused and not ui.modal and not computer.active and event.physical_keycode == KEY_J:
 			if tablet_hud != null and tablet_hud.visible: toggle_tablet()
 			ui.show_journal()
 			get_viewport().set_input_as_handled()
-		elif event.physical_keycode == KEY_F1:
+		elif debug_tools and event.physical_keycode == KEY_F1:
 			if tablet_hud != null and tablet_hud.visible: toggle_tablet()
 			toggle_hud_demo()
 			get_viewport().set_input_as_handled()
-		elif event.physical_keycode == KEY_F3:
+		elif debug_tools and event.physical_keycode == KEY_F3:
 			# Teste de arte: planta o Mêmesis na frente de quem joga, para olhar
 			# o vulto de perto sem esperar a etapa 5 do capítulo.
 			if world != null and world.figure != null and player != null:
 				world.figure.chamar_para_frente(player.camera)
 			get_viewport().set_input_as_handled()
-		elif event.physical_keycode == KEY_F5:
+		elif debug_tools and event.physical_keycode == KEY_F5:
 			# Teste de arte: a pose da foto refeita em névoa e partículas.
 			if world != null and world.figure_volume != null and player != null:
 				world.figure_volume.chamar_para_frente(player.camera)
 			get_viewport().set_input_as_handled()
-		elif event.physical_keycode == KEY_F4:
+		elif debug_tools and event.physical_keycode == KEY_F4:
 			toggle_debug_free_roam()
 			get_viewport().set_input_as_handled()
 		elif event.physical_keycode == KEY_F2:

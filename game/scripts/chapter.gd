@@ -50,7 +50,7 @@ func objective() -> String:
 		4:
 			if not has_flag("fault_inspected"): return "Sala técnica: inspecione o quadro e identifique a falha."
 			if not has_flag("repair_note_read"): return "A ordem de manutenção foi arquivada na administração do segundo andar. Use o crachá na escada."
-			if not has_flag("fuse20_owned") and not has_flag("fuse_replaced"): return "Busque na sala de TI um fusível compatível com a ordem de manutenção."
+			if not has_flag("fuse20_owned") and not has_flag("fuse_replaced"): return game.exploration.objective() if game.exploration != null else "Busque na TI a reposição de F1."
 			if not has_flag("fuse_replaced"): return "Retorne ao quadro, isole os circuitos, retire o cartucho queimado e instale a reposição."
 			if not has_flag("power"): return "Rearme os circuitos na ordem descrita na nota de manutenção."
 			return "Volte à segurança e confira a CAM-02 no terminal."
@@ -68,6 +68,7 @@ func say(text: String) -> void:
 	game.ui.say(text)
 
 func interact(id: String) -> void:
+	if game.exploration != null and game.exploration.interact(id): return
 	if stage >= 9 and act_two.interact(id):
 		refresh()
 		save_game()
@@ -105,6 +106,9 @@ func interact(id: String) -> void:
 		"admin_notice": collect_document("admin_notice", "Aviso administrativo", preload("res://scripts/chapter_two_data.gd").ADMIN_NOTICE)
 		"network_log": collect_document("network_log", "Diagnóstico de rede", preload("res://scripts/chapter_two_data.gd").NETWORK_LOG)
 		"fuse20":
+			if not has_flag("it_cabinet_open") and not has_flag("fuse20_taken"):
+				say("A reposição está trancada. Leia o aviso no armário da TI.")
+				return
 			if has_flag("fuse20_taken"): return
 			flags.fuse20_owned = true
 			flags.fuse20_taken = true
@@ -157,9 +161,10 @@ func interact(id: String) -> void:
 		"cam04":
 			flags.cam04_label = true
 			collect_document("cam04_label", "CAM-04 — etiqueta", "Alimentação presente.\nRACK 2B — PORTA 07.\nO diagnóstico do sinal depende da autorização da central.")
-		"it_terminal", "network_patch": say("Diagnóstico de rede reservado à inspeção da CAM-04. O estoque de fusíveis fica na bancada.")
+		"it_terminal", "network_patch": say("Diagnóstico de rede reservado à inspeção da CAM-04. O cartucho de 10 A fica na bancada. A reposição F1 está no armário trancado.")
 		"emergency_map": act_two.show_map()
 	if id == "fuse_slot": game.world.upper.apply_state()
+	if game.exploration != null: game.exploration.apply_state()
 	refresh()
 	save_game()
 
@@ -391,6 +396,7 @@ func apply_world() -> void:
 		game.world.set_time(["01:00", "01:01", "01:01", "01:02", "01:02", "01:23", "01:42", "01:51", "01:57", "02:00"][clampi(stage - 9, 0, 9)])
 
 func refresh() -> void:
+	if game.exploration != null: game.exploration.apply_state()
 	game.ui.update_objective(stage, objective())
 	game.computer.update_status()
 
@@ -405,30 +411,61 @@ func serialize_state() -> Dictionary:
 	for id in game.world.doors: door_states[id] = game.world.doors[id].is_open
 	return {"map_revision": 3, "version": SAVE_VERSION, "stage": stage, "flags": flags.duplicate(true), "documents": documents.duplicate(), "transcript": transcript.duplicate(), "flashlight_on": game.player.flashlight.visible, "pitch": game.player.camera.rotation.x, "verified": verified.duplicate(), "history": history.duplicate(), "breakers": breakers.duplicate(), "entity_steps": entity_steps, "elapsed": elapsed, "position": [point.x, maxf(point.y, 0.05), point.z], "yaw": game.player.rotation.y, "doors": door_states}
 
+func backup_path() -> String:
+	return save_path.get_basename() + ".bak.json"
+
 func save_game() -> bool:
-	var file := FileAccess.open(save_path, FileAccess.WRITE)
+	# Grava num arquivo temporário e só então troca pelo checkpoint: fechar o jogo
+	# ou faltar energia no meio da escrita não deixa um JSON truncado. A versão
+	# anterior fica como reserva e é usada se o checkpoint principal falhar.
+	var temp := save_path + ".tmp"
+	var file := FileAccess.open(temp, FileAccess.WRITE)
 	if file == null:
 		say("Não foi possível gravar o checkpoint.")
 		return false
 	file.store_string(JSON.stringify(serialize_state()))
 	file.close()
+	if FileAccess.file_exists(save_path):
+		DirAccess.rename_absolute(save_path, backup_path())
+	if DirAccess.rename_absolute(temp, save_path) != OK:
+		say("Não foi possível gravar o checkpoint.")
+		return false
 	return true
 
-func load_game() -> bool:
-	if not FileAccess.file_exists(save_path):
-		say("Nenhum checkpoint salvo. Inicie sua primeira noite.")
-		return false
-	var file := FileAccess.open(save_path, FileAccess.READ)
-	if file == null: return false
+# Retorna o checkpoint validado ou null. Não altera o estado do jogo.
+func read_checkpoint(path: String):
+	if not FileAccess.file_exists(path): return null
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null: return null
 	var data = JSON.parse_string(file.get_as_text())
 	if not data is Dictionary or data.get("version") != SAVE_VERSION or not data.get("stage") is float:
-		say("Checkpoint inválido. Use Nova partida para recomeçar.")
-		return false
+		return null
 	if int(data.stage) < 0 or int(data.stage) > 18 or not data.get("flags") is Dictionary or not data.get("position") is Array or data.position.size() != 3:
-		return false
+		return null
 	if not data.get("verified") is Array or not data.get("history") is Array or not data.get("breakers") is Array or data.breakers.size() != 4:
-		return false
+		return null
 	if not data.get("documents", []) is Array or not data.get("transcript", []) is Array or not data.get("doors", {}) is Dictionary:
+		return null
+	return data
+
+# JSON devolve todo número como float. Em Godot 4, [2.0] != [2] e
+# [0.0].has(0) é falso, então listas de índices precisam voltar a ser int.
+static func int_array(values: Array) -> Array:
+	var result := []
+	for value in values: result.append(int(value))
+	return result
+
+func load_game() -> bool:
+	if not FileAccess.file_exists(save_path) and not FileAccess.file_exists(backup_path()):
+		say("Nenhum checkpoint salvo. Inicie sua primeira noite.")
+		return false
+	var data = read_checkpoint(save_path)
+	var from_backup := false
+	if data == null:
+		data = read_checkpoint(backup_path())
+		from_backup = data != null
+	if data == null:
+		say("Checkpoint inválido. Use Nova partida para recomeçar.")
 		return false
 	event_generation += 1
 	pending_threat = false
@@ -440,12 +477,14 @@ func load_game() -> bool:
 	game.computer.close()
 	stage = int(data.stage)
 	flags = data.flags
+	if flags.get("power_sequence") is Array: flags.power_sequence = int_array(flags.power_sequence)
+	if flags.has("patch_port"): flags.patch_port = int(flags.patch_port)
 	documents = data.get("documents", [])
 	transcript = data.get("transcript", [])
 	if not data.has("documents"):
 		for pair in [["badge", "protocol"], ["recording", "recording"], ["logbook", "logbook"], ["diagram_read", "diagram"], ["report_read", "report"]]:
 			if has_flag(pair[0]): documents.append(pair[1])
-	verified = data.get("verified", [])
+	verified = int_array(data.get("verified", []))
 	history = data.get("history", [])
 	breakers = data.get("breakers", [true, false, true, false])
 	entity_steps = int(data.get("entity_steps", 0))
@@ -465,10 +504,10 @@ func load_game() -> bool:
 	game.player.rotation.y = float(data.get("yaw", 0))
 	if old_map and old_upper: game.player.rotation.y = PI - game.player.rotation.y
 	game.player.camera.rotation.x = clampf(float(data.get("pitch", 0)), -1.4, 1.4)
-	for id in data.get("doors", {}):
-		if game.world.doors.has(id): game.world.doors[id].restore_open(bool(data.doors[id]))
+	for id in game.world.doors:
+		game.world.doors[id].restore_open(bool(data.get("doors", {}).get(id, false)))
 	refresh()
-	say("Checkpoint carregado — " + (preload("res://scripts/chapter_two_data.gd").TITLES[stage - 9] if stage >= 9 else Data.TITLES[stage]))
+	say(("Checkpoint principal danificado — cópia de reserva carregada — " if from_backup else "Checkpoint carregado — ") + (preload("res://scripts/chapter_two_data.gd").TITLES[stage - 9] if stage >= 9 else Data.TITLES[stage]))
 	if stage == 8: game.ui.show_ending()
 	if stage == 18: game.ui.show_ending(2)
 	return true

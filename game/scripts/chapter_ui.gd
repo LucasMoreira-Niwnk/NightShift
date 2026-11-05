@@ -19,6 +19,10 @@ var subtitle: Label
 var hint: Label
 var panel: PanelContainer
 var column: VBoxContainer
+var inventory_open := false
+var inventory_card: Control
+var controls_hint: Control
+var status_card: Control
 var modal := false
 var paused := false
 var ending := false
@@ -59,6 +63,8 @@ func _ready() -> void:
 		progress.add_child(segment)
 		progress_segments.append(segment)
 	var status := hud_card(root)
+	status_card = status
+	status.add_theme_stylebox_override("panel", Style.card(Color(0.02,0.03,0.03,0.4),2))
 	status.anchor_left = 1
 	status.anchor_right = 1
 	status.offset_left = -244
@@ -74,6 +80,8 @@ func _ready() -> void:
 	light_label.modulate = Style.ACCENT
 	inventory_label = Label.new()
 	var inventory := hud_card(root)
+	inventory_card = inventory
+	inventory.hide()
 	inventory.anchor_top = 1
 	inventory.anchor_bottom = 1
 	inventory.offset_left = 24
@@ -83,7 +91,8 @@ func _ready() -> void:
 	inventory.add_child(inventory_label)
 	inventory_label.add_theme_font_size_override("font_size", 12)
 	inventory_label.modulate = Style.MUTED
-	var controls := label_at(root, Vector2.ZERO, "[WASD] Mover    [F] Lanterna    [Tab] Tablet / Mapa    [F1] HUDs    [J] Diário    [Esc] Menu", 11)
+	var controls := label_at(root, Vector2.ZERO, "[Tab] Tablet     [I] Bolsa de serviço     [J] Diário", 11)
+	controls_hint = controls
 	controls.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	controls.offset_left = 24
 	controls.offset_top = -26
@@ -187,6 +196,9 @@ func _process(delta: float) -> void:
 		zone = "2º / CORREDOR ADMINISTRATIVO"
 		if point.x < -1.6: zone = "2º / ADMINISTRAÇÃO" if point.z < -4 else "2º / SALA DE TI"
 		elif point.x > 1.6: zone = "2º / SALA DE REUNIÕES"
+	if game.exploration != null:
+		var explored_zone: String = game.exploration.zone(point)
+		if not explored_zone.is_empty(): zone = explored_zone
 	zone_label.text = zone
 	time_label.text = game.world.clocks[0].displayed_time
 	light_label.text = "LANTERNA / NÃO COLETADA"
@@ -199,6 +211,8 @@ func _process(delta: float) -> void:
 	if game.chapter.has_flag("fuse20_owned"): inventory_label.text += "\nFUSÍVEL 20 A"
 	elif game.chapter.has_flag("fuse10_owned"): inventory_label.text += "\nFUSÍVEL 10 A"
 	elif game.chapter.has_flag("burnt_fuse_removed") and not game.chapter.has_flag("fuse_replaced"): inventory_label.text += "\nCARTUCHO QUEIMADO"
+	inventory_card.hide()
+	controls_hint.visible = not modal and not paused and not ending and game.chapter.elapsed < 28
 	if not modal and not paused and not ending:
 		# o prompt agora vive no hud_minimal; o card antigo some para nao duplicar
 		reticle.hovering = not hint.text.is_empty()
@@ -287,6 +301,7 @@ func document(heading: String, content: String, final: bool = false) -> void:
 	open_modal()
 
 func show_journal() -> void:
+	inventory_open = false
 	clear_panel()
 	title("Daniel Reis — Diário do turno")
 	var entries := document_entries()
@@ -327,6 +342,7 @@ func show_floor_plan(texture: Texture2D, heading: String = "VESPER — Planta do
 
 func close_modal() -> void:
 	if ending: return
+	inventory_open = false
 	modal = false
 	panel.hide()
 	for child in panel.get_parent().get_children():
@@ -402,7 +418,7 @@ func toggle_pause() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		return
 	clear_panel()
-	title("PAUSADO — O Primeiro Turno")
+	title("PAUSADO — " + ("Registros Incompletos" if game.chapter.stage >= 9 else "O Primeiro Turno"))
 	for child in panel.get_parent().get_children():
 		if child != panel and child is CanvasItem: child.hide()
 	modal_shade.show()
@@ -471,7 +487,19 @@ func show_settings() -> void:
 	clear_panel()
 	title("CONFIGURAÇÕES")
 	button("Som", show_audio_settings)
+	button("Controles e vídeo", show_control_settings)
 	button("Dificuldade — desconforto", show_discomfort_settings)
+	button("Continuar", toggle_pause)
+
+func show_control_settings() -> void:
+	clear_panel()
+	title("CONTROLES E VÍDEO")
+	var values: Dictionary = game.settings
+	slider_row("Sensibilidade do mouse", float(values.get("mouse_sensitivity", 1.0)), 0.25, 2.5, 0.05, "×", func(value: float): game.update_setting("mouse_sensitivity", value))
+	toggle_row("Inverter eixo vertical", bool(values.get("invert_y", false)), func(on: bool): game.update_setting("invert_y", on))
+	toggle_row("Tela cheia", bool(values.get("fullscreen", false)), func(on: bool): game.update_setting("fullscreen", on))
+	toggle_row("Pausar ao trocar de janela (Alt+Tab)", bool(values.get("pause_on_focus_loss", true)), func(on: bool): game.update_setting("pause_on_focus_loss", on))
+	button("Voltar", show_settings)
 	button("Continuar", toggle_pause)
 
 # Tres controles so: o de efeitos cobre tambem o leito de ambiente, que o
@@ -540,3 +568,48 @@ func document_entries() -> Dictionary:
 	for id in game.chapter.flags.get("document_records", {}):
 		entries[id] = game.chapter.flags.document_records[id]
 	return entries
+
+func show_inventory(selected: String = "") -> void:
+	clear_panel()
+	inventory_open = true
+	title("BOLSA DE SERVIÇO")
+	var summary := label_at(column, Vector2.ZERO, "Daniel Reis  /  Plantão noturno  /  " + game.world.clocks[0].displayed_time, 14)
+	summary.modulate = Style.MUTED
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 28)
+	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(row)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size.x = 250
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(scroll)
+	var items := VBoxContainer.new()
+	items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	items.add_theme_constant_override("separation",8)
+	scroll.add_child(items)
+	var detail := VBoxContainer.new()
+	detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(detail)
+	var contents: Array = preload("res://scripts/inventory.gd").entries(game.chapter)
+	var current: Array = []
+	for item in contents:
+		if current.is_empty() or item[0] == selected: current = item
+		button(item[1],show_inventory.bind(item[0]),items)
+	if current.is_empty():
+		label_at(detail,Vector2.ZERO,"Nenhum objeto guardado.",20)
+	else:
+		var illustration := preload("res://scripts/inventory_illustration.gd").new()
+		illustration.item_id = current[0]
+		detail.add_child(illustration)
+		var kind := label_at(detail,Vector2.ZERO,current[2],12)
+		kind.modulate = Style.ACCENT
+		label_at(detail,Vector2.ZERO,current[1],23)
+		var description := label_at(detail,Vector2.ZERO,current[3],18)
+		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		description.custom_minimum_size = Vector2(270,140)
+	var instructions := label_at(column,Vector2.ZERO,"Chaves e peças são usadas ao interagir com o objeto correspondente. Documentos ficam no diário.",14)
+	instructions.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	instructions.modulate = Style.MUTED
+	button("Consultar documentos",show_journal)
+	button("Guardar bolsa [I / Esc]",close_modal)
+	open_modal()

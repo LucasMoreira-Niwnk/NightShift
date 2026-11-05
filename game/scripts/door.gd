@@ -80,9 +80,22 @@ func interact() -> void:
 		return
 	if forced_locked and not Engine.get_main_loop().has_meta("debug_free_roam"):
 		return
+	if is_open and viewer_in_doorway():
+		var game = get_tree().current_scene
+		if game != null and game.get("chapter") != null: game.chapter.say("Saia do vão da porta para fechá-la.")
+		return
 	if access.is_valid() and not access.call():
 		return
 	set_open(not is_open)
+
+# A colisão da folha volta assim que a porta começa a fechar. Com o jogador
+# parado no vão, a física o empurraria para dentro da parede ou de outro cômodo.
+# Só vale para o fechamento pedido pelo jogador; eventos do roteiro usam restore_open.
+func viewer_in_doorway() -> bool:
+	var viewer := get_viewport().get_camera_3d()
+	if viewer == null: return false
+	var local := to_local(viewer.global_position)
+	return absf(local.x) < 0.85 and absf(local.z) < 0.5 and local.y > -0.5 and local.y < 2.8
 
 func restore_open(value: bool) -> void:
 	if animation != null and animation.is_valid(): animation.kill()

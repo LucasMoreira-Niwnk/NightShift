@@ -8,6 +8,8 @@ Capítulo jogável de terror psicológico 3D em primeira pessoa para Windows, fe
 - No editor, pressione F6 para executar a cena aberta ou F5 para o projeto.
 - Clique em `Jogar.cmd` para atualizar a branch atual, preparar o cache e iniciar o jogo. Se houver divergência entre commits locais e remotos ou falha de conexão, o inicializador avisa e usa a versão local; a integração deve ser resolvida antes da publicação.
 - WASD move, mouse olha, E interage com portas e computador. F liga/desliga a lanterna. Esc pausa e libera o mouse.
+- Esc > Configurações > **Controles e vídeo** ajusta sensibilidade do mouse, eixo vertical invertido, tela cheia e pausa automática ao trocar de janela (Alt+Tab). As preferências ficam em `user://settings.cfg`; o volume continua em `user://audio.cfg`.
+- F1 (demo da HUD), F3/F5 (vulto na frente da câmera) e F4 (portas destrancadas e voo livre) são ferramentas de desenvolvimento: funcionam pelo editor e pelo launcher (build de debug) e ficam desativadas em exports de release. F2 alterna o grão de filme.
 
 ### Editar o cenário visualmente
 
@@ -18,9 +20,19 @@ Abra **`game/scenes/cenario_editavel.tscn`** (`res://scenes/cenario_editavel.tsc
 - As colisões do mobiliário e dos blocos foram agrupadas aos seus elementos visuais. Mova/rotacione/escale o nó do conjunto. Ao alterar diretamente o tamanho de uma malha ou substituir um modelo, confira também sua `CollisionShape3D`. Em assets novos, selecione a malha e use o menu **Malha → Criar corpo estático de malha triangular** para adicionar colisão onde necessário.
 - `PreviewEdicao` fornece luz de trabalho para enxergar o mapa no editor e é descartado no jogo. Para variar o material de um único objeto, torne o recurso **Único** antes de modificá-lo.
 - É possível adicionar, mover e remover cenário e ajustar materiais/luzes. As piscadas e o apagão continuam sob controle do jogo; a intensidade configurada é a intensidade nominal da luz.
-- `ReferenciasDoRoteiro_NaoEditar`, `ReferenciaTerminal` e os nós com metadado `vesper_gameplay_reference` são referências visuais protegidas. Portas interativas, evidências, câmeras e relógios continuam ligados ao roteiro; não use esses nós para alterar a lógica nem remova os metadados `vesper_*`. Para decoração independente, adicione um asset novo pelo painel Arquivos, em vez de duplicar uma referência de gameplay.
+- Os itens em `ReferenciasDoRoteiro_NaoEditar` continuam ligados ao roteiro, mas seu posicionamento agora é salvo e aplicado no jogo. Para mover telefone, documentos e gravador, selecione o nó raiz `ReferenciaInteracao` do objeto e mova o conjunto: malha e colisão devem acompanhar a edição. Edições já feitas nos filhos também são respeitadas. Mantenha scripts, colisões e metadados `vesper_*`. Portas, câmeras, relógios e `ReferenciaTerminal` têm lógica própria; preserve a hierarquia interna. Para decoração independente, adicione um asset novo em vez de duplicar uma referência de gameplay.
 
 As edições salvas são aplicadas ao iniciar o jogo, sem manter uma segunda cópia das colisões. A geração por código continua como base da lógica. Para alterações visuais futuras, edite esta cena em vez dos geradores de geometria dos scripts. Não execute `tools/bake_scenery.gd` para atualizar alterações manuais: ele é uma ferramenta de migração e recusa sobrescrever uma cena existente sem a opção explícita de substituição. As pequenas cenas em `scenes/scenery_models/` apenas selecionam variantes de assets originais.
+
+### Salas de apoio e bolsa de serviço
+
+O térreo agora tem almoxarifado (entre segurança e técnica) e copa (em frente à segurança). A sala de pessoal ocupa a área após reuniões no segundo andar. As novas salas usam os modelos já licenciados no projeto e aparecem na planta do tablet.
+
+Durante o reparo de F1, o cartucho correto está em um armário trancado da TI. O aviso indica a sala de pessoal; o livro de entrega na copa explica onde ficou sua chave. Busque-a na bancada do almoxarifado, abra pessoal e recolha a chave TI. Abra o armário, pegue o cartucho de 20 A e siga a ordem de manutenção. Os itens podem ser encontrados antes da falha, sem exigir uma ordem artificial de leitura dos documentos.
+
+**I** abre/fecha a bolsa de serviço: selecione um item para consultar identificação e uso; **J** reúne documentos. Chaves são utilizadas automaticamente na fechadura correspondente e peças no suporte F1. Objetos essenciais não podem ser descartados. O checkpoint armazena itens, documentos, portas destrancadas e o armário aberto; saves que já retiraram ou instalaram a reposição continuam válidos. A HUD de exploração não mantém a lista de equipamentos na tela e as dicas de teclas desaparecem após a introdução.
+
+Para editar os acréscimos, abra `res://scenes/novas_salas.tscn`; ela está instanciada em `cenario_editavel.tscn`. Mantenha os metadados `exploration_*`, os nomes `Leaf` e os scripts das portas/luminárias. A ferramenta `tools/add_exploration_rooms.gd` foi uma migração única e recusa reaplicar sobre salas existentes. Não a execute para atualizar o mapa. O cenário anterior à integração foi copiado para `.local/before-exploration/` como backup local, fora do Git.
 
 ### Editar a mão e a lanterna visualmente
 
@@ -154,3 +166,22 @@ Consulte [CONTRIBUTING.md](CONTRIBUTING.md) para configurar outra máquina, cria
 A escada de serviço usa dois lances no eixo das portas, unidos por uma galeria lateral no meio do percurso. A chegada superior se alinha à administração e a inferior à segurança. Corrimãos, rodapés de proteção e envelopes de colisão fecham as bordas expostas; piso, degraus e paredes usam concreto fotográfico. Checkpoints antigos nessa escada são realocados para patamares seguros (map revision 3).
 
 Luminárias fluorescentes e arandelas industriais usam modelos CC0 do Poly Haven. O difusor acompanha visibilidade e energia da luz, inclusive nas piscadas e no apagão geral. Computador e impressora ficam próximos da parede da segurança; monitor, gabinete, impressora, telefone, portas opacas, câmeras, quadro, estantes, plantas, carro e decoração utilizam modelos externos. Há extintor, vassoura, caixas e materiais de escritório em pontos fora das rotas. Estrutura, corrimãos, colisões, documentos de roteiro e detalhes interativos permanecem editáveis no Godot. Fontes/licenças em `game/assets/ART_CREDITS.md`; nenhum download ocorre durante o jogo.
+
+### Posicionamento e mobiliário
+
+As posições das interações e de suas malhas/colisões acompanham o cenário editável. O balcão da recepção conserva a posição visual editada, com suas colisões alinhadas. Bancos e enciclopédias usam modelos PBR CC0 do Poly Haven, documentados em `game/assets/ART_CREDITS.md`. Os volumes ficam apoiados nas superfícies reais das prateleiras.
+
+Nas salas de apoio, o lado de trabalho das mesas fica voltado às cadeiras; caderno, chaves e documentos ficam apoiados no tampo. O armário da TI fica encostado na parede lateral e sua etiqueta/anotação acompanham o móvel. `ArmarioTI/it_cabinet/FuseSocket`, na cena `novas_salas.tscn`, define o encaixe da reposição: ao editar o armário ou esse marcador, o fusível acompanha a posição ao iniciar o jogo.
+
+### Ambientação editável
+
+Objetos de ambientação ficam em **`game/scenes/ambientacao.tscn`** (`res://scenes/ambientacao.tscn`), instanciada em `cenario_editavel.tscn` ao lado de `novas_salas.tscn`. Os grupos `AmbientacaoTerreo` e `Ambientacao2Andar` estão divididos por cômodo (copa, almoxarifado, segurança, recepção, corredor, sala técnica, arquivo, sala de pessoal).
+
+- Cada objeto é um nó com o script `scripts/prop_slot.gd`. O nó marca a **base** do objeto: mova/gire o nó e ajuste o tamanho em `dimensions` (metros, antes da rotação). `asset` aponta para o `.gltf/.glb`, e o modelo aparece no editor e no jogo, centralizado e apoiado no chão do nó. `solid` cria uma colisão em caixa com o mesmo tamanho; desligue-a para papéis e objetos sobre mesas. `visible_parts` escolhe variantes de modelos com várias malhas (ex.: `binder_notebook_closed`).
+- Para acrescentar um objeto, duplique um nó existente (**Ctrl+D**) e troque `asset`/`dimensions`. Use proporções próximas às do modelo original para não esticá-lo. Os quadros de avisos e o calendário são malhas simples com `Label3D` e podem ter o texto editado no Inspetor.
+- O grupo `Ambientacao2Andar` recebe a camada de culling do segundo andar em `exploration.gd`; um grupo novo no segundo andar precisa ser incluído ali.
+- Os modelos Kenney simplificados da segurança, recepção e sala técnica (cadeira, cabideiro, lixeira e caixas) estão ocultos em `cenario_editavel.tscn` (`visible = false`) e foram substituídos por modelos fotográficos do Poly Haven já incluídos no projeto. As colisões invisíveis originais desses pontos continuam no lugar.
+
+### Acabamento da escadaria principal
+
+A escadaria principal possui piso contínuo de concreto texturizado sob os lances e o mesmo acabamento nos três patamares. O patamar superior tem mureta com capeamento, corrimão metálico e colisão nas bordas abertas; o vão do lance permanece livre. O conjunto novo é editável em `cenario_editavel.tscn`, no grupo `Predio/Escadas_2075/AcabamentoEscadariaPrincipal`. Os ajustes de portas, materiais e ambientação documentados pelo Claude permanecem na cena.

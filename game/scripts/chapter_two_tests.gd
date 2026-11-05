@@ -10,6 +10,7 @@ func walk(action: String, seconds: float) -> void:
 	game.player.velocity = Vector3.ZERO
 	Input.action_press(action)
 	for tick in range(int(round(seconds * Engine.physics_ticks_per_second))):
+		Input.action_press(action)
 		await game.get_tree().physics_frame
 	Input.action_release(action)
 	print("ROUTE ", action, " ", game.player.position)
@@ -20,14 +21,36 @@ func stairs_up() -> void:
 	if not game.world.doors.stairs.is_open: game.world.doors.stairs.interact()
 	if not game.world.doors.upper_gate.is_open: game.world.doors.upper_gate.interact()
 	await game.get_tree().create_timer(0.4).timeout
-	await walk("move_forward", 0.8)
-	await walk("move_left", 0.35)
-	await walk("move_forward", 1.7)
-	await walk("move_right", 0.7)
-	await walk("move_back", 1.7)
-	await walk("move_left", 0.35)
-	await walk("move_back", 0.95)
+	await walk_main_to("move_forward", -17.35)
+	await walk_main_to("move_left", -1.4)
+	await walk_main_to("move_forward", -23.15)
+	await walk_main_to("move_right", 1.4)
+	await walk_main_to("move_back", -17.33)
+	await walk_main_to("move_left", 0.0)
+	await walk_main_to("move_back", -13.53)
 	test.check(game.player.position.y > 4.0 and game.player.position.z > -14, "Controller climbs main stairs without teleport or jump")
+
+func walk_main_to(action: String, coordinate: float) -> void:
+	# Bound by a waypoint, not a fixed number of frames near the return rail.
+	# This still walks the real controller and fails if geometry blocks the path.
+	game.player.rotation.y = 0
+	game.player.velocity = Vector3.ZERO
+	var along_x := action in ["move_left","move_right"]
+	var direction := -1.0 if action in ["move_left","move_forward"] else 1.0
+	var arrived := false
+	Input.action_press(action)
+	for tick in range(240):
+		# Godot releases actions on window focus changes; keep synthetic test input held.
+		Input.action_press(action)
+		await game.get_tree().physics_frame
+		var actual: float = game.player.position.x if along_x else game.player.position.z
+		if (coordinate-actual)*direction < 0.04:
+			arrived = true
+			break
+	Input.action_release(action)
+	game.player.velocity = Vector3.ZERO
+	test.check(arrived,"Main stair controller reaches waypoint: "+action+" "+str(coordinate))
+	print("MAIN_ROUTE ",action," ",game.player.position)
 
 func walk_service(action: String, coordinate: float) -> void:
 	game.player.rotation.y = 0
@@ -39,6 +62,8 @@ func walk_service(action: String, coordinate: float) -> void:
 	var largest_drop := 0.0
 	var arrived := false
 	for tick in range(240):
+		# Godot releases actions on window focus changes; keep synthetic test input held.
+		Input.action_press(action)
 		await game.get_tree().physics_frame
 		largest_drop = maxf(largest_drop,last_y-game.player.position.y)
 		last_y = game.player.position.y
@@ -81,7 +106,9 @@ func repair_power() -> void:
 	game.player.interaction_target().interact()
 	chapter.interact("fuse_slot")
 	test.check(not chapter.has_flag("fuse_replaced"), "Wrong fuse rating rejected without consuming a correct spare")
-	await test.reachable("fuse20", Building.upper_point(Vector3(-5.8, 4.25, -42.9)))
+	var exploration_cases = preload("res://scripts/exploration_tests.gd").new()
+	await exploration_cases.run(game,test)
+	await test.reachable("fuse20", Vector3(game.world.objects.fuse20.global_position.x-1.3, 4.25, game.world.objects.fuse20.global_position.z))
 	game.player.interaction_target().interact()
 	test.check(chapter.has_flag("fuse20_owned") and not game.world.objects.fuse20.visible, "Correct spare collected and removed from world")
 	test.check(chapter.save_game() and chapter.load_game(), "Checkpoint preserves note and fuse inventory")
@@ -96,7 +123,7 @@ func repair_power() -> void:
 	await walk("move_right", 0.35)
 	await walk("move_back", 0.85)
 	test.check(game.player.position.y < 0.2 and game.player.position.y > -0.1 and game.player.position.z > -16, "Controller descends folded main stairs safely")
-	await test.reachable("fuse_slot", Vector3(-6.1, 0.05, -10.65))
+	await test.reachable("fuse_slot", Vector3(game.world.objects.fuse_slot.global_position.x+1.4, 0.05, game.world.objects.fuse_slot.global_position.z))
 	game.player.interaction_target().interact()
 	test.check(chapter.has_flag("fuse_replaced") and not chapter.has_flag("fuse20_owned"), "Spare installed in physical fuse holder")
 	chapter.toggle_breaker(3)

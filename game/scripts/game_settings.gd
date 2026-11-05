@@ -1,0 +1,40 @@
+extends RefCounted
+# Preferências do jogador (controles e vídeo), separadas do checkpoint.
+# O volume continua em user://audio.cfg, gravado por soundscape.gd.
+
+const PATH := "user://settings.cfg"
+const BASE_SENSITIVITY := 0.0025
+const DEFAULTS := {
+	"mouse_sensitivity": 1.0,
+	"invert_y": false,
+	"fullscreen": false,
+	"pause_on_focus_loss": true,
+}
+
+static func load_all() -> Dictionary:
+	var values: Dictionary = DEFAULTS.duplicate()
+	var file := ConfigFile.new()
+	if file.load(PATH) != OK: return values
+	for key in DEFAULTS:
+		var value = file.get_value("game", key, DEFAULTS[key])
+		# Um valor de tipo inesperado (arquivo editado à mão) volta ao padrão.
+		if typeof(value) == typeof(DEFAULTS[key]): values[key] = value
+	values.mouse_sensitivity = clampf(values.mouse_sensitivity, 0.25, 2.5)
+	return values
+
+static func save_all(values: Dictionary) -> void:
+	var file := ConfigFile.new()
+	for key in DEFAULTS:
+		file.set_value("game", key, values.get(key, DEFAULTS[key]))
+	file.save(PATH)
+
+static func apply(game: Node, values: Dictionary) -> void:
+	if game.player != null:
+		game.player.sensitivity = BASE_SENSITIVITY * float(values.mouse_sensitivity)
+		game.player.invert_y = bool(values.invert_y)
+	# Testes automatizados nunca trocam o modo da janela de quem está rodando.
+	if OS.get_cmdline_user_args().has("--smoke-test"): return
+	var mode := DisplayServer.window_get_mode()
+	var fullscreen := mode == DisplayServer.WINDOW_MODE_FULLSCREEN or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+	if bool(values.fullscreen) != fullscreen:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if values.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED)

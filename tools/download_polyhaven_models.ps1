@@ -1,9 +1,9 @@
-﻿$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 $projectRoot = Split-Path $PSScriptRoot -Parent
 $metadataRoot = Join-Path $projectRoot '.local\polyhaven-metadata'
 New-Item -ItemType Directory -Force -Path $metadataRoot | Out-Null
-$ids = 'SchoolChair_01','metal_office_desk','signal_flashlight','vintage_radio_transceiver','desk_lamp_arm_01','drawer_cabinet','binder_notebook','mounted_fluorescent_lights','industrial_wall_lamp','potted_plant_01','cardboard_box_01','wooden_bookshelf_worn','clipboard','stationery_supplies','korean_fire_extinguisher_01','plastic_broom','power_box_01','security_camera_01','office_notepads','shrub_01','pine_sapling_small','street_lamp_01'
+$ids = 'SchoolChair_01','metal_office_desk','signal_flashlight','vintage_radio_transceiver','desk_lamp_arm_01','drawer_cabinet','binder_notebook','mounted_fluorescent_lights','industrial_wall_lamp','potted_plant_01','cardboard_box_01','wooden_bookshelf_worn','clipboard','stationery_supplies','korean_fire_extinguisher_01','plastic_broom','power_box_01','security_camera_01','office_notepads','shrub_01','pine_sapling_small','street_lamp_01','painted_wooden_bench','book_encyclopedia_set_01'
 foreach ($id in $ids) {
     $metadataPath = Join-Path $metadataRoot ($id + '.json')
     if (Test-Path -LiteralPath $metadataPath) {

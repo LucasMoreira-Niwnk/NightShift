@@ -77,7 +77,16 @@ func apply_node(authored: Node, parent: Node3D, present: Dictionary) -> void:
 	if authored.get_meta("vesper_editor_only",false): return
 	if authored.has_meta(ID):
 		var key: String = authored.get_meta(ID)
-		if protected.has(key): return
+		if protected.has(key):
+			# Keep the live script/state, but honor the editor's placement of the
+			# complete interaction body (visuals and ray/physics collision together).
+			if nodes.has(key) and is_instance_valid(nodes[key]):
+				nodes[key].global_transform = authored.global_transform
+				nodes[key].set_meta("vesper_applied_id",key)
+				var script: Script = nodes[key].get_script()
+				if script != null and script.resource_path == "res://scripts/interactable.gd":
+					apply_reference_children(authored,nodes[key])
+			return
 		if present.has(key):
 			add_manual_branch(authored,parent)
 			return
@@ -104,6 +113,20 @@ func apply_node(authored: Node, parent: Node3D, present: Dictionary) -> void:
 		return
 	for child in authored.get_children():
 		if child is Node3D: apply_node(child,parent,present)
+
+func apply_reference_children(authored: Node3D, target: Node3D) -> void:
+	# The authoring snapshot keeps the order of the generated Node3D children.
+	# This also preserves edits made inside an interaction's mesh/model rather
+	# than only at its root, without replacing its action or scripted visibility.
+	var saved := authored.get_children().filter(func(node): return node is Node3D)
+	var live := target.get_children().filter(func(node): return node is Node3D)
+	for index in range(mini(saved.size(),live.size())):
+		var source: Node3D = saved[index]
+		var destination: Node3D = live[index]
+		if source.get_class() != destination.get_class(): continue
+		destination.transform = source.transform
+		if not source.scene_file_path.is_empty(): apply_asset_overrides(source,destination)
+		else: apply_reference_children(source,destination)
 
 func in_fixture(node: Node) -> bool:
 	var cursor := node

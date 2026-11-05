@@ -134,7 +134,7 @@ bindings de compatibilidade, sem uma segunda interface interativa na tela.
 `computer.console.set_contaminated(active, message)` permite aos eventos
 narrativos ativar a interface contaminada. O estágio 6 já a aciona, sem timers de
 spoilers. O modo muda a cor, as mensagens e os rótulos sobre os feeds reais.
-As cenas demo originais permanecem acessíveis por F1.
+As cenas demo originais permanecem acessíveis por F1 em builds de debug (editor e launcher).
 
 O grão global fica abaixo das interfaces de texto (camada 8), o monitor na 9,
 documentos na 10 e tablet na 18. O monitor conserva suas próprias scanlines.

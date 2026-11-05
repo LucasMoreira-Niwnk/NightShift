@@ -11,7 +11,7 @@ Percurso (spoilers):
 1. Inspecione o painel na técnica. Isole todos os circuitos e examine o suporte F1 para retirar o fusível queimado.
 2. Suba a escadaria ao fundo do corredor usando o crachá. Ao entrar no corredor superior, administração fica à direita, perto do palier; TI fica à direita, mais ao fundo. Na planta orientada ao norte, ambas ocupam a ala oeste.
 3. Encontre a ordem de manutenção sobre a mesa da administração. Ela identifica o calibre e explica a sequência por nomes dos circuitos.
-4. Busque a reposição na bancada da TI. Há fusíveis de 10 A e 20 A; o de 10 A não serve para F1 e não consome a reposição correta.
+4. Leia o aviso no armário trancado da TI. Consulte o livro de entrega na copa do térreo, recolha a chave de pessoal no almoxarifado e abra pessoal no segundo andar. Recolha ali a chave TI, abra o armário e retire a reposição de 20 A. O cartucho de 10 A permanece na bancada e não serve para F1. I abre a bolsa de serviço; documentos podem ser relidos em J.
 5. Retorne pela escada, instale o fusível de 20 A com o painel isolado e execute a partida: arquivo (C), recepção (A), corredor (B). D permanece desligado.
 6. A ordem errada não conclui o reparo, mesmo com A/B/C ligados. Use Isolar todos para recomeçar. D dispara a proteção, sem destruir a reposição nem impedir outra tentativa.
 

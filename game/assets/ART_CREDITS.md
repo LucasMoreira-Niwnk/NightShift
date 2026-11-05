@@ -86,3 +86,9 @@ Innerscene CC0 models: desktop printer, desk phone, vintage CRT, flush door, sed
 Additional Kenney Furniture Kit models are from the same original CC0 archive: bench and open cardboard box. Materials are adapted to the project palette. Architectural shells, stair geometry/rails, collisions and narrative UI remain native editable Godot geometry.
 
 Outdoor replacements from Poly Haven (CC0, API MD5 verified): Shrub 01 (https://polyhaven.com/a/shrub_01), Pine Sapling Small (https://polyhaven.com/a/pine_sapling_small, single variant A), Street Lamp 01 (https://polyhaven.com/a/street_lamp_01). Street lantern glass/bulbs use the same power controller as indoor fixtures. Trees and shrubs replace the former generated leaf geometry.
+
+### Assentos e volumes de arquivo
+
+- [Painted Wooden Bench](https://polyhaven.com/a/painted_wooden_bench) — Poly Haven, Kirill Sannikov, CC0. Modelo glTF com PBR 1K, ajustado ao espaço de espera/recepção.
+- [Book Encyclopedia Set 01](https://polyhaven.com/a/book_encyclopedia_set_01) — Poly Haven, CC0. Enciclopédias com capas, lombadas e páginas texturizadas; fileiras assentadas na geometria das prateleiras.
+- [Licença CC0 dos assets](https://polyhaven.com/license). Downloads com MD5 conferido; uso offline, sem API em tempo de execução. Powered by Poly Haven na preparação dos assets.

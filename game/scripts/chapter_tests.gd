@@ -34,12 +34,17 @@ func run() -> void:
 	expansion.test = self
 	await get_tree().create_timer(0.8).timeout
 	check(game.scenery_applied and game.get_node_or_null("CenarioEditavel") == null,"Editable scenery is applied without duplicate preview collisions")
+	preload("res://scripts/prop_layout_tests.gd").new().run(game,self)
 	check(game.player.is_on_floor(), "Player settles on entrance floor")
 	var tablet_cases = preload("res://scripts/tablet_console_tests.gd").new()
 	await tablet_cases.run(game, self)
 	check(game.player.position.z > 12, "Arrival begins outside reception")
 	var architecture_cases = preload("res://scripts/architecture_tests.gd").new()
 	await architecture_cases.run(game, self)
+	var stair_finish_cases = preload("res://scripts/stair_finish_tests.gd").new()
+	await stair_finish_cases.run(game,self)
+	var collaboration_cases = preload("res://scripts/collaboration_tests.gd").new()
+	await collaboration_cases.run(game,self)
 	check(not game.computer.monitor_power, "Terminal starts switched off")
 	check(game.sound.effects.ring.data.size() > 0 and game.sound.effects.rain.loop_end > 0, "Soundscape has playable PCM and looping ambience")
 	preload("res://scripts/soundscape_tests.gd").new().run(game, self)

@@ -7,6 +7,29 @@
 // Usa surface nets em vez de marching cubes: produz o mesmo tipo de superficie
 // fechada para formas gordas como esta, sem as tabelas de 1400 numeros.
 
+import { poseAndar } from './skeleton.js';
+
+// ------------------------------------------------------------- animacao
+
+// O ciclo de caminhada vai dentro do glb como animacao glTF: no Godot aparece
+// no AnimationPlayer, sem ninguem precisar remontar a pose la.
+function animacaoAndar(ossos, quadros = 24, duracao = 1.0) {
+  const copia = ossos.map(b => ({ ...b }));
+  const tempos = new Float32Array(quadros + 1);
+  const rots = ossos.map(() => new Float32Array((quadros + 1) * 4));
+  for (let k = 0; k <= quadros; k++) {
+    const fase = k/quadros;
+    tempos[k] = fase * duracao;
+    poseAndar(copia, fase);
+    copia.forEach((b, i) => {
+      // o editor gira no espaco da imagem, com y para baixo; no modelo y sobe
+      const a = -(b.ang || 0) / 2;
+      rots[i].set([0, 0, Math.sin(a), Math.cos(a)], k*4);
+    });
+  }
+  return { tempos, rots };
+}
+
 // ---------------------------------------------------------------- campo 2D
 
 // Pre-calcula mascara dilatada e espessura numa grade 2D. Sem isso o laco 3D
@@ -218,6 +241,11 @@ export async function exportarGLB(malha, skin, ossos, artAsp, texturaCanvas) {
     ibm.set([1,0,0,0, 0,1,0,0, 0,0,1,0, -x,-y,-z,1], i*16);
   });
   const aIbm = acessor(por(ibm), 5126, ossos.length, 'MAT4');
+
+  const anim = animacaoAndar(ossos);
+  const aTempo = acessor(por(anim.tempos), 5126, anim.tempos.length, 'SCALAR',
+    { min: [anim.tempos[0]], max: [anim.tempos[anim.tempos.length-1]] });
+  const aRot = anim.rots.map(r => acessor(por(r), 5126, r.length/4, 'VEC4'));
   const vPng = por(png);
 
   const nosOssos = ossos.map((b, i) => {
@@ -242,7 +270,12 @@ export async function exportarGLB(malha, skin, ossos, artAsp, texturaCanvas) {
       indices: aIdx, material: 0 }] }],
     skins: [{ inverseBindMatrices: aIbm, joints: ossos.map((_, i) => i + 1),
               skeleton: raizes[0] }],
+    animations: [{ name: 'andar',
+      samplers: aRot.map(o => ({ input: aTempo, output: o, interpolation: 'LINEAR' })),
+      channels: aRot.map((_, i) => ({ sampler: i, target: { node: i+1, path: 'rotation' } })) }],
+    // emissivo tambem: a nevoa tem luz propria e nao deve sumir numa cena escura
     materials: [{ name: 'nevoa', doubleSided: true, alphaMode: 'MASK', alphaCutoff: 0.5,
+      emissiveTexture: { index: 0 }, emissiveFactor: [1, 1, 1],
       pbrMetallicRoughness: { baseColorTexture: { index: 0 },
                               metallicFactor: 0, roughnessFactor: 1 } }],
     textures: [{ source: 0, sampler: 0 }],

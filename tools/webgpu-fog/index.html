@@ -623,6 +623,31 @@ $('baixar').addEventListener('click', ()=>{
 });
 // Exporta a criatura como malha de verdade: o campo de densidade ja e 3D,
 // entao da para extrair a superficie e levar os ossos junto como Skeleton3D.
+// A textura nao pode ser a arte crua: o ceifador e quase preto, entao a malha
+// saia preta no Godot. Usa a FRENTE ja renderizada, com nevoa e luz dentro.
+// A projecao da UV e exatamente a camera do bake, entao basta recortar o centro.
+async function texturaFrontal(){
+  const lA = cv.width, aA = cv.height, yA = yaw;
+  const girA = $('spin').checked, solA = $('solido').checked;
+  $('spin').checked = false; $('solido').checked = false;
+  pausado = true;
+  const W = 768, H = 1024;
+  cv.width = W; cv.height = H; yaw = 0;
+  escreverUniforms(); bind = bind || criarBind();
+  desenharQuadro();
+  const bmp = await createImageBitmap(cv);
+  cv.width = lA; cv.height = aA; yaw = yA;
+  $('spin').checked = girA; $('solido').checked = solA; pausado = false;
+
+  const asp = W/H;                       // o quadro cobre x em [-asp, asp], y em [-1,1]
+  const fx = Math.min(1, (aspectArte/2)/asp), fy = 0.5;   // a malha ocupa o centro
+  const t = document.createElement('canvas');
+  t.width = 512; t.height = Math.max(2, Math.round(512/aspectArte));
+  t.getContext('2d').drawImage(bmp, (1-fx)/2*W, (1-fy)/2*H, fx*W, fy*H,
+                               0, 0, t.width, t.height);
+  return t;
+}
+
 async function exportarMalha(){
   if(!maskCv) throw new Error('carregue uma arte primeiro');
   $('glbinfo').textContent = 'gerando malha...';
@@ -637,8 +662,9 @@ async function exportarMalha(){
   $('glbinfo').textContent = `malha: ${malha.pos.length/3} vertices · gravando glb...`;
   await new Promise(r=>setTimeout(r));
   const ossos = skel.bones;
+  const textura = await texturaFrontal();
   const glb = await exportarGLB(malha, pesos(malha, ossos, aspectArte),
-                                ossos, aspectArte, corCv);
+                                ossos, aspectArte, textura);
   const a = document.createElement('a');
   a.href = URL.createObjectURL(glb); a.download = 'criatura.glb'; a.click();
   $('glbinfo').textContent =

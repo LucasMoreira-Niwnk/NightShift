@@ -155,3 +155,30 @@ comportamento no Godot — nada foi portado ainda.
 **Limite conhecido:** um PNG de frente não tem perfil lateral. Até ~±60° lê como
 criatura; a 90° vira um borrão. Saídas: billboard (o volume sempre encara a
 câmera), ou uma segunda silhueta de perfil para cruzar os dois volumes.
+
+## 2026-11-06 — Claude — Mêmesis de malha andando entre as salas (F5 vira lista)
+
+A criatura do protótipo WebGPU entrou no jogo como quarto vulto, para medir se
+vale trocar névoa volumétrica por malha animada.
+
+| Arquivo | O quê | Por quê |
+|---|---|---|
+| `game/scripts/memesis_malha.gd` (novo) | Carrega `assets/models/criatura.glb`, toca o ciclo "andar" e ronda o térreo: corredor, segurança, arquivo e sala técnica | Os três vultos de névoa são campo de densidade e não têm corpo: só deslizam. Este anda de verdade, com Skeleton3D |
+| `game/scripts/chapter_world.gd` | Cria `figure_mesh` ao lado de `figure` e `figure_volume` | O capítulo não sabe que ele existe, igual ao `figure_volume` |
+| `game/scripts/main.gd` | F5 deixou de invocar direto e passou a abrir uma lista dos Mêmesis disponíveis | Eram três vultos e um atalho só; agora quem testa escolhe sem decorar tecla por vulto |
+| `game/assets/models/criatura.glb` | A malha exportada, com esqueleto de 10 ossos e a animação "andar" dentro | — |
+
+O `.glb` sai de `tools/webgpu-fog` (botão "exportar .glb"). A textura é a frente
+já renderizada com névoa, não a arte crua: com a arte crua a malha ficava preta
+no Godot, porque o desenho é quase todo preto. O material é emissivo pelo mesmo
+motivo — numa cena escura como a do jogo ela sumiria.
+
+**Validado** com o Godot deste projeto: smoke test passa (`tools\godot.ps1 -Mode
+test`); a lista do F5 abre com as cinco entradas e fecha; o vulto de malha anda
+6,6 m em 15 s e passa por quatro pontos da ronda, com o ciclo tocando.
+**Não validado:** como fica em tela, de perto e com a iluminação do corredor —
+nada disso foi visto rodando o jogo de verdade.
+
+**Limite conhecido:** a malha vem de um desenho de frente, então de lado ela
+engorda. A ronda é um caminho fixo, sem navegação nem colisão: ela atravessa
+porta fechada e móvel no caminho.

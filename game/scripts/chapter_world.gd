@@ -28,6 +28,7 @@ var rhythm_time := 0.0
 var chair: StaticBody3D
 var figure: Node3D
 var figure_volume: Node3D
+var figure_mesh: Node3D
 var double: Node3D
 var clocks: Array = []
 var floor_plans: Array = []
@@ -193,6 +194,12 @@ func _ready() -> void:
 	add_child(figure_volume)
 	figure_volume.position = Vector3(0, 0, -13)
 	figure_volume.hide()
+	# Quarto vulto: malha de verdade, com esqueleto e ciclo de caminhada. Serve
+	# para ver o Mêmesis ANDANDO entre as salas, o que os de névoa não fazem.
+	figure_mesh = preload("res://scripts/memesis_malha.gd").new()
+	add_child(figure_mesh)
+	figure_mesh.position = Vector3(0, 0, -13)
+	figure_mesh.hide()
 	double = humanoid(Color(0.19, 0.28, 0.24))
 	double.position = Vector3(0, 0, 8)
 	var badge := Art.box(double, Vector3(-0.13, 1.3, 0.14), Vector3(0.09, 0.12, 0.012), Color(0.75, 0.72, 0.6))

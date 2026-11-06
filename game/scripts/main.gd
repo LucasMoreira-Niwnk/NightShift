@@ -220,9 +220,10 @@ func _input(event: InputEvent) -> void:
 				world.figure.chamar_para_frente(player.camera)
 			get_viewport().set_input_as_handled()
 		elif debug_tools and event.physical_keycode == KEY_F5:
-			# Teste de arte: a pose da foto refeita em névoa e partículas.
-			if world != null and world.figure_volume != null and player != null:
-				world.figure_volume.chamar_para_frente(player.camera)
+			# Eram três vultos e só um atalho. Agora o F5 abre a lista e quem
+			# testa escolhe qual invocar, sem precisar decorar tecla por vulto.
+			if tablet_hud != null and tablet_hud.visible: toggle_tablet()
+			alternar_lista_memesis()
 			get_viewport().set_input_as_handled()
 		elif debug_tools and event.physical_keycode == KEY_F4:
 			toggle_debug_free_roam()
@@ -231,6 +232,107 @@ func _input(event: InputEvent) -> void:
 			if crt_overlay_layer:
 				crt_overlay_layer.visible = !crt_overlay_layer.visible
 			get_viewport().set_input_as_handled()
+
+## Lista do F5: nome, dica e o que fazer ao escolher.
+var lista_memesis: CanvasLayer = null
+
+func alternar_lista_memesis() -> void:
+	if lista_memesis != null:
+		fechar_lista_memesis()
+		return
+	if world == null:
+		return
+	lista_memesis = CanvasLayer.new()
+	lista_memesis.layer = 31
+	lista_memesis.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(lista_memesis)
+
+	var fundo := ColorRect.new()
+	fundo.color = Color(0, 0, 0, 0.55)
+	fundo.set_anchors_preset(Control.PRESET_FULL_RECT)
+	lista_memesis.add_child(fundo)
+
+	var caixa := VBoxContainer.new()
+	caixa.set_anchors_preset(Control.PRESET_CENTER)
+	caixa.position = Vector2(-190, -120)
+	caixa.custom_minimum_size = Vector2(380, 0)
+	caixa.add_theme_constant_override("separation", 8)
+	lista_memesis.add_child(caixa)
+
+	var titulo := Label.new()
+	titulo.text = "MÊMESIS DISPONÍVEIS  (F5 fecha)"
+	caixa.add_child(titulo)
+
+	for item in _memesis_disponiveis():
+		var b := Button.new()
+		b.text = item["nome"]
+		b.tooltip_text = item["dica"]
+		b.custom_minimum_size = Vector2(0, 34)
+		b.pressed.connect(item["acao"])
+		caixa.add_child(b)
+
+	set_player_control(false)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+func fechar_lista_memesis() -> void:
+	if lista_memesis == null:
+		return
+	lista_memesis.queue_free()
+	lista_memesis = null
+	set_player_control(true)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+func _memesis_disponiveis() -> Array:
+	var itens := []
+	if world.figure != null:
+		itens.append({
+			"nome": "1 · Vulto de névoa (coluna)",
+			"dica": "memesis.gd — a coluna de névoa do roteiro.",
+			"acao": func():
+				world.figure.chamar_para_frente(player.camera)
+				_escolhido("vulto de névoa na sua frente"),
+		})
+	if world.figure_volume != null:
+		itens.append({
+			"nome": "2 · Corpo da foto em névoa",
+			"dica": "memesis_corpo.gd — a foto virada campo de densidade.",
+			"acao": func():
+				world.figure_volume.chamar_para_frente(player.camera)
+				_escolhido("corpo da foto na sua frente"),
+		})
+	if world.figure_mesh != null and world.figure_mesh.corpo != null:
+		itens.append({
+			"nome": "3 · Criatura de malha — parada",
+			"dica": "criatura.glb com esqueleto, plantada na sua frente.",
+			"acao": func():
+				world.figure_mesh.chamar_para_frente(player.camera)
+				_escolhido("criatura de malha na sua frente"),
+		})
+		itens.append({
+			"nome": "4 · Criatura de malha — rondando as salas",
+			"dica": "Anda pelo corredor e entra na segurança, arquivo e sala técnica.",
+			"acao": func():
+				world.figure_mesh.rondar()
+				_escolhido("criatura rondando: comece pela boca do corredor"),
+		})
+		itens.append({
+			"nome": "5 · Guardar a criatura de malha",
+			"dica": "Tira a criatura de cena e para o ciclo.",
+			"acao": func():
+				world.figure_mesh.parar()
+				_escolhido("criatura guardada"),
+		})
+	else:
+		itens.append({
+			"nome": "— criatura de malha indisponível",
+			"dica": "Falta assets/models/criatura.glb (exporte em tools/webgpu-fog).",
+			"acao": func(): _escolhido("criatura.glb não está no projeto"),
+		})
+	return itens
+
+func _escolhido(aviso: String) -> void:
+	fechar_lista_memesis()
+	ui.say("DEBUG: %s." % aviso)
 
 const DEBUG_UPPER_Y := 4.2
 # Corredor -> porta da administracao -> dentro da sala, ida e volta.

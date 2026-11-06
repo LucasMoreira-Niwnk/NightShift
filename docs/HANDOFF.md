@@ -139,8 +139,10 @@ fundo virou CSS) para o png salvo poder ser composto em cima de qualquer cena.
 
 **Validado:** renderiza sem erro de console no Chrome, com a arte do ceifador;
 girar um osso deforma a regiao certa; o modo solido bate com o volumetrico.
-**Pendente:** o esqueleto ainda deforma a arte de origem, nao os quadros do
-modelo salvo. Com "usar modelo salvo" ligado, posar nao muda o que aparece.
+No modo solido o esqueleto deforma na GPU, nao na CPU: como ali nao ha volume
+para remarchar, a pose vira algumas contas por pixel sobre o quadro gravado
+(ossos vao num storage buffer). Resultado: posar e andar rodam ao vivo, sem
+rebake. No modo volumetrico continua sendo a CPU, com rebake limitado.
 **Não validado:** FPS real (medido só no pane do app, que vem throttled) e o
 comportamento no Godot — nada foi portado ainda.
 

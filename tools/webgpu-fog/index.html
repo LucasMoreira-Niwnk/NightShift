@@ -52,14 +52,28 @@
   <div id=fpsout></div><div id=err></div>
 </div>
 <script type="module">
-import { criarEditor, deformar, poseAndar } from './skeleton.js';
+import { criarEditor, deformar, poseAndar, poses } from './skeleton.js';
+function escreverOssos(){
+  if(!usarSk()) return 0;
+  const P = poses(skel.bones).slice(0, MAX_OSSOS);
+  P.forEach((p, i) => {
+    const o = i*FLOATS_OSSO, m = p.inv;
+    dadosOssos.set([m.m00, m.m01, m.m10, m.m11, m.tx, m.ty,
+                    p.pa[0], p.pa[1], p.pb[0], p.pb[1], p.r, 0], o);
+  });
+  dev.queue.writeBuffer(sbo, 0, dadosOssos, 0, P.length*FLOATS_OSSO);
+  return P.length;
+}
+
 function criarBind(){
   return dev.createBindGroup({layout:pipe.getBindGroupLayout(0),entries:[
     {binding:0,resource:{buffer:ubo}},{binding:1,resource:smp},
     {binding:2,resource:view},{binding:3,resource:viewCor},
-    {binding:4,resource:viewModelo}]});
+    {binding:4,resource:viewModelo},{binding:5,resource:{buffer:sbo}}]});
 }
 function escreverUniforms(){
+  // o esqueleto so deforma o modelo salvo; no volumetrico quem deforma e a CPU
+  const nOssos = $('solido').checked ? escreverOssos() : 0;
   const nf = Math.max(1, +$('frames').value);
   const f = Math.floor(animT * +$('fps').value) % nf;
   dev.queue.writeBuffer(ubo,0,new Float32Array([
@@ -68,7 +82,8 @@ function escreverUniforms(){
     +$('noise').value/100, srcAspect/nf, yaw, +$('detail').value/100,
     +$('inflate').value/100, ...hexRGB($('col').value),
     +$('glow').value/100, +$('corpng').value/100, $('corpura').checked?1:0,
-    $('solido').checked?1:0, angCols, angRows, bakeAsp, nAng]));
+    $('solido').checked?1:0, angCols, angRows, bakeAsp,
+    nAng, nOssos, aspectArte, 0,0]));
 }
 function desenharQuadro(){
   const enc = dev.createCommandEncoder();
@@ -254,6 +269,7 @@ async function salvarModelo(){
   const fg = folha.getContext('2d');
   const yawAntes = yaw, larguraAntes = cv.width, alturaAntes = cv.height;
   const girAntes = $('spin').checked; $('spin').checked = false;
+  const solidoAntes = $('solido').checked; $('solido').checked = false;
   pausado = true;
   cv.width = fw; cv.height = fh;
   for(let i=0;i<n;i++){
@@ -265,6 +281,7 @@ async function salvarModelo(){
     $('modeloinfo').textContent = `gravando ${i+1}/${n}`;
   }
   cv.width = larguraAntes; cv.height = alturaAntes;
+  $('solido').checked = solidoAntes;
   pausado = false;
   yaw = yawAntes; $('spin').checked = girAntes;
   folhaModelo = folha; nAng = n; angCols = cols; angRows = linhas; bakeAsp = fw/fh;
@@ -279,7 +296,11 @@ const qImg = new URLSearchParams(location.search).get('img');   // ?img=criatura
 await setTexture(qImg ? await createImageBitmap(await (await fetch(qImg)).blob()) : procedural());
 
 const smp = dev.createSampler({magFilter:'linear',minFilter:'linear',addressModeU:'clamp-to-edge',addressModeV:'clamp-to-edge'});
-const ubo = dev.createBuffer({size:96, usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
+const MAX_OSSOS = 16, FLOATS_OSSO = 12;
+const sbo = dev.createBuffer({size: MAX_OSSOS*FLOATS_OSSO*4,
+  usage: GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
+const dadosOssos = new Float32Array(MAX_OSSOS*FLOATS_OSSO);
+const ubo = dev.createBuffer({size:112, usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
 
 const shader = dev.createShaderModule({code:`
 struct U {
@@ -289,12 +310,47 @@ struct U {
   inflate: f32, colR: f32, colG: f32, colB: f32,
   glow: f32, corPng: f32, corPura: f32, solido: f32,
   angCols: f32, angRows: f32, bakeAsp: f32, nAng: f32,
+  nOssos: f32, artAsp: f32, pf: f32, pg: f32,
 };
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var samp: sampler;
 @group(0) @binding(2) var silh: texture_2d<f32>;
 @group(0) @binding(3) var arte: texture_2d<f32>;
 @group(0) @binding(4) var modelo: texture_2d<f32>;
+
+struct Osso { inv: vec4f, t: vec2f, pa: vec2f, pb: vec2f, raio: vec2f };
+@group(0) @binding(5) var<storage, read> ossos: array<Osso>;
+
+// Deforma a UV do quadro ja gravado. Aqui nao ha volume para remarchar: e uma
+// imagem, entao o esqueleto sai da CPU e vira algumas contas por pixel.
+fn ossosUV(uvQuadro: vec2f) -> vec2f {
+  let n = i32(u.nOssos);
+  if (n <= 0) { return uvQuadro; }
+  // quadro -> espaco da arte (a camera do bake e fixa, entao e um afim simples)
+  let x = (uvQuadro.x - 0.5) * 2.0 * u.bakeAsp;
+  let y = (0.5 - uvQuadro.y) * 2.0;
+  let arte2 = vec2f(x / max(u.artAsp, 0.001) + 0.5, 0.5 - y);
+  var soma = 0.0; var acc = vec2f(0.0);
+  for (var i = 0; i < n; i = i + 1) {
+    let o = ossos[i];
+    let d = o.pb - o.pa;
+    let e = arte2 - o.pa;
+    let l2 = dot(d, d);
+    let tt = select(0.0, clamp(dot(e, d)/l2, 0.0, 1.0), l2 > 0.0);
+    var w = 1.0 - length(e - d*tt) / max(o.raio.x, 0.001);
+    if (w <= 0.0) { continue; }
+    w = w*w;
+    let q = vec2f(o.inv.x*arte2.x + o.inv.y*arte2.y + o.t.x,
+                  o.inv.z*arte2.x + o.inv.w*arte2.y + o.t.y);
+    acc = acc + w*q; soma = soma + w;
+  }
+  if (soma <= 0.0) { return uvQuadro; }
+  let arte3 = acc / soma;
+  // volta para o espaco do quadro
+  let x2 = (arte3.x - 0.5) * max(u.artAsp, 0.001);
+  let y2 = 0.5 - arte3.y;
+  return vec2f(x2 / (2.0 * u.bakeAsp) + 0.5, 0.5 - y2 * 0.5);
+}
 
 // Modo solido: em vez de marchar o volume, mostra o angulo mais proximo do
 // modelo ja assado. Mesma imagem, custo de um sprite.
@@ -313,6 +369,7 @@ fn impostor(frag: vec2f) -> vec4f {
   } else {
     uv.y = (uv.y - 0.5) * u.bakeAsp / telaAsp + 0.5;
   }
+  uv = ossosUV(uv);
   if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { return vec4f(0.0); }
   let c = textureSampleLevel(modelo, samp,
     vec2f((uv.x + col) / u.angCols, (uv.y + row) / u.angRows), 0.0);
@@ -485,7 +542,8 @@ function frame(now){
   if(skel.tick(now)) poseSuja = true;
   // andar ao vivo deforma na CPU: limita a ~12 rebakes/s para nao comer o frame.
   // Para rodar liso de verdade, use "assar ciclo" — ai nao deforma mais nada.
-  const podeRebake = !skel.andando || now - ultimoBake > 80;
+  // no solido quem deforma e a GPU: o rebake na CPU so queimaria frame
+  const podeRebake = (!skel.andando || now - ultimoBake > 80) && !$('solido').checked;
   if(poseSuja && maskCv && !assado && podeRebake){
     poseSuja = false; ultimoBake = now;
     enviarTextura().catch(x=>err(String(x)));

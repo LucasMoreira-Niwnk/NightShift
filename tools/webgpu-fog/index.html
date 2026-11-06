@@ -32,15 +32,22 @@
   <label>espessura Z <input id=thick type=range min=5 max=100 value=35></label>
   <label>espessura XY <input id=inflate type=range min=0 max=100 value=0></label>
   <label>cor <input id=col type=color value="#9ec8ff"> brilho <input id=glow type=range min=0 max=100 value=15 style=width:90px></label>
+  <label>cor do png <input id=corpng type=range min=0 max=100 value=0>
+    <label><input id=corpura type=checkbox> pura</label></label>
   <label>desenho <input id=detail type=range min=0 max=100 value=60></label>
   <label>ruido <input id=noise type=range min=0 max=100 value=55></label>
   <label><input id=spin type=checkbox checked> girar (ou arraste na tela)</label>
   <label><input id=freeze type=checkbox> desenho parado</label>
+  <label>assar ciclo <input id=bakeN type=number value=16 min=2 max=48 style=width:44px>
+    <button id=bake>assar</button></label>
+  <div id=bakeinfo></div>
   <div id=fpsout></div><div id=err></div>
 </div>
 <script type="module">
-import { criarEditor, deformar } from './skeleton.js';
-const err=(m)=>document.getElementById('err').textContent=m;
+import { criarEditor, deformar, poseAndar } from './skeleton.js';
+const $=id=>document.getElementById(id);
+const hexRGB=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16)/255);
+const err=(m)=>$('err').textContent=m;
 if(!navigator.gpu) err('WebGPU indisponivel. Chrome/Edge 113+ ou habilite chrome://flags/#enable-unsafe-webgpu');
 const adapter = navigator.gpu && await navigator.gpu.requestAdapter();
 if(navigator.gpu && !adapter) err('sem adapter WebGPU');
@@ -112,37 +119,89 @@ function buildMask(bmp, mode){
   }
   g.putImageData(img,0,0);
 
+  // camada de cor: o desenho original recortado pela mascara, para quem quiser
+  // a nevoa com as cores da propria arte em vez de uma cor chapada
+  const cor=document.createElement('canvas'); cor.width=k.width; cor.height=k.height;
+  const gc=cor.getContext('2d'); gc.drawImage(bmp,0,0);
+  const ci=gc.getImageData(0,0,cor.width,cor.height), cd=ci.data;
+  for(let i=0;i<cd.length;i+=4) cd[i+3]=d[i+3];
+  gc.putImageData(ci,0,0);
+
   document.getElementById('maskinfo').textContent =
     `mascara: ${use}${mode==='auto'?' (auto)':''}${invert?' · tom invertido':''} · ${bmp.width}x${bmp.height}`;
-  return k;
+  return { mascara:k, cor };
 }
-let tex, view, bind=null, srcBitmap=null, srcAspect=1, maskCv=null;
+let view, viewCor, bind=null, srcBitmap=null, srcAspect=1, maskCv=null, corCv=null;
+// A textura fica numa variavel viva e a anterior e destruida na mao: deixar o
+// GPUTexture so como local fazia a textura sumir embaixo da view ainda em uso.
+const texturas = {};
+async function subir(cvs, chave){
+  const bmp = await createImageBitmap(cvs);
+  const t = dev.createTexture({size:[bmp.width,bmp.height],format:'rgba8unorm',
+    usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST|GPUTextureUsage.RENDER_ATTACHMENT});
+  dev.queue.copyExternalImageToTexture({source:bmp},{texture:t},[bmp.width,bmp.height]);
+  texturas[chave] = t;   // sem destroy: o frame em voo ainda pode estar usando a anterior
+  return t.createView();
+}
 const usarSk = () => document.getElementById('skon').checked;
 async function setTexture(src){
   if(src) srcBitmap = src instanceof HTMLCanvasElement ? await createImageBitmap(src) : src;
-  maskCv = buildMask(srcBitmap, document.getElementById('mask').value);
+  const m = buildMask(srcBitmap, document.getElementById('mask').value);
+  maskCv = m.mascara; corCv = m.cor;
   srcAspect = maskCv.width / maskCv.height;
+  aspectArte = srcAspect;
+  $('frames').value = '1';
   skel.definirFundo(srcBitmap, srcAspect);
   await enviarTextura();
 }
 // separado porque posar o esqueleto refaz so esta parte, nao a mascara inteira
 async function enviarTextura(){
-  const fonte = usarSk() ? deformar(maskCv, skel.bones, srcAspect) : maskCv;
-  const bmp = await createImageBitmap(fonte);
-  tex = dev.createTexture({size:[bmp.width,bmp.height],format:'rgba8unorm',
-    usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST|GPUTextureUsage.RENDER_ATTACHMENT});
-  dev.queue.copyExternalImageToTexture({source:bmp},{texture:tex},[bmp.width,bmp.height]);
-  view = tex.createView(); bind = null;
+  const [m, c] = usarSk() ? deformar([maskCv, corCv], skel.bones, srcAspect) : [maskCv, corCv];
+  view = await subir(m, 'mascara'); viewCor = await subir(c, 'cor'); bind = null;
 }
-let poseSuja = false;
+let poseSuja = false, assado = false, ultimoBake = 0;
 const skel = criarEditor({
   raiz: document.getElementById('skui'),
   aoMudar: () => { if(usarSk()) poseSuja = true; },
 });
 document.getElementById('skon').addEventListener('change', e => {
   document.getElementById('sk').classList.toggle('oculto', !e.target.checked);
-  poseSuja = true;
+  assado = false; $('frames').value = '1'; poseSuja = true;
 });
+
+// Assar o ciclo: a deformacao e cara porque roda na CPU pixel a pixel. Rodando
+// ao vivo ela come o frame inteiro. Assada vira um sprite sheet comum e a
+// reproducao passa a custar o mesmo que uma animacao qualquer: zero deformacao.
+let aspectArte = 1;
+async function assarCiclo(){
+  const n = Math.max(2, Math.min(48, +$('bakeN').value));
+  skel.pararAndar();
+  assado = true;   // antes do laco: posar durante o bake marca a pose como suja
+                   // e o rebake ao vivo sobrescreveria a folha com 1 so frame
+  const larg = Math.min(256, Math.floor(8192/n));   // o sheet inteiro cabe na GPU
+  const folhas = [null, null];
+  const ctxs = [];
+  for(let i=0;i<n;i++){
+    poseAndar(skel.bones, i/n);
+    const [m, c] = deformar([maskCv, corCv], skel.bones, aspectArte, larg);
+    if(!folhas[0]){
+      [m, c].forEach((q, k) => {
+        const f=document.createElement('canvas'); f.width=q.width*n; f.height=q.height;
+        folhas[k]=f; ctxs[k]=f.getContext('2d');
+      });
+    }
+    ctxs[0].drawImage(m, i*m.width, 0);
+    ctxs[1].drawImage(c, i*c.width, 0);
+    $('bakeinfo').textContent = `assando ${i+1}/${n}`;
+    await new Promise(r=>setTimeout(r));   // deixa a pagina respirar
+  }
+  poseAndar(skel.bones, 0);
+  view = await subir(folhas[0], 'mascara'); viewCor = await subir(folhas[1], 'cor'); bind = null;
+  srcAspect = folhas[0].width / folhas[0].height;
+  $('frames').value = String(n);
+  poseSuja = false;
+  $('bakeinfo').textContent = `ciclo assado: ${n} frames de ${folhas[0].width/n}px`;
+}
 
 const qImg = new URLSearchParams(location.search).get('img');   // ?img=criatura.png
 await setTexture(qImg ? await createImageBitmap(await (await fetch(qImg)).blob()) : procedural());
@@ -156,11 +215,12 @@ struct U {
   frame: f32, steps: f32, density: f32, thick: f32,
   noiseAmt: f32, aspect: f32, yaw: f32, detail: f32,
   inflate: f32, colR: f32, colG: f32, colB: f32,
-  glow: f32, pa: f32, pb: f32, pc: f32,
+  glow: f32, corPng: f32, corPura: f32, pc: f32,
 };
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var samp: sampler;
 @group(0) @binding(2) var silh: texture_2d<f32>;
+@group(0) @binding(3) var arte: texture_2d<f32>;
 
 @vertex fn vs(@builtin(vertex_index) i:u32) -> @builtin(position) vec4f {
   var p = array(vec2f(-1,-1), vec2f(3,-1), vec2f(-1,3));
@@ -205,6 +265,16 @@ fn dilate(uv: vec2f, base: f32) -> f32 {
   }
   return m;
 }
+// Cor da arte no ponto. Usa so o MATIZ (divide pelo canal mais forte): um manto
+// quase preto tem a cor certa mas escura demais, e apagaria a nevoa.
+fn albedoAt(uv: vec2f) -> vec3f {
+  let tinta = vec3f(u.colR, u.colG, u.colB);
+  if (u.corPng < 0.01) { return tinta; }
+  let c = textureSampleLevel(arte, samp, vec2f((uv.x + u.frame) / u.frames, uv.y), 0.0).rgb;
+  if (u.corPura > 0.5) { return mix(tinta, c, u.corPng); }   // crua, como esta no arquivo
+  let m = max(max(c.r, c.g), c.b);
+  return tinta * mix(vec3f(1.0), c / max(m, 0.02), u.corPng);
+}
 // 0 = silhueta chapada, 1 = o desenho inteiro aparecendo na nevoa
 fn inkMul(det: f32) -> f32 {
   return mix(1.0, 0.15 + 2.2*det*det, u.detail);
@@ -248,8 +318,7 @@ fn densityShadow(q: vec3f) -> f32 {
 
   let lp = vec3f(cos(u.time*0.6)*1.1, 0.45, sin(u.time*0.6)*1.1);  // luz girando
   let lcol = vec3f(1.0, 0.85, 0.6) * 2.2;
-  let albedo = vec3f(u.colR, u.colG, u.colB);
-  let ambient = albedo * 0.35 + vec3f(u.glow);   // glow = brilho proprio da nevoa
+
 
   let inv = 1.0 / rd;
   let t1 = (vec3f(-0.5) - ro) * inv;
@@ -275,6 +344,8 @@ fn densityShadow(q: vec3f) -> f32 {
         for (var j = 1; j <= 2; j = j + 1) {   // sombra: 2 amostras, passo maior
           sh = sh + densityShadow(q + ldir * (f32(j) * 0.14)) * 0.14;
         }
+        let albedo = albedoAt(localUV(q));
+        let ambient = albedo * 0.35 + vec3f(u.glow);   // glow = brilho proprio
         let lighting = ambient + lcol * exp(-sh * 1.6) / (1.0 + dot(lp-q, lp-q));
         acc = acc + trans * (1.0 - exp(-sigma)) * albedo * lighting;
         trans = trans * exp(-sigma);
@@ -295,8 +366,6 @@ const pipe = dev.createRenderPipeline({layout:'auto',
   fragment:{module:shader,entryPoint:'fs',targets:[{format:fmt}]},
   primitive:{topology:'triangle-list'}});
 
-const $=id=>document.getElementById(id);
-const hexRGB=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16)/255);
 let last=performance.now(), accT=0, nF=0;
 function frame(now){
   // renderiza menor e deixa o CSS esticar: custo cai com o quadrado da escala
@@ -305,13 +374,20 @@ function frame(now){
   if(w<1||h<1){ requestAnimationFrame(frame); return; }   // aba oculta / pane com 0px
   if(cv.width!==w||cv.height!==h){ cv.width=w; cv.height=h; }
   if(!bind) bind = dev.createBindGroup({layout:pipe.getBindGroupLayout(0),entries:[
-    {binding:0,resource:{buffer:ubo}},{binding:1,resource:smp},{binding:2,resource:view}]});
+    {binding:0,resource:{buffer:ubo}},{binding:1,resource:smp},
+    {binding:2,resource:view},{binding:3,resource:viewCor}]});
 
   const dt = (now-last)/1000;
   if($('spin').checked) yaw += dt * 0.5;
   if(!$('freeze').checked) animT += Math.min(dt, 0.1);   // congela so a nevoa
   if(skel.tick(now)) poseSuja = true;
-  if(poseSuja && maskCv){ poseSuja = false; enviarTextura().catch(x=>err(String(x))); }
+  // andar ao vivo deforma na CPU: limita a ~12 rebakes/s para nao comer o frame.
+  // Para rodar liso de verdade, use "assar ciclo" — ai nao deforma mais nada.
+  const podeRebake = !skel.andando || now - ultimoBake > 80;
+  if(poseSuja && maskCv && !assado && podeRebake){
+    poseSuja = false; ultimoBake = now;
+    enviarTextura().catch(x=>err(String(x)));
+  }
   const t = animT;
   const nf = Math.max(1, +$('frames').value);
   const f = Math.floor(t * +$('fps').value) % nf;
@@ -320,7 +396,7 @@ function frame(now){
     f, +$('steps').value, +$('dens').value/10, +$('thick').value/100,
     +$('noise').value/100, srcAspect/nf, yaw, +$('detail').value/100,
     +$('inflate').value/100, ...hexRGB($('col').value),
-    +$('glow').value/100, 0,0,0]));
+    +$('glow').value/100, +$('corpng').value/100, $('corpura').checked?1:0, 0]));
 
   const enc = dev.createCommandEncoder();
   const pass = enc.beginRenderPass({colorAttachments:[{view:ctx.getCurrentTexture().createView(),
@@ -344,6 +420,11 @@ document.body.addEventListener('dragover',e=>e.preventDefault());
 document.body.addEventListener('drop',async e=>{
   e.preventDefault(); const f=e.dataTransfer.files[0]; if(!f) return;
   try{ await setTexture(await createImageBitmap(f)); err(''); }catch(x){ err(String(x)); }
+});
+$('bake').addEventListener('click', ()=>{
+  if(!usarSk()){ err('ligue "usar esqueleto" antes de assar'); return; }
+  err(''); $('bake').disabled = true;
+  assarCiclo().catch(x=>err(String(x))).finally(()=>{ $('bake').disabled = false; });
 });
 document.getElementById('mask').addEventListener('change',()=>setTexture(null).catch(x=>err(String(x))));
 </script>

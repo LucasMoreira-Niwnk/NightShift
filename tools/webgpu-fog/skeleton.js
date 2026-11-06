@@ -80,14 +80,16 @@ function distSeg(px, py, a, b, ar) {
 // nevoa nao precisa da resolucao cheia e isso mantem o rebake rapido o bastante
 // para arrastar a junta e ver o resultado.
 const MAXW = 512;
-export function deformar(src, bones, aspect) {
-  const sc = Math.min(1, MAXW / src.width);
-  const w = Math.max(2, Math.round(src.width*sc)), h = Math.max(2, Math.round(src.height*sc));
-  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-  const g = cv.getContext('2d', { willReadFrequently:true });
-  g.drawImage(src, 0, 0, w, h);
-  const srcData = g.getImageData(0, 0, w, h), s = srcData.data;
-  const out = g.createImageData(w, h), o = out.data;
+export function deformar(camadas, bones, aspect, maxW) {
+  const base = camadas[0], lim = maxW || MAXW;
+  const sc = Math.min(1, lim / base.width);
+  const w = Math.max(2, Math.round(base.width*sc)), h = Math.max(2, Math.round(base.height*sc));
+  const ctxs = camadas.map(src => {
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const g = cv.getContext('2d', { willReadFrequently:true });
+    g.drawImage(src, 0, 0, w, h);
+    return { cv, g, src: g.getImageData(0, 0, w, h).data, out: g.createImageData(w, h) };
+  });
 
   const P = poses(bones), ar = aspect || 1;
   for (let y = 0; y < h; y++) {
@@ -105,14 +107,24 @@ export function deformar(src, bones, aspect) {
       }
       const su = soma > 0 ? rx/soma : u, sv = soma > 0 ? ry/soma : v;
       const sx = Math.round(su*w - 0.5), sy = Math.round(sv*h - 0.5);
-      const di = (y*w + x)*4;
       if (sx < 0 || sy < 0 || sx >= w || sy >= h) continue;   // fora: fica vazio
-      const si = (sy*w + sx)*4;
-      o[di] = s[si]; o[di+1] = s[si+1]; o[di+2] = s[si+2]; o[di+3] = s[si+3];
+      const di = (y*w + x)*4, si = (sy*w + sx)*4;
+      for (const c of ctxs) {
+        const s = c.src, o = c.out.data;
+        o[di] = s[si]; o[di+1] = s[si+1]; o[di+2] = s[si+2]; o[di+3] = s[si+3];
+      }
     }
   }
-  g.putImageData(out, 0, 0);
-  return cv;
+  for (const c of ctxs) c.g.putImageData(c.out, 0, 0);
+  return ctxs.map(c => c.cv);
+}
+
+// pose da caminhada num instante do ciclo (0..1). Usada ao vivo e ao assar.
+export function poseAndar(bones, fase) {
+  for (const b of bones) {
+    const a = ANDAR[b.nome];
+    b.ang = a ? a[0] * Math.sin(fase*TAU + a[1]) : 0;
+  }
 }
 
 // --- editor -----------------------------------------------------------------
@@ -272,15 +284,14 @@ export function criarEditor({ raiz, aoMudar }) {
 
   return {
     get bones() { return bones; },
+    get andando() { return andando; },
+    pararAndar() { andando = false; raiz.querySelector('.sk-andar').checked = false; },
+    poseAndar(fase) { poseAndar(bones, fase); desenhar(); },
     definirFundo(img, asp) { fundo = img; aspect = asp; redimensionar(); },
     // chamado todo frame; so devolve true quando a pose mudou de verdade
     tick(now) {
       if (!andando) return false;
-      const t = (now - t0)/1000;
-      for (const b of bones) {
-        const a = ANDAR[b.nome];
-        b.ang = a ? a[0] * Math.sin(t*2.4 + a[1]) : 0;
-      }
+      poseAndar(bones, ((now - t0)/1000) * 0.38 % 1);
       desenhar();
       return true;
     },

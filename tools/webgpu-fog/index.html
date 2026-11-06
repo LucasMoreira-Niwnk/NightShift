@@ -7,8 +7,18 @@
  #ui label{display:block}
  input[type=range]{width:160px;vertical-align:middle}
  #err{color:#f66;white-space:pre-wrap;max-width:60ch}
+ #sk{position:fixed;top:8px;right:8px;background:#0b0f17e0;padding:8px;width:256px;line-height:1.6}
+ #sk.oculto .sk-cv,#sk.oculto .sk-bot{display:none}
+ .sk-cv{background:#0003;cursor:crosshair;touch-action:none;width:200px}
+ .sk-top label,.sk-bot label{display:inline-block;margin-right:6px}
+ .sk-bot select,.sk-bot button{margin-top:4px}
+ .sk-bot input[type=range]{width:100px}
 </style>
 <canvas id=c></canvas>
+<div id=sk class=oculto>
+  <label><input id=skon type=checkbox> usar esqueleto</label>
+  <div id=skui></div>
+</div>
 <div id=ui>
   <b>fog creature</b> — arraste um sprite sheet (png) aqui<br>
   <label>mascara <select id=mask><option value=auto>auto</option><option value=alpha>alpha</option><option value=escuro>sujeito escuro</option><option value=claro>sujeito claro</option></select></label>
@@ -28,6 +38,7 @@
   <div id=fpsout></div><div id=err></div>
 </div>
 <script type="module">
+import { criarEditor, deformar } from './skeleton.js';
 const err=(m)=>document.getElementById('err').textContent=m;
 if(!navigator.gpu) err('WebGPU indisponivel. Chrome/Edge 113+ ou habilite chrome://flags/#enable-unsafe-webgpu');
 const adapter = navigator.gpu && await navigator.gpu.requestAdapter();
@@ -104,16 +115,34 @@ function buildMask(bmp, mode){
     `mascara: ${use}${mode==='auto'?' (auto)':''}${invert?' · tom invertido':''} · ${bmp.width}x${bmp.height}`;
   return k;
 }
-let tex, view, bind=null, srcBitmap=null, srcAspect=1;
+let tex, view, bind=null, srcBitmap=null, srcAspect=1, maskCv=null;
+const usarSk = () => document.getElementById('skon').checked;
 async function setTexture(src){
   if(src) srcBitmap = src instanceof HTMLCanvasElement ? await createImageBitmap(src) : src;
-  const bmp = await createImageBitmap(buildMask(srcBitmap, document.getElementById('mask').value));
-  srcAspect = bmp.width / bmp.height;
+  maskCv = buildMask(srcBitmap, document.getElementById('mask').value);
+  srcAspect = maskCv.width / maskCv.height;
+  skel.definirFundo(srcBitmap, srcAspect);
+  await enviarTextura();
+}
+// separado porque posar o esqueleto refaz so esta parte, nao a mascara inteira
+async function enviarTextura(){
+  const fonte = usarSk() ? deformar(maskCv, skel.bones, srcAspect) : maskCv;
+  const bmp = await createImageBitmap(fonte);
   tex = dev.createTexture({size:[bmp.width,bmp.height],format:'rgba8unorm',
     usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST|GPUTextureUsage.RENDER_ATTACHMENT});
   dev.queue.copyExternalImageToTexture({source:bmp},{texture:tex},[bmp.width,bmp.height]);
   view = tex.createView(); bind = null;
 }
+let poseSuja = false;
+const skel = criarEditor({
+  raiz: document.getElementById('skui'),
+  aoMudar: () => { if(usarSk()) poseSuja = true; },
+});
+document.getElementById('skon').addEventListener('change', e => {
+  document.getElementById('sk').classList.toggle('oculto', !e.target.checked);
+  poseSuja = true;
+});
+
 const qImg = new URLSearchParams(location.search).get('img');   // ?img=criatura.png
 await setTexture(qImg ? await createImageBitmap(await (await fetch(qImg)).blob()) : procedural());
 
@@ -280,6 +309,8 @@ function frame(now){
   const dt = (now-last)/1000;
   if($('spin').checked) yaw += dt * 0.5;
   if(!$('freeze').checked) animT += Math.min(dt, 0.1);   // congela so a nevoa
+  if(skel.tick(now)) poseSuja = true;
+  if(poseSuja && maskCv){ poseSuja = false; enviarTextura().catch(x=>err(String(x))); }
   const t = animT;
   const nf = Math.max(1, +$('frames').value);
   const f = Math.floor(t * +$('fps').value) % nf;

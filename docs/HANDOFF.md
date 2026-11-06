@@ -122,7 +122,16 @@ Como rodar: servir a pasta (`python -m http.server`) e abrir
 | Slider silhueta ↔ desenho | O tom da arte modula a densidade: define quanto do desenho aparece na névoa |
 | Câmera orbital, cor, brilho próprio, congelar animação | Avaliar o efeito parado e de vários ângulos |
 
-**Validado:** renderiza sem erro de console no Chrome, com a arte do ceifador.
+**Sub-setor de esqueleto** (`tools/webgpu-fog/skeleton.js`): esqueleto humanoide
+base de 10 ossos que o Lucas arrasta para encaixar na arte. Cada osso tem um
+alcance (a regiao da imagem que ele leva junto); girar o osso distorce aquela
+regiao, dando andar/sentar sem redesenhar frame a frame. A deformacao e feita
+invertida (para cada pixel de saida, de onde ele veio) e assada na CPU a no
+maximo 512px de largura, so quando a pose muda — assim o shader nao paga nada
+por amostra. Tem preset de caminhada e exporta `esqueleto.json`.
+
+**Validado:** renderiza sem erro de console no Chrome, com a arte do ceifador;
+girar um osso deforma a regiao certa.
 **Não validado:** FPS real (medido só no pane do app, que vem throttled) e o
 comportamento no Godot — nada foi portado ainda.
 

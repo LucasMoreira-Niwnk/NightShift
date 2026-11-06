@@ -137,6 +137,12 @@ de marchar o volume — mesma imagem, custo de um sprite. O raymarch roda uma ve
 por angulo na gravacao e nunca mais. A saida do shader passou a ter alpha (o
 fundo virou CSS) para o png salvo poder ser composto em cima de qualquer cena.
 
+**Malha 3D** (`tools/webgpu-fog/mesh.js`): "exportar .glb" extrai a superficie
+do mesmo campo de densidade (surface nets, nao marching cubes: mesma superficie
+para formas gordas, sem as tabelas de 1400 numeros) e grava um glTF binario com
+UV planar frontal, a arte como textura e os ossos do editor como skin. No Godot
+abre como MeshInstance3D + Skeleton3D, entao a animacao passa a ser nativa.
+
 **Validado:** renderiza sem erro de console no Chrome, com a arte do ceifador;
 girar um osso deforma a regiao certa; o modo solido bate com o volumetrico.
 No modo solido o esqueleto deforma na GPU, nao na CPU: como ali nao ha volume

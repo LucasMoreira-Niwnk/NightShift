@@ -46,6 +46,9 @@
   <button id=baixar>baixar png</button>
   <div id=modeloinfo></div>
   <b>2. esqueleto</b>
+  <label>malha res <input id=malhaRes type=number value=96 min=32 max=192 style=width:46px>
+    <button id=glb>exportar .glb</button></label>
+  <div id=glbinfo></div>
   <label>assar ciclo <input id=bakeN type=number value=16 min=2 max=48 style=width:44px>
     <button id=bake>assar</button></label>
   <div id=bakeinfo></div>
@@ -53,6 +56,7 @@
 </div>
 <script type="module">
 import { criarEditor, deformar, poseAndar, poses } from './skeleton.js';
+import { gerarMalha, pesos, exportarGLB } from './mesh.js';
 function escreverOssos(){
   if(!usarSk()) return 0;
   const ossos = skel.bones.slice(0, MAX_OSSOS);
@@ -616,6 +620,34 @@ $('baixar').addEventListener('click', ()=>{
     const a=document.createElement('a');
     a.href=URL.createObjectURL(b); a.download='modelo.png'; a.click();
   });
+});
+// Exporta a criatura como malha de verdade: o campo de densidade ja e 3D,
+// entao da para extrair a superficie e levar os ossos junto como Skeleton3D.
+async function exportarMalha(){
+  if(!maskCv) throw new Error('carregue uma arte primeiro');
+  $('glbinfo').textContent = 'gerando malha...';
+  await new Promise(r=>setTimeout(r));
+  const malha = gerarMalha(maskCv, {
+    artAsp: aspectArte,
+    thick: +$('thick').value/100,
+    inflate: +$('inflate').value/100,
+    res: Math.max(32, Math.min(192, +$('malhaRes').value)),
+  });
+  if(!malha.idx.length) throw new Error('malha vazia: aumente densidade ou espessura');
+  $('glbinfo').textContent = `malha: ${malha.pos.length/3} vertices · gravando glb...`;
+  await new Promise(r=>setTimeout(r));
+  const ossos = skel.bones;
+  const glb = await exportarGLB(malha, pesos(malha, ossos, aspectArte),
+                                ossos, aspectArte, corCv);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(glb); a.download = 'criatura.glb'; a.click();
+  $('glbinfo').textContent =
+    `glb: ${malha.pos.length/3} vertices, ${malha.idx.length/3} triangulos, ${ossos.length} ossos`;
+}
+$('glb').addEventListener('click', ()=>{
+  err(''); $('glb').disabled = true;
+  exportarMalha().catch(x=>{ err(String(x)); $('glbinfo').textContent=''; })
+    .finally(()=>{ $('glb').disabled = false; });
 });
 $('bake').addEventListener('click', ()=>{
   if(!usarSk()){ err('ligue "usar esqueleto" antes de assar'); return; }

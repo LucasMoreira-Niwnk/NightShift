@@ -19,9 +19,12 @@
   <label>steps <input id=steps type=range min=8 max=128 value=32></label>
   <label>densidade <input id=dens type=range min=1 max=200 value=60></label>
   <label>espessura Z <input id=thick type=range min=5 max=100 value=35></label>
+  <label>espessura XY <input id=inflate type=range min=0 max=100 value=0></label>
+  <label>cor <input id=col type=color value="#9ec8ff"> brilho <input id=glow type=range min=0 max=100 value=15 style=width:90px></label>
   <label>desenho <input id=detail type=range min=0 max=100 value=60></label>
   <label>ruido <input id=noise type=range min=0 max=100 value=55></label>
   <label><input id=spin type=checkbox checked> girar (ou arraste na tela)</label>
+  <label><input id=freeze type=checkbox> desenho parado</label>
   <div id=fpsout></div><div id=err></div>
 </div>
 <script type="module">
@@ -115,13 +118,15 @@ const qImg = new URLSearchParams(location.search).get('img');   // ?img=criatura
 await setTexture(qImg ? await createImageBitmap(await (await fetch(qImg)).blob()) : procedural());
 
 const smp = dev.createSampler({magFilter:'linear',minFilter:'linear',addressModeU:'clamp-to-edge',addressModeV:'clamp-to-edge'});
-const ubo = dev.createBuffer({size:64, usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
+const ubo = dev.createBuffer({size:96, usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
 
 const shader = dev.createShaderModule({code:`
 struct U {
   res: vec2f, time: f32, frames: f32,
   frame: f32, steps: f32, density: f32, thick: f32,
   noiseAmt: f32, aspect: f32, yaw: f32, detail: f32,
+  inflate: f32, colR: f32, colG: f32, colB: f32,
+  glow: f32, pa: f32, pb: f32, pc: f32,
 };
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var samp: sampler;
@@ -155,6 +160,21 @@ fn silhTex(uv: vec2f) -> vec3f {   // x = espessura, y = silhueta, z = tom do de
   let t = textureSampleLevel(silh, samp, vec2f((uv.x + u.frame) / u.frames, uv.y), 0.0);
   return vec3f(t.r, t.a, t.g);
 }
+// Espessura em X e Y: o mapa borrado vaza pra fora da silhueta, entao baixar o
+// corte nele infla o corpo lateralmente - mesmo principio da espessura em Z.
+// Dilatacao real: pega o maior valor num anel em volta do ponto. So roda quando
+// o slider sai do zero, e engorda em X e Y do mesmo jeito que thick engorda em Z.
+fn dilate(uv: vec2f, base: f32) -> f32 {
+  if (u.inflate < 0.01) { return base; }
+  let r = u.inflate * 0.07;
+  let rx = r / max(u.aspect, 0.001);
+  var m = base;
+  for (var i = 0; i < 6; i = i + 1) {
+    let a = f32(i) * 1.0472;
+    m = max(m, silhTex(uv + vec2f(cos(a)*rx, sin(a)*r)).y);
+  }
+  return m;
+}
 // 0 = silhueta chapada, 1 = o desenho inteiro aparecendo na nevoa
 fn inkMul(det: f32) -> f32 {
   return mix(1.0, 0.15 + 2.2*det*det, u.detail);
@@ -166,23 +186,25 @@ fn densityAt(q: vec3f) -> f32 {
   let uv0 = localUV(q);
   let s0 = silhTex(uv0);
   // teste barato: fora da silhueta sai antes de tocar no ruido (o caro)
-  if (s0.y < 0.02) { return 0.0; }
+  if (dilate(uv0, s0.y) < 0.02) { return 0.0; }
   // AQUI vira 3D: a espessura em Z vem de quao fundo o ponto esta dentro do corpo,
   // entao tronco fica gordo e dedo fica fino, em vez de tudo com a mesma chapa.
-  let halfZ = max(s0.x, 0.03) * u.thick;
+  let halfZ = max(s0.x + u.inflate*0.6, 0.03) * u.thick;   // XY gordo pede Z gordo
   let zf = smoothstep(1.0, 0.25, abs(q.z) / halfZ);
   if (zf < 0.01) { return 0.0; }
   let w = fbm(vec3f(q.xy*4.0, u.time*0.35)) - 0.5;   // ondulacao de fumaca
-  let s1 = silhTex(uv0 + vec2f(w, w*0.6) * 0.06);
+  let uv1 = uv0 + vec2f(w, w*0.6) * 0.06;
+  let s1 = silhTex(uv1);
   let n = mix(1.0, fbm(q*6.0 + vec3f(0.0, -u.time*0.5, u.time*0.2)), u.noiseAmt);
-  return smoothstep(0.25, 0.85, s1.y) * zf * n * inkMul(s1.z) * u.density;
+  return smoothstep(0.25, 0.85, dilate(uv1, s1.y)) * zf * n * inkMul(s1.z) * u.density;
 }
 // densidade sem ruido, so pra sombra: 1 fetch, zero fbm
 fn densityShadow(q: vec3f) -> f32 {
   if (abs(q.x) > 0.5 || abs(q.y) > 0.5 || abs(q.z) > 0.5) { return 0.0; }
-  let s0 = silhTex(localUV(q));
-  let zf = smoothstep(1.0, 0.25, abs(q.z) / max(s0.x * u.thick, 0.03));
-  return smoothstep(0.25, 0.85, s0.y) * zf * inkMul(s0.z) * u.density;
+  let uvs = localUV(q);
+  let s0 = silhTex(uvs);
+  let zf = smoothstep(1.0, 0.25, abs(q.z) / max((s0.x + u.inflate*0.6) * u.thick, 0.03));
+  return smoothstep(0.25, 0.85, dilate(uvs, s0.y)) * zf * inkMul(s0.z) * u.density;
 }
 
 @fragment fn fs(@builtin(position) pos: vec4f) -> @location(0) vec4f {
@@ -196,8 +218,8 @@ fn densityShadow(q: vec3f) -> f32 {
 
   let lp = vec3f(cos(u.time*0.6)*1.1, 0.45, sin(u.time*0.6)*1.1);  // luz girando
   let lcol = vec3f(1.0, 0.85, 0.6) * 2.2;
-  let ambient = vec3f(0.10, 0.16, 0.30);
-  let albedo = vec3f(0.62, 0.78, 1.0);
+  let albedo = vec3f(u.colR, u.colG, u.colB);
+  let ambient = albedo * 0.35 + vec3f(u.glow);   // glow = brilho proprio da nevoa
 
   let inv = 1.0 / rd;
   let t1 = (vec3f(-0.5) - ro) * inv;
@@ -232,7 +254,8 @@ fn densityShadow(q: vec3f) -> f32 {
     }
     col = col * trans + acc;
   }
-  col = col / (1.0 + col);
+  // tonemap pelo canal mais forte: o /(1+col) por canal lavava a cor toda
+  col = col / (1.0 + max(max(col.r, col.g), col.b));
   col = pow(col, vec3f(1.0/2.2));
   return vec4f(col, 1.0);
 }`});
@@ -243,6 +266,7 @@ const pipe = dev.createRenderPipeline({layout:'auto',
   primitive:{topology:'triangle-list'}});
 
 const $=id=>document.getElementById(id);
+const hexRGB=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16)/255);
 let last=performance.now(), accT=0, nF=0;
 function frame(now){
   // renderiza menor e deixa o CSS esticar: custo cai com o quadrado da escala
@@ -253,14 +277,18 @@ function frame(now){
   if(!bind) bind = dev.createBindGroup({layout:pipe.getBindGroupLayout(0),entries:[
     {binding:0,resource:{buffer:ubo}},{binding:1,resource:smp},{binding:2,resource:view}]});
 
-  const t = now/1000;
-  if($('spin').checked) yaw += (now-last)/1000 * 0.5;
+  const dt = (now-last)/1000;
+  if($('spin').checked) yaw += dt * 0.5;
+  if(!$('freeze').checked) animT += Math.min(dt, 0.1);   // congela so a nevoa
+  const t = animT;
   const nf = Math.max(1, +$('frames').value);
   const f = Math.floor(t * +$('fps').value) % nf;
   dev.queue.writeBuffer(ubo,0,new Float32Array([
     cv.width, cv.height, t, nf,
     f, +$('steps').value, +$('dens').value/10, +$('thick').value/100,
-    +$('noise').value/100, srcAspect/nf, yaw, +$('detail').value/100]));
+    +$('noise').value/100, srcAspect/nf, yaw, +$('detail').value/100,
+    +$('inflate').value/100, ...hexRGB($('col').value),
+    +$('glow').value/100, 0,0,0]));
 
   const enc = dev.createCommandEncoder();
   const pass = enc.beginRenderPass({colorAttachments:[{view:ctx.getCurrentTexture().createView(),
@@ -274,7 +302,7 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 
-let yaw=0, drag=false, lastX=0;
+let yaw=0, animT=0, drag=false, lastX=0;
 cv.addEventListener('pointerdown',e=>{drag=true; lastX=e.clientX; cv.setPointerCapture(e.pointerId);});
 cv.addEventListener('pointerup',()=>drag=false);
 cv.addEventListener('pointermove',e=>{ if(drag){ yaw += (e.clientX-lastX)*0.01; lastX=e.clientX; $('spin').checked=false; } });

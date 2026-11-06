@@ -103,3 +103,29 @@ Entradas mais recentes no topo. Cada uma diz o que mudou, por quê, o que foi va
 - `chapter.gd` e `chapter_ui.gd` concentram muita lógica (roteiro, saves, todos os menus). Vale separar saves (`checkpoint.gd`) e menus de pausa/configuração antes do capítulo 3.
 - Mapeamento de teclas fixo em código (`configure_input` e `physical_keycode` espalhados). Um remapeamento futuro deve passar tudo para ações do InputMap.
 - Os testes não cobrem: save com reserva, normalização de tipos e bloqueio da porta no vão. Sugestão: casos em `chapter_tests.gd` gravando um JSON truncado no principal e conferindo o carregamento da reserva.
+
+## 2026-11-06 — Claude — protótipo WebGPU da criatura de névoa (fora do Godot)
+
+Banco de testes em `tools/webgpu-fog/index.html` para fechar o visual do vulto
+volumétrico ANTES de gastar tempo com `FogVolume` no Godot. Não toca no jogo.
+
+Como rodar: servir a pasta (`python -m http.server`) e abrir
+`index.html?img=arquivo.png`, ou arrastar um PNG na página. Precisa de WebGPU
+(Chrome/Edge 113+).
+
+| O quê | Por quê |
+|---|---|
+| Raymarch de volume com densidade vinda da silhueta | É o equivalente do `void fog()` do Godot; o que for calibrado aqui porta direto |
+| Máscara reconstruída pelo brilho quando o PNG não tem alpha | As artes de referência do Lucas são RGB com o xadrez gravado nos pixels; sem isso o volume vira um bloco |
+| Espessura em Z vinda de um borrão da própria silhueta | Tronco grosso, dedo fino: é o que tira o aspecto de recorte chapado |
+| Espessura em XY por dilatação (anel de 6 amostras) | Engorda o corpo sem mexer na arte |
+| Slider silhueta ↔ desenho | O tom da arte modula a densidade: define quanto do desenho aparece na névoa |
+| Câmera orbital, cor, brilho próprio, congelar animação | Avaliar o efeito parado e de vários ângulos |
+
+**Validado:** renderiza sem erro de console no Chrome, com a arte do ceifador.
+**Não validado:** FPS real (medido só no pane do app, que vem throttled) e o
+comportamento no Godot — nada foi portado ainda.
+
+**Limite conhecido:** um PNG de frente não tem perfil lateral. Até ~±60° lê como
+criatura; a 90° vira um borrão. Saídas: billboard (o volume sempre encara a
+câmera), ou uma segunda silhueta de perfil para cruzar os dois volumes.

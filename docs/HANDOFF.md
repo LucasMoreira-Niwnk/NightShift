@@ -130,8 +130,17 @@ invertida (para cada pixel de saida, de onde ele veio) e assada na CPU a no
 maximo 512px de largura, so quando a pose muda — assim o shader nao paga nada
 por amostra. Tem preset de caminhada e exporta `esqueleto.json`.
 
+**Ordem de trabalho** (definida pelo Lucas): primeiro fecha o MODELO, depois
+anima. "salvar modelo" grava o visual pronto de N angulos num sprite sheet
+(impostor) e "usar modelo salvo" passa a mostrar o angulo mais proximo em vez
+de marchar o volume — mesma imagem, custo de um sprite. O raymarch roda uma vez
+por angulo na gravacao e nunca mais. A saida do shader passou a ter alpha (o
+fundo virou CSS) para o png salvo poder ser composto em cima de qualquer cena.
+
 **Validado:** renderiza sem erro de console no Chrome, com a arte do ceifador;
-girar um osso deforma a regiao certa.
+girar um osso deforma a regiao certa; o modo solido bate com o volumetrico.
+**Pendente:** o esqueleto ainda deforma a arte de origem, nao os quadros do
+modelo salvo. Com "usar modelo salvo" ligado, posar nao muda o que aparece.
 **Não validado:** FPS real (medido só no pane do app, que vem throttled) e o
 comportamento no Godot — nada foi portado ainda.
 

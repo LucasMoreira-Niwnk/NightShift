@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <meta charset="utf-8"><title>Fog Creature — WebGPU</title>
 <style>
- html,body{margin:0;height:100%;background:#05070c;color:#9fb;font:13px monospace;overflow:hidden}
+ html,body{margin:0;height:100%;background:radial-gradient(circle at 50% 45%,#121a28,#05070c 70%);color:#9fb;font:13px monospace;overflow:hidden}
  canvas{display:block;width:100vw;height:100vh}
  #ui{position:fixed;top:8px;left:8px;background:#0008;padding:8px;line-height:1.7}
  #ui label{display:block}
@@ -38,6 +38,14 @@
   <label>ruido <input id=noise type=range min=0 max=100 value=55></label>
   <label><input id=spin type=checkbox checked> girar (ou arraste na tela)</label>
   <label><input id=freeze type=checkbox> desenho parado</label>
+  <hr style="border-color:#234">
+  <b>1. modelo</b>
+  <label>angulos <input id=angN type=number value=16 min=4 max=64 style=width:44px>
+    <button id=salvar>salvar modelo</button></label>
+  <label><input id=solido type=checkbox> usar modelo salvo (solido)</label>
+  <button id=baixar>baixar png</button>
+  <div id=modeloinfo></div>
+  <b>2. esqueleto</b>
   <label>assar ciclo <input id=bakeN type=number value=16 min=2 max=48 style=width:44px>
     <button id=bake>assar</button></label>
   <div id=bakeinfo></div>
@@ -45,6 +53,30 @@
 </div>
 <script type="module">
 import { criarEditor, deformar, poseAndar } from './skeleton.js';
+function criarBind(){
+  return dev.createBindGroup({layout:pipe.getBindGroupLayout(0),entries:[
+    {binding:0,resource:{buffer:ubo}},{binding:1,resource:smp},
+    {binding:2,resource:view},{binding:3,resource:viewCor},
+    {binding:4,resource:viewModelo}]});
+}
+function escreverUniforms(){
+  const nf = Math.max(1, +$('frames').value);
+  const f = Math.floor(animT * +$('fps').value) % nf;
+  dev.queue.writeBuffer(ubo,0,new Float32Array([
+    cv.width, cv.height, animT, nf,
+    f, +$('steps').value, +$('dens').value/10, +$('thick').value/100,
+    +$('noise').value/100, srcAspect/nf, yaw, +$('detail').value/100,
+    +$('inflate').value/100, ...hexRGB($('col').value),
+    +$('glow').value/100, +$('corpng').value/100, $('corpura').checked?1:0,
+    $('solido').checked?1:0, nAng, bakeAsp, 0,0]));
+}
+function desenharQuadro(){
+  const enc = dev.createCommandEncoder();
+  const pass = enc.beginRenderPass({colorAttachments:[{view:ctx.getCurrentTexture().createView(),
+    loadOp:'clear',storeOp:'store',clearValue:{r:0,g:0,b:0,a:0}}]});
+  pass.setPipeline(pipe); pass.setBindGroup(0,bind); pass.draw(3); pass.end();
+  dev.queue.submit([enc.finish()]);
+}
 const $=id=>document.getElementById(id);
 const hexRGB=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16)/255);
 const err=(m)=>$('err').textContent=m;
@@ -55,7 +87,7 @@ const dev = await adapter.requestDevice();
 const cv = document.getElementById('c');
 const ctx = cv.getContext('webgpu');
 const fmt = navigator.gpu.getPreferredCanvasFormat();
-ctx.configure({device:dev, format:fmt, alphaMode:'opaque'});
+ctx.configure({device:dev, format:fmt, alphaMode:'premultiplied'});
 
 // silhueta padrao: humanoide desenhado em canvas 2D (trocavel por drag&drop)
 function procedural(){
@@ -131,7 +163,7 @@ function buildMask(bmp, mode){
     `mascara: ${use}${mode==='auto'?' (auto)':''}${invert?' · tom invertido':''} · ${bmp.width}x${bmp.height}`;
   return { mascara:k, cor };
 }
-let view, viewCor, bind=null, srcBitmap=null, srcAspect=1, maskCv=null, corCv=null;
+let view, viewCor, viewModelo, bind=null, srcBitmap=null, srcAspect=1, maskCv=null, corCv=null;
 // A textura fica numa variavel viva e a anterior e destruida na mao: deixar o
 // GPUTexture so como local fazia a textura sumir embaixo da view ainda em uso.
 const texturas = {};
@@ -160,6 +192,7 @@ async function enviarTextura(){
   view = await subir(m, 'mascara'); viewCor = await subir(c, 'cor'); bind = null;
 }
 let poseSuja = false, assado = false, ultimoBake = 0;
+let yaw=0, animT=0, drag=false, lastX=0;
 const skel = criarEditor({
   raiz: document.getElementById('skui'),
   aoMudar: () => { if(usarSk()) poseSuja = true; },
@@ -203,6 +236,38 @@ async function assarCiclo(){
   $('bakeinfo').textContent = `ciclo assado: ${n} frames de ${folhas[0].width/n}px`;
 }
 
+let nAng = 1, bakeAsp = 0.75, folhaModelo = null;
+{ const vazio=document.createElement('canvas'); vazio.width=1; vazio.height=1;
+  viewModelo = await subir(vazio, 'modelo'); }
+
+// Salvar modelo: grava o visual ja pronto de varios angulos. Nao e o volume,
+// e o resultado dele - o raymarch roda uma vez por angulo aqui e nunca mais.
+async function salvarModelo(){
+  const n = Math.max(4, Math.min(64, +$('angN').value));
+  const fw = 384, fh = Math.round(fw / bakeAspAlvo());
+  const folha = document.createElement('canvas');
+  folha.width = fw*n; folha.height = fh;
+  const fg = folha.getContext('2d');
+  const yawAntes = yaw, larguraAntes = cv.width, alturaAntes = cv.height;
+  const girAntes = $('spin').checked; $('spin').checked = false;
+  cv.width = fw; cv.height = fh;
+  for(let i=0;i<n;i++){
+    yaw = i/n * Math.PI*2;
+    escreverUniforms();
+    bind = bind || criarBind();
+    desenharQuadro();
+    fg.drawImage(await createImageBitmap(cv), i*fw, 0);
+    $('modeloinfo').textContent = `gravando ${i+1}/${n}`;
+  }
+  cv.width = larguraAntes; cv.height = alturaAntes;
+  yaw = yawAntes; $('spin').checked = girAntes;
+  folhaModelo = folha; nAng = n; bakeAsp = fw/fh;
+  viewModelo = await subir(folha, 'modelo'); bind = null;
+  $('solido').checked = true;
+  $('modeloinfo').textContent = `modelo: ${n} angulos de ${fw}x${fh}`;
+}
+const bakeAspAlvo = () => 0.75;
+
 const qImg = new URLSearchParams(location.search).get('img');   // ?img=criatura.png
 await setTexture(qImg ? await createImageBitmap(await (await fetch(qImg)).blob()) : procedural());
 
@@ -215,12 +280,32 @@ struct U {
   frame: f32, steps: f32, density: f32, thick: f32,
   noiseAmt: f32, aspect: f32, yaw: f32, detail: f32,
   inflate: f32, colR: f32, colG: f32, colB: f32,
-  glow: f32, corPng: f32, corPura: f32, pc: f32,
+  glow: f32, corPng: f32, corPura: f32, solido: f32,
+  angulos: f32, bakeAsp: f32, pd: f32, pe: f32,
 };
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var samp: sampler;
 @group(0) @binding(2) var silh: texture_2d<f32>;
 @group(0) @binding(3) var arte: texture_2d<f32>;
+@group(0) @binding(4) var modelo: texture_2d<f32>;
+
+// Modo solido: em vez de marchar o volume, mostra o angulo mais proximo do
+// modelo ja assado. Mesma imagem, custo de um sprite.
+fn impostor(frag: vec2f) -> vec4f {
+  let voltas = u.yaw / 6.28318531;
+  let idx = floor((voltas - floor(voltas)) * u.angulos + 0.5) % u.angulos;
+  // encaixa o quadro assado na tela mantendo a proporcao com que foi gravado
+  let telaAsp = u.res.x / u.res.y;
+  var uv = frag / u.res;
+  if (telaAsp > u.bakeAsp) {
+    uv.x = (uv.x - 0.5) * telaAsp / u.bakeAsp + 0.5;
+  } else {
+    uv.y = (uv.y - 0.5) * u.bakeAsp / telaAsp + 0.5;
+  }
+  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { return vec4f(0.0); }
+  let c = textureSampleLevel(modelo, samp, vec2f((uv.x + idx) / u.angulos, uv.y), 0.0);
+  return vec4f(c.rgb * c.a, c.a);   // a subida desmultiplica o alpha; aqui volta
+}
 
 @vertex fn vs(@builtin(vertex_index) i:u32) -> @builtin(position) vec4f {
   var p = array(vec2f(-1,-1), vec2f(3,-1), vec2f(-1,3));
@@ -308,6 +393,7 @@ fn densityShadow(q: vec3f) -> f32 {
 }
 
 @fragment fn fs(@builtin(position) pos: vec4f) -> @location(0) vec4f {
+  if (u.solido > 0.5) { return impostor(pos.xy); }   // antes do raymarch: e o ponto
   let p = (pos.xy / u.res) * 2.0 - 1.0;
   let aspect = u.res.x / u.res.y;
   let cy = cos(u.yaw); let sy = sin(u.yaw);
@@ -326,7 +412,8 @@ fn densityShadow(q: vec3f) -> f32 {
   let tmin = max(max(min(t1.x,t2.x), min(t1.y,t2.y)), min(t1.z,t2.z));
   let tmax = min(min(max(t1.x,t2.x), max(t1.y,t2.y)), max(t1.z,t2.z));
 
-  var col = vec3f(0.01, 0.015, 0.03) + vec3f(0.05,0.07,0.12) * (1.0 - length(p));
+  var col = vec3f(0.0);
+  var alfa = 0.0;
 
   if (tmax > max(tmin, 0.0)) {
     let n = i32(u.steps);
@@ -353,12 +440,13 @@ fn densityShadow(q: vec3f) -> f32 {
       }
       t = t + dt;
     }
-    col = col * trans + acc;
+    col = acc;
+    alfa = 1.0 - trans;
   }
   // tonemap pelo canal mais forte: o /(1+col) por canal lavava a cor toda
   col = col / (1.0 + max(max(col.r, col.g), col.b));
   col = pow(col, vec3f(1.0/2.2));
-  return vec4f(col, 1.0);
+  return vec4f(col, alfa);   // premultiplicado: o acumulado ja embute a cobertura
 }`});
 
 const pipe = dev.createRenderPipeline({layout:'auto',
@@ -373,9 +461,7 @@ function frame(now){
   const w = Math.floor(innerWidth*s), h = Math.floor(innerHeight*s);
   if(w<1||h<1){ requestAnimationFrame(frame); return; }   // aba oculta / pane com 0px
   if(cv.width!==w||cv.height!==h){ cv.width=w; cv.height=h; }
-  if(!bind) bind = dev.createBindGroup({layout:pipe.getBindGroupLayout(0),entries:[
-    {binding:0,resource:{buffer:ubo}},{binding:1,resource:smp},
-    {binding:2,resource:view},{binding:3,resource:viewCor}]});
+  if(!bind) bind = criarBind();
 
   const dt = (now-last)/1000;
   if($('spin').checked) yaw += dt * 0.5;
@@ -388,21 +474,8 @@ function frame(now){
     poseSuja = false; ultimoBake = now;
     enviarTextura().catch(x=>err(String(x)));
   }
-  const t = animT;
-  const nf = Math.max(1, +$('frames').value);
-  const f = Math.floor(t * +$('fps').value) % nf;
-  dev.queue.writeBuffer(ubo,0,new Float32Array([
-    cv.width, cv.height, t, nf,
-    f, +$('steps').value, +$('dens').value/10, +$('thick').value/100,
-    +$('noise').value/100, srcAspect/nf, yaw, +$('detail').value/100,
-    +$('inflate').value/100, ...hexRGB($('col').value),
-    +$('glow').value/100, +$('corpng').value/100, $('corpura').checked?1:0, 0]));
-
-  const enc = dev.createCommandEncoder();
-  const pass = enc.beginRenderPass({colorAttachments:[{view:ctx.getCurrentTexture().createView(),
-    loadOp:'clear',storeOp:'store',clearValue:{r:0,g:0,b:0,a:1}}]});
-  pass.setPipeline(pipe); pass.setBindGroup(0,bind); pass.draw(3); pass.end();
-  dev.queue.submit([enc.finish()]);
+  escreverUniforms();
+  desenharQuadro();
 
   accT += now-last; last=now; nF++;
   if(accT>500){ $('fpsout').textContent = (1000*nF/accT).toFixed(0)+' fps @ '+cv.width+'x'+cv.height; accT=0; nF=0; }
@@ -410,7 +483,7 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 
-let yaw=0, animT=0, drag=false, lastX=0;
+
 cv.addEventListener('pointerdown',e=>{drag=true; lastX=e.clientX; cv.setPointerCapture(e.pointerId);});
 cv.addEventListener('pointerup',()=>drag=false);
 cv.addEventListener('pointermove',e=>{ if(drag){ yaw += (e.clientX-lastX)*0.01; lastX=e.clientX; $('spin').checked=false; } });
@@ -420,6 +493,17 @@ document.body.addEventListener('dragover',e=>e.preventDefault());
 document.body.addEventListener('drop',async e=>{
   e.preventDefault(); const f=e.dataTransfer.files[0]; if(!f) return;
   try{ await setTexture(await createImageBitmap(f)); err(''); }catch(x){ err(String(x)); }
+});
+$('salvar').addEventListener('click', ()=>{
+  err(''); $('salvar').disabled = true;
+  salvarModelo().catch(x=>err(String(x))).finally(()=>{ $('salvar').disabled = false; });
+});
+$('baixar').addEventListener('click', ()=>{
+  if(!folhaModelo){ err('salve o modelo primeiro'); return; }
+  folhaModelo.toBlob(b=>{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(b); a.download='modelo.png'; a.click();
+  });
 });
 $('bake').addEventListener('click', ()=>{
   if(!usarSk()){ err('ligue "usar esqueleto" antes de assar'); return; }

@@ -191,7 +191,7 @@ async function enviarTextura(){
   const [m, c] = usarSk() ? deformar([maskCv, corCv], skel.bones, srcAspect) : [maskCv, corCv];
   view = await subir(m, 'mascara'); viewCor = await subir(c, 'cor'); bind = null;
 }
-let poseSuja = false, assado = false, ultimoBake = 0;
+let poseSuja = false, assado = false, ultimoBake = 0, pausado = false;
 let yaw=0, animT=0, drag=false, lastX=0;
 const skel = criarEditor({
   raiz: document.getElementById('skui'),
@@ -250,6 +250,7 @@ async function salvarModelo(){
   const fg = folha.getContext('2d');
   const yawAntes = yaw, larguraAntes = cv.width, alturaAntes = cv.height;
   const girAntes = $('spin').checked; $('spin').checked = false;
+  pausado = true;
   cv.width = fw; cv.height = fh;
   for(let i=0;i<n;i++){
     yaw = i/n * Math.PI*2;
@@ -260,6 +261,7 @@ async function salvarModelo(){
     $('modeloinfo').textContent = `gravando ${i+1}/${n}`;
   }
   cv.width = larguraAntes; cv.height = alturaAntes;
+  pausado = false;
   yaw = yawAntes; $('spin').checked = girAntes;
   folhaModelo = folha; nAng = n; bakeAsp = fw/fh;
   viewModelo = await subir(folha, 'modelo'); bind = null;
@@ -456,6 +458,10 @@ const pipe = dev.createRenderPipeline({layout:'auto',
 
 let last=performance.now(), accT=0, nF=0;
 function frame(now){
+  // Durante a gravacao o canvas fica no tamanho do quadro. Sem esta pausa o loop
+  // o redimensionava de volta entre um angulo e outro e os quadros saiam com o
+  // tamanho da janela, espremidos dentro da folha.
+  if(pausado){ last = now; requestAnimationFrame(frame); return; }
   // renderiza menor e deixa o CSS esticar: custo cai com o quadrado da escala
   const s = (+$('scale').value)/100 * Math.min(devicePixelRatio, 2);
   const w = Math.floor(innerWidth*s), h = Math.floor(innerHeight*s);
@@ -496,7 +502,8 @@ document.body.addEventListener('drop',async e=>{
 });
 $('salvar').addEventListener('click', ()=>{
   err(''); $('salvar').disabled = true;
-  salvarModelo().catch(x=>err(String(x))).finally(()=>{ $('salvar').disabled = false; });
+  salvarModelo().catch(x=>err(String(x)))
+    .finally(()=>{ pausado = false; $('salvar').disabled = false; });
 });
 $('baixar').addEventListener('click', ()=>{
   if(!folhaModelo){ err('salve o modelo primeiro'); return; }

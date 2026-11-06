@@ -55,11 +55,13 @@
 import { criarEditor, deformar, poseAndar, poses } from './skeleton.js';
 function escreverOssos(){
   if(!usarSk()) return 0;
+  const ossos = skel.bones.slice(0, MAX_OSSOS);
   const P = poses(skel.bones).slice(0, MAX_OSSOS);
   P.forEach((p, i) => {
-    const o = i*FLOATS_OSSO, m = p.inv;
+    const b = ossos[i], m = p.inv;
+    // segmento de REPOUSO: e contra ele que o pixel desfeito e testado
     dadosOssos.set([m.m00, m.m01, m.m10, m.m11, m.tx, m.ty,
-                    p.pa[0], p.pa[1], p.pb[0], p.pb[1], p.r, 0], o);
+                    b.ax, b.ay, b.bx, b.by, b.r, b.ang || 0], i*FLOATS_OSSO);
   });
   dev.queue.writeBuffer(sbo, 0, dadosOssos, 0, P.length*FLOATS_OSSO);
   return P.length;
@@ -182,11 +184,12 @@ let view, viewCor, viewModelo, bind=null, srcBitmap=null, srcAspect=1, maskCv=nu
 // A textura fica numa variavel viva e a anterior e destruida na mao: deixar o
 // GPUTexture so como local fazia a textura sumir embaixo da view ainda em uso.
 const texturas = {};
-async function subir(cvs, chave){
+async function subir(cvs, chave, premult){
   const bmp = await createImageBitmap(cvs);
   const t = dev.createTexture({size:[bmp.width,bmp.height],format:'rgba8unorm',
     usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST|GPUTextureUsage.RENDER_ATTACHMENT});
-  dev.queue.copyExternalImageToTexture({source:bmp},{texture:t},[bmp.width,bmp.height]);
+  dev.queue.copyExternalImageToTexture({source:bmp},
+    {texture:t, premultipliedAlpha: !!premult},[bmp.width,bmp.height]);
   texturas[chave] = t;   // sem destroy: o frame em voo ainda pode estar usando a anterior
   return t.createView();
 }
@@ -253,7 +256,7 @@ async function assarCiclo(){
 
 let nAng = 1, angCols = 1, angRows = 1, bakeAsp = 0.75, folhaModelo = null;
 { const vazio=document.createElement('canvas'); vazio.width=1; vazio.height=1;
-  viewModelo = await subir(vazio, 'modelo'); }
+  viewModelo = await subir(vazio, 'modelo', true); }
 
 // Salvar modelo: grava o visual ja pronto de varios angulos. Nao e o volume,
 // e o resultado dele - o raymarch roda uma vez por angulo aqui e nunca mais.
@@ -285,7 +288,7 @@ async function salvarModelo(){
   pausado = false;
   yaw = yawAntes; $('spin').checked = girAntes;
   folhaModelo = folha; nAng = n; angCols = cols; angRows = linhas; bakeAsp = fw/fh;
-  viewModelo = await subir(folha, 'modelo'); bind = null;
+  viewModelo = await subir(folha, 'modelo', true); bind = null;
   $('solido').checked = true;
   $('modeloinfo').textContent =
     `modelo: ${n} angulos de ${fw}x${fh} · folha ${folha.width}x${folha.height}`;
@@ -318,42 +321,57 @@ struct U {
 @group(0) @binding(3) var arte: texture_2d<f32>;
 @group(0) @binding(4) var modelo: texture_2d<f32>;
 
-struct Osso { inv: vec4f, t: vec2f, pa: vec2f, pb: vec2f, raio: vec2f };
+struct Osso { inv: vec4f, t: vec2f, ra: vec2f, rb: vec2f, raio: f32, ang: f32 };
 @group(0) @binding(5) var<storage, read> ossos: array<Osso>;
+
+fn distRepouso(p: vec2f, o: Osso) -> f32 {
+  let d = o.rb - o.ra;
+  let e = p - o.ra;
+  let l2 = dot(d, d);
+  let tt = select(0.0, clamp(dot(e, d)/l2, 0.0, 1.0), l2 > 0.0);
+  return length(e - d*tt) / max(o.raio, 0.001);
+}
+fn porOsso(p: vec2f, o: Osso) -> vec2f {
+  return vec2f(o.inv.x*p.x + o.inv.y*p.y + o.t.x,
+               o.inv.z*p.x + o.inv.w*p.y + o.t.y);
+}
 
 // Deforma a UV do quadro ja gravado. Aqui nao ha volume para remarchar: e uma
 // imagem, entao o esqueleto sai da CPU e vira algumas contas por pixel.
-fn ossosUV(uvQuadro: vec2f) -> vec2f {
+//
+// Cada pixel pergunta "de qual osso eu vim?": desfaz a pose de cada osso e ve
+// se cai dentro do alcance dele no REPOUSO. Misturar pesos como em malha 3D
+// duplicava o membro - o braco aparecia na pose nova E no lugar antigo, porque
+// a area abandonada continuava sendo copiada da arte original.
+fn ossosUV(uvQuadro: vec2f) -> vec3f {
   let n = i32(u.nOssos);
-  if (n <= 0) { return uvQuadro; }
+  if (n <= 0) { return vec3f(uvQuadro, 1.0); }
   // quadro -> espaco da arte (a camera do bake e fixa, entao e um afim simples)
   let x = (uvQuadro.x - 0.5) * 2.0 * u.bakeAsp;
   let y = (0.5 - uvQuadro.y) * 2.0;
-  let arte2 = vec2f(x / max(u.artAsp, 0.001) + 0.5, 0.5 - y);
-  var soma = 0.0; var acc = vec2f(0.0);
+  let arte = vec2f(x / max(u.artAsp, 0.001) + 0.5, 0.5 - y);
+
+  var melhor = 1e9; var origem = arte;
   for (var i = 0; i < n; i = i + 1) {
-    let o = ossos[i];
-    let d = o.pb - o.pa;
-    let e = arte2 - o.pa;
-    let l2 = dot(d, d);
-    let tt = select(0.0, clamp(dot(e, d)/l2, 0.0, 1.0), l2 > 0.0);
-    var w = 1.0 - length(e - d*tt) / max(o.raio.x, 0.001);
-    if (w <= 0.0) { continue; }
-    w = w*w;
-    let q = vec2f(o.inv.x*arte2.x + o.inv.y*arte2.y + o.t.x,
-                  o.inv.z*arte2.x + o.inv.w*arte2.y + o.t.y);
-    acc = acc + w*q; soma = soma + w;
+    let q = porOsso(arte, ossos[i]);
+    let d = distRepouso(q, ossos[i]);
+    if (d < melhor) { melhor = d; origem = q; }
   }
-  if (soma <= 0.0) { return uvQuadro; }
-  let arte3 = acc / soma;
+  if (melhor >= 1.0) {
+    // ninguem reivindicou: se este ponto era de um osso que girou, virou buraco
+    for (var i = 0; i < n; i = i + 1) {
+      if (abs(ossos[i].ang) > 0.02 && distRepouso(arte, ossos[i]) < 1.0) {
+        return vec3f(uvQuadro, 0.0);
+      }
+    }
+    origem = arte;
+  }
   // volta para o espaco do quadro
-  let x2 = (arte3.x - 0.5) * max(u.artAsp, 0.001);
-  let y2 = 0.5 - arte3.y;
-  return vec2f(x2 / (2.0 * u.bakeAsp) + 0.5, 0.5 - y2 * 0.5);
+  let x2 = (origem.x - 0.5) * max(u.artAsp, 0.001);
+  let y2 = 0.5 - origem.y;
+  return vec3f(x2 / (2.0 * u.bakeAsp) + 0.5, 0.5 - y2 * 0.5, 1.0);
 }
 
-// Modo solido: em vez de marchar o volume, mostra o angulo mais proximo do
-// modelo ja assado. Mesma imagem, custo de um sprite.
 fn impostor(frag: vec2f) -> vec4f {
   let voltas = u.yaw / 6.28318531;
   let idx = floor((voltas - floor(voltas)) * u.nAng + 0.5) % u.nAng;
@@ -369,11 +387,12 @@ fn impostor(frag: vec2f) -> vec4f {
   } else {
     uv.y = (uv.y - 0.5) * u.bakeAsp / telaAsp + 0.5;
   }
-  uv = ossosUV(uv);
+  let r = ossosUV(uv);
+  if (r.z < 0.5) { return vec4f(0.0); }   // area que o membro abandonou
+  uv = r.xy;
   if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { return vec4f(0.0); }
-  let c = textureSampleLevel(modelo, samp,
+  return textureSampleLevel(modelo, samp,
     vec2f((uv.x + col) / u.angCols, (uv.y + row) / u.angRows), 0.0);
-  return vec4f(c.rgb * c.a, c.a);   // a subida desmultiplica o alpha; aqui volta
 }
 
 @vertex fn vs(@builtin(vertex_index) i:u32) -> @builtin(position) vec4f {

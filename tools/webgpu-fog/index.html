@@ -61,7 +61,8 @@ function escreverOssos(){
     const b = ossos[i], m = p.inv;
     // segmento de REPOUSO: e contra ele que o pixel desfeito e testado
     dadosOssos.set([m.m00, m.m01, m.m10, m.m11, m.tx, m.ty,
-                    b.ax, b.ay, b.bx, b.by, b.r, b.ang || 0], i*FLOATS_OSSO);
+                    b.ax, b.ay, b.bx, b.by, b.r, b.ang || 0,
+                    b.pai, 0, 0, 0], i*FLOATS_OSSO);
   });
   dev.queue.writeBuffer(sbo, 0, dadosOssos, 0, P.length*FLOATS_OSSO);
   return P.length;
@@ -299,7 +300,7 @@ const qImg = new URLSearchParams(location.search).get('img');   // ?img=criatura
 await setTexture(qImg ? await createImageBitmap(await (await fetch(qImg)).blob()) : procedural());
 
 const smp = dev.createSampler({magFilter:'linear',minFilter:'linear',addressModeU:'clamp-to-edge',addressModeV:'clamp-to-edge'});
-const MAX_OSSOS = 16, FLOATS_OSSO = 12;
+const MAX_OSSOS = 16, FLOATS_OSSO = 16;
 const sbo = dev.createBuffer({size: MAX_OSSOS*FLOATS_OSSO*4,
   usage: GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
 const dadosOssos = new Float32Array(MAX_OSSOS*FLOATS_OSSO);
@@ -321,7 +322,8 @@ struct U {
 @group(0) @binding(3) var arte: texture_2d<f32>;
 @group(0) @binding(4) var modelo: texture_2d<f32>;
 
-struct Osso { inv: vec4f, t: vec2f, ra: vec2f, rb: vec2f, raio: f32, ang: f32 };
+struct Osso { inv: vec4f, t: vec2f, ra: vec2f, rb: vec2f, raio: f32, ang: f32,
+              pai: f32, p1: f32, p2: f32, p3: f32 };
 @group(0) @binding(5) var<storage, read> ossos: array<Osso>;
 
 fn distRepouso(p: vec2f, o: Osso) -> f32 {
@@ -330,6 +332,13 @@ fn distRepouso(p: vec2f, o: Osso) -> f32 {
   let l2 = dot(d, d);
   let tt = select(0.0, clamp(dot(e, d)/l2, 0.0, 1.0), l2 > 0.0);
   return length(e - d*tt) / max(o.raio, 0.001);
+}
+fn projRepouso(p: vec2f, o: Osso) -> vec2f {
+  let d = o.rb - o.ra;
+  let e = p - o.ra;
+  let l2 = dot(d, d);
+  let tt = select(0.0, clamp(dot(e, d)/l2, 0.0, 1.0), l2 > 0.0);
+  return o.ra + d*tt;
 }
 fn porOsso(p: vec2f, o: Osso) -> vec2f {
   return vec2f(o.inv.x*p.x + o.inv.y*p.y + o.t.x,
@@ -358,13 +367,22 @@ fn ossosUV(uvQuadro: vec2f) -> vec3f {
     if (d < melhor) { melhor = d; origem = q; }
   }
   if (melhor >= 1.0) {
-    // ninguem reivindicou: se este ponto era de um osso que girou, virou buraco
+    origem = arte;
+    // Ninguem reivindicou: este ponto foi abandonado por um osso que girou.
+    // Em vez de vazar, puxa a amostra para o eixo do osso PAI, fechando o vao
+    // com o proprio corpo. Borra um pouco, mas le como corpo e nao como recorte.
     for (var i = 0; i < n; i = i + 1) {
       if (abs(ossos[i].ang) > 0.02 && distRepouso(arte, ossos[i]) < 1.0) {
-        return vec3f(uvQuadro, 0.0);
+        let ip = i32(ossos[i].pai);
+        if (ip < 0) { return vec3f(uvQuadro, 0.0); }
+        let pai = ossos[ip];
+        let dp = distRepouso(arte, pai);
+        if (dp > 0.6) {
+          origem = mix(arte, projRepouso(arte, pai), (dp - 0.6) / max(dp, 0.001));
+        }
+        break;
       }
     }
-    origem = arte;
   }
   // volta para o espaco do quadro
   let x2 = (origem.x - 0.5) * max(u.artAsp, 0.001);

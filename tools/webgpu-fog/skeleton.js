@@ -119,15 +119,17 @@ export function deformar(src, bones, aspect) {
 
 export function criarEditor({ raiz, aoMudar }) {
   let bones = clonarBase(), sel = 0, modo = 'encaixar', andando = false, t0 = 0;
-  let fundo = null, aspect = 1, arrastando = null;
+  let fundo = null, aspect = 1, arrastando = null, grande = false, sobre = null;
+  const RAIO = 9;   // bolinha da junta, em pixels de tela
 
   raiz.innerHTML = `
     <div class=sk-top>
       <b>esqueleto</b>
       <label><input type=radio name=skmodo value=encaixar checked> encaixar</label>
       <label><input type=radio name=skmodo value=posar> posar</label>
+      <button class=sk-zoom title="usa a altura da janela">ampliar</button>
     </div>
-    <canvas class=sk-cv width=200 height=266></canvas>
+    <canvas class=sk-cv></canvas>
     <div class=sk-bot>
       <select class=sk-sel></select>
       <label>angulo <input class=sk-ang type=range min=-180 max=180 value=0></label>
@@ -142,6 +144,15 @@ export function criarEditor({ raiz, aoMudar }) {
   const rEl = raiz.querySelector('.sk-r');
 
   bones.forEach((b, i) => selEl.add(new Option(b.nome, i)));
+
+  function redimensionar() {
+    const h = Math.round(innerHeight * (grande ? 0.86 : 0.52));
+    cv.height = h; cv.width = Math.max(120, Math.round(h * Math.max(aspect, 0.05)));
+    cv.style.width = cv.width + 'px'; cv.style.height = h + 'px';
+    raiz.closest('#sk').classList.toggle('grande', grande);
+    desenhar();
+  }
+  addEventListener('resize', redimensionar);
 
   const paraTela = (u, v) => [u*cv.width, v*cv.height];
   const paraUV = (x, y) => [x/cv.width, y/cv.height];
@@ -159,8 +170,11 @@ export function criarEditor({ raiz, aoMudar }) {
         g.strokeStyle = '#ffd24a55'; g.lineWidth = bones[i].r*2*cv.width;
         g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke(); g.lineWidth = 2;
       }
-      for (const [x, y] of [[ax, ay], [bx, by]]) {
-        g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, 4, 0, TAU); g.fill();
+      for (const [j, [x, y]] of [[0, [ax, ay]], [1, [bx, by]]]) {
+        const alvo = sobre && sobre.i === i && sobre.ponta === (j ? 'b' : 'a');
+        g.fillStyle = alvo ? '#ffd24a' : '#fff';
+        g.strokeStyle = '#000a'; g.lineWidth = 2;
+        g.beginPath(); g.arc(x, y, alvo ? RAIO + 3 : RAIO, 0, TAU); g.fill(); g.stroke();
       }
     });
   }
@@ -174,17 +188,26 @@ export function criarEditor({ raiz, aoMudar }) {
     desenhar();
   }
 
+  // Pega a junta mais proxima medindo em PIXELS de tela: medir em UV fazia uma
+  // imagem alta e estreita ter uma area de clique achatada e quase impossivel.
+  function pegarJunta(u, v) {
+    const P = poses(bones);
+    let achou = null, dmin = RAIO * 2.2;
+    P.forEach((p, i) => {
+      for (const [ponta, pt] of [['a', p.pa], ['b', p.pb]]) {
+        const [x, y] = paraTela(...pt);
+        const d = Math.hypot(x - u*cv.width, y - v*cv.height);
+        if (d < dmin) { dmin = d; achou = { i, ponta }; }
+      }
+    });
+    return achou;
+  }
+
   // --- arrastar juntas (modo encaixar) ---
   cv.addEventListener('pointerdown', e => {
     const rect = cv.getBoundingClientRect();
     const [u, v] = paraUV(e.clientX - rect.left, e.clientY - rect.top);
-    let melhor = null, dmin = 0.06;
-    bones.forEach((b, i) => {
-      for (const ponta of ['a', 'b']) {
-        const d = Math.hypot(b[ponta+'x'] - u, b[ponta+'y'] - v);
-        if (d < dmin) { dmin = d; melhor = { i, ponta }; }
-      }
-    });
+    const melhor = pegarJunta(u, v);
     if (!melhor) {   // clicou longe de junta: so seleciona o osso mais proximo
       let dl = 1e9;
       poses(bones).forEach((p, i) => {
@@ -199,7 +222,17 @@ export function criarEditor({ raiz, aoMudar }) {
   });
 
   cv.addEventListener('pointermove', e => {
-    if (!arrastando) return;
+    const r0 = cv.getBoundingClientRect();
+    if (!arrastando) {
+      const [hu, hv] = paraUV(e.clientX - r0.left, e.clientY - r0.top);
+      const novo = pegarJunta(hu, hv);
+      const mudou = (novo && sobre) ? (novo.i !== sobre.i || novo.ponta !== sobre.ponta)
+                                    : (novo !== sobre);
+      sobre = novo;
+      cv.style.cursor = novo ? 'grab' : 'crosshair';
+      if (mudou) desenhar();
+      return;
+    }
     const rect = cv.getBoundingClientRect();
     const [u, v] = paraUV(e.clientX - rect.left, e.clientY - rect.top);
     const { i, ponta } = arrastando, b = bones[i];
@@ -221,6 +254,9 @@ export function criarEditor({ raiz, aoMudar }) {
     bones[sel].ang = (+angEl.value) * Math.PI/180; marcarMudanca();
   });
   rEl.addEventListener('input', () => { bones[sel].r = (+rEl.value)/100; marcarMudanca(); });
+  raiz.querySelector('.sk-zoom').addEventListener('click', e => {
+    grande = !grande; e.target.textContent = grande ? 'reduzir' : 'ampliar'; redimensionar();
+  });
   raiz.querySelector('.sk-zero').addEventListener('click', () => {
     bones.forEach(b => b.ang = 0); angEl.value = '0'; marcarMudanca();
   });
@@ -236,8 +272,7 @@ export function criarEditor({ raiz, aoMudar }) {
 
   return {
     get bones() { return bones; },
-    definirFundo(img, asp) { fundo = img; aspect = asp;
-      cv.height = Math.round(cv.width / Math.max(asp, 0.01)); desenhar(); },
+    definirFundo(img, asp) { fundo = img; aspect = asp; redimensionar(); },
     // chamado todo frame; so devolve true quando a pose mudou de verdade
     tick(now) {
       if (!andando) return false;

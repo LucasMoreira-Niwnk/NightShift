@@ -7,9 +7,10 @@
  #ui label{display:block}
  input[type=range]{width:160px;vertical-align:middle}
  #err{color:#f66;white-space:pre-wrap;max-width:60ch}
- #sk{position:fixed;top:8px;right:8px;background:#0b0f17e0;padding:8px;width:256px;line-height:1.6}
+ #sk{position:fixed;top:8px;right:8px;background:#0b0f17e0;padding:8px;line-height:1.6;max-height:96vh;overflow:auto}
+ #sk.grande{right:50%;transform:translateX(50%);z-index:5}
  #sk.oculto .sk-cv,#sk.oculto .sk-bot{display:none}
- .sk-cv{background:#0003;cursor:crosshair;touch-action:none;width:200px}
+ .sk-cv{background:#0003;cursor:crosshair;touch-action:none;display:block}
  .sk-top label,.sk-bot label{display:inline-block;margin-right:6px}
  .sk-bot select,.sk-bot button{margin-top:4px}
  .sk-bot input[type=range]{width:100px}

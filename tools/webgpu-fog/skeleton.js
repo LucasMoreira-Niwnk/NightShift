@@ -24,6 +24,11 @@ export const BASE_BONES = [
   { nome: 'perna D -',  pai:  8, ax: 0.57, ay: 0.76, bx: 0.58, by: 0.95, r: 0.11 },
 ];
 
+// De frente, girar a perna no plano da imagem quase nao aparece: o passo vai
+// na profundidade, que um rig 2D nao tem. O que le como caminhada de frente e o
+// corpo subindo e descendo a cada passo, com os membros balancando de leve.
+const BALANCO = 0.030;   // altura do sobe-desce do tronco, em fracao da imagem
+
 // amplitude (em radianos) de cada osso no ciclo de caminhada, e o atraso de fase
 const ANDAR = {
   'perna E +': [ 0.45, 0 ], 'perna E -': [ 0.30, 0.9 ],
@@ -34,7 +39,7 @@ const ANDAR = {
 };
 
 export function clonarBase() {
-  return BASE_BONES.map(b => ({ ...b, ang: 0 }));
+  return BASE_BONES.map(b => ({ ...b, ang: 0, ox: 0, oy: 0 }));
 }
 
 // --- matrizes 2x3 (m00 m01 tx / m10 m11 ty) ---
@@ -58,8 +63,11 @@ export function poses(bones) {
   const out = [];
   for (let i = 0; i < bones.length; i++) {
     const b = bones[i], c = Math.cos(b.ang || 0), s = Math.sin(b.ang || 0);
+    // rotacao em torno da propria junta, mais um deslocamento livre: e o
+    // deslocamento que permite o corpo inteiro subir e descer ao andar
     const local = { m00:c, m01:-s, m10:s, m11:c,
-                    tx: b.ax - (c*b.ax - s*b.ay), ty: b.ay - (s*b.ax + c*b.ay) };
+                    tx: b.ax - (c*b.ax - s*b.ay) + (b.ox || 0),
+                    ty: b.ay - (s*b.ax + c*b.ay) + (b.oy || 0) };
     const M = b.pai >= 0 ? mul(out[b.pai].M, local) : local;
     out.push({ M, inv: inverter(M),
                pa: aplicar(M, b.ax, b.ay), pb: aplicar(M, b.bx, b.by), r: b.r });
@@ -124,7 +132,10 @@ export function poseAndar(bones, fase) {
   for (const b of bones) {
     const a = ANDAR[b.nome];
     b.ang = a ? a[0] * Math.sin(fase*TAU + a[1]) : 0;
+    b.ox = 0; b.oy = 0;
   }
+  // dois quiques por ciclo, um por passo; o resto do corpo vem junto na FK
+  if (bones.length) bones[0].oy = -BALANCO * Math.abs(Math.sin(fase*TAU));
 }
 
 // --- editor -----------------------------------------------------------------

@@ -50,7 +50,8 @@
     <button id=glb>exportar .glb</button></label>
   <div id=glbinfo></div>
   <label>assar ciclo <input id=bakeN type=number value=16 min=2 max=48 style=width:44px>
-    <button id=bake>assar</button></label>
+    <button id=bake>assar</button>
+    <button id=animpng>exportar png</button></label>
   <div id=bakeinfo></div>
   <div id=fpsout></div><div id=err></div>
 </div>
@@ -299,6 +300,49 @@ async function salvarModelo(){
     `modelo: ${n} angulos de ${fw}x${fh} · folha ${folha.width}x${folha.height}`;
 }
 const bakeAspAlvo = () => 0.75;
+
+// Folha da CAMINHADA, para usar como textura animada: cada quadro e a criatura
+// renderizada com os efeitos, numa pose do ciclo. Diferente de "salvar modelo",
+// que varre angulos; aqui o angulo e fixo e o que varia e o passo.
+async function exportarAnimacaoPNG(){
+  if(!usarSk()) throw new Error('ligue "usar esqueleto" para ter o que animar');
+  const n = Math.max(2, Math.min(48, +$('bakeN').value));
+  skel.pararAndar();
+  const fw = 384, fh = Math.round(fw / bakeAspAlvo());
+  const limite = dev.limits.maxTextureDimension2D;
+  const cols = Math.max(1, Math.min(n, Math.floor(limite/fw)));
+  const linhas = Math.ceil(n/cols);
+  const folha = document.createElement('canvas');
+  folha.width = fw*cols; folha.height = fh*linhas;
+  const fg = folha.getContext('2d');
+
+  const lA = cv.width, aA = cv.height, yA = yaw, girA = $('spin').checked;
+  $('spin').checked = false;
+  pausado = true;
+  cv.width = fw; cv.height = fh; yaw = 0;
+  try {
+    for(let i=0;i<n;i++){
+      poseAndar(skel.bones, i/n);
+      // no solido a GPU deforma sozinha; no volumetrico a mascara tem de ser
+      // refeita antes de desenhar, senao todos os quadros saem iguais
+      if(!$('solido').checked) await enviarTextura();
+      escreverUniforms(); bind = bind || criarBind();
+      desenharQuadro();
+      fg.drawImage(await createImageBitmap(cv), (i%cols)*fw, Math.floor(i/cols)*fh);
+      $('bakeinfo').textContent = `gravando passo ${i+1}/${n}`;
+    }
+  } finally {
+    cv.width = lA; cv.height = aA; yaw = yA; $('spin').checked = girA;
+    pausado = false;
+    poseAndar(skel.bones, 0);
+    poseSuja = true;
+  }
+  const blob = await new Promise(r => folha.toBlob(r, 'image/png'));
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'caminhada.png'; a.click();
+  $('bakeinfo').textContent =
+    `caminhada: ${n} passos de ${fw}x${fh} · folha ${folha.width}x${folha.height} (${cols}x${linhas})`;
+}
 
 const qImg = new URLSearchParams(location.search).get('img');   // ?img=criatura.png
 await setTexture(qImg ? await createImageBitmap(await (await fetch(qImg)).blob()) : procedural());
@@ -674,6 +718,11 @@ $('glb').addEventListener('click', ()=>{
   err(''); $('glb').disabled = true;
   exportarMalha().catch(x=>{ err(String(x)); $('glbinfo').textContent=''; })
     .finally(()=>{ $('glb').disabled = false; });
+});
+$('animpng').addEventListener('click', ()=>{
+  err(''); $('animpng').disabled = true;
+  exportarAnimacaoPNG().catch(x=>{ err(String(x)); $('bakeinfo').textContent=''; })
+    .finally(()=>{ $('animpng').disabled = false; });
 });
 $('bake').addEventListener('click', ()=>{
   if(!usarSk()){ err('ligue "usar esqueleto" antes de assar'); return; }

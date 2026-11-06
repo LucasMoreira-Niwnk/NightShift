@@ -13,10 +13,11 @@ import { poseAndar } from './skeleton.js';
 
 // O ciclo de caminhada vai dentro do glb como animacao glTF: no Godot aparece
 // no AnimationPlayer, sem ninguem precisar remontar a pose la.
-function animacaoAndar(ossos, quadros = 24, duracao = 1.0) {
+function animacaoAndar(ossos, artAsp, cabeca, quadros = 24, duracao = 1.0) {
   const copia = ossos.map(b => ({ ...b }));
   const tempos = new Float32Array(quadros + 1);
   const rots = ossos.map(() => new Float32Array((quadros + 1) * 4));
+  const pos = ossos.map(() => new Float32Array((quadros + 1) * 3));
   for (let k = 0; k <= quadros; k++) {
     const fase = k/quadros;
     tempos[k] = fase * duracao;
@@ -25,9 +26,16 @@ function animacaoAndar(ossos, quadros = 24, duracao = 1.0) {
       // o editor gira no espaco da imagem, com y para baixo; no modelo y sobe
       const a = -(b.ang || 0) / 2;
       rots[i].set([0, 0, Math.sin(a), Math.cos(a)], k*4);
+      // o deslocamento do tronco (o sobe-desce do passo) tem de ir junto,
+      // senao no Godot a caminhada perde o quique e so mexe os membros
+      const base = cabeca(ossos[i]);
+      const pai = ossos[i].pai >= 0 ? cabeca(ossos[ossos[i].pai]) : [0,0,0];
+      pos[i].set([base[0] - pai[0] + (b.ox || 0)*artAsp,
+                  base[1] - pai[1] - (b.oy || 0),
+                  base[2] - pai[2]], k*3);
     });
   }
-  return { tempos, rots };
+  return { tempos, rots, pos };
 }
 
 // ---------------------------------------------------------------- campo 2D
@@ -220,6 +228,8 @@ export async function exportarGLB(malha, skin, ossos, artAsp, texturaCanvas) {
     return acessores.length - 1;
   };
 
+  // matriz inversa de bind: no repouso cada osso so translada ate sua junta
+  const cabeca = b => [ (b.ax - 0.5)*artAsp, 0.5 - b.ay, 0 ];
   let minP = [1e9,1e9,1e9], maxP = [-1e9,-1e9,-1e9];
   for (let i = 0; i < malha.pos.length; i += 3) for (let k = 0; k < 3; k++) {
     minP[k] = Math.min(minP[k], malha.pos[i+k]);
@@ -233,8 +243,6 @@ export async function exportarGLB(malha, skin, ossos, artAsp, texturaCanvas) {
   const aWgt = acessor(por(skin.wgt, 34962), 5126, nv, 'VEC4');
   const aIdx = acessor(por(malha.idx, 34963), 5125, malha.idx.length, 'SCALAR');
 
-  // matriz inversa de bind: no repouso cada osso so translada ate sua junta
-  const cabeca = b => [ (b.ax - 0.5)*artAsp, 0.5 - b.ay, 0 ];
   const ibm = new Float32Array(ossos.length*16);
   ossos.forEach((b, i) => {
     const [x,y,z] = cabeca(b);
@@ -242,10 +250,11 @@ export async function exportarGLB(malha, skin, ossos, artAsp, texturaCanvas) {
   });
   const aIbm = acessor(por(ibm), 5126, ossos.length, 'MAT4');
 
-  const anim = animacaoAndar(ossos);
+  const anim = animacaoAndar(ossos, artAsp, cabeca);
   const aTempo = acessor(por(anim.tempos), 5126, anim.tempos.length, 'SCALAR',
     { min: [anim.tempos[0]], max: [anim.tempos[anim.tempos.length-1]] });
   const aRot = anim.rots.map(r => acessor(por(r), 5126, r.length/4, 'VEC4'));
+  const aTrans = anim.pos.map(r => acessor(por(r), 5126, r.length/3, 'VEC3'));
   const vPng = por(png);
 
   const nosOssos = ossos.map((b, i) => {
@@ -271,8 +280,10 @@ export async function exportarGLB(malha, skin, ossos, artAsp, texturaCanvas) {
     skins: [{ inverseBindMatrices: aIbm, joints: ossos.map((_, i) => i + 1),
               skeleton: raizes[0] }],
     animations: [{ name: 'andar',
-      samplers: aRot.map(o => ({ input: aTempo, output: o, interpolation: 'LINEAR' })),
-      channels: aRot.map((_, i) => ({ sampler: i, target: { node: i+1, path: 'rotation' } })) }],
+      samplers: aRot.concat(aTrans).map(o => ({ input: aTempo, output: o, interpolation: 'LINEAR' })),
+      channels: aRot.map((_, i) => ({ sampler: i, target: { node: i+1, path: 'rotation' } }))
+        .concat(aTrans.map((_, i) => ({ sampler: aRot.length + i,
+                                      target: { node: i+1, path: 'translation' } }))) }],
     // emissivo tambem: a nevoa tem luz propria e nao deve sumir numa cena escura
     materials: [{ name: 'nevoa', doubleSided: true, alphaMode: 'MASK', alphaCutoff: 0.5,
       emissiveTexture: { index: 0 }, emissiveFactor: [1, 1, 1],

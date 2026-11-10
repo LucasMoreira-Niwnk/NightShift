@@ -8,6 +8,8 @@ func _ready() -> void:
 	for child in get_children():
 		if child is CollisionShape3D: collider = child
 	hide_static_leaf()
+	# Mesma folha, mesmo occluder: a porta autorada tambem tem de tapar a sala.
+	add_leaf_occluder(Vector3(0.75, 1.25, 0), Vector3(1.5, 2.5, 0.15))
 
 # A folha, as dobradiças e a maçaneta que abrem já ficam sob `pivot`. A migração
 # das salas novas gravou também o modelo importado inteiro ao lado dele, então

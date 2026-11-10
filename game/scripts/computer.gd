@@ -30,6 +30,14 @@ var interference: ColorRect
 var channel_screens: Array = []
 var stage_six_time := 0.0
 var monitor_glow: OmniLight3D
+# O feed e um segundo render da cena inteira. Com o terminal fechado ele so
+# alimenta um monitor pequeno dentro da sala: 6 Hz em meia resolucao e mais do
+# que um CRT de 2008 entrega, e devolve 74 -> 180 fps. Aberto, volta ao vivo e
+# em resolucao cheia, porque ai a imagem ocupa a tela.
+var feed_hz := 6.0
+const FEED_PARADO := Vector2i(320, 180)
+const FEED_AO_VIVO := Vector2i(640, 360)
+var feed_clock := 0.0
 var recording: Node
 var chapter_actions: HBoxContainer
 var clip_button: Button
@@ -447,6 +455,7 @@ func show_empty_security() -> void:
 
 func _process(delta: float) -> void:
 	elapsed += delta
+	atualizar_feed(delta)
 	if chapter.stage == 6: stage_six_time += delta
 	else: stage_six_time = 0
 	if interference != null:
@@ -487,3 +496,21 @@ func _input(event: InputEvent) -> void:
 		_:
 			return
 	get_viewport().set_input_as_handled()
+
+# Grava quando o terminal esta aberto; fora dele, em rajadas espacadas. Nao
+# encosta no feed durante uma fita: `play_recording` desliga o viewport de
+# proposito e quem manda la e o `recording_player`.
+func atualizar_feed(delta: float) -> void:
+	if feed == null or (recording != null and recording.active): return
+	if active:
+		if feed.size != FEED_AO_VIVO: feed.size = FEED_AO_VIVO
+		feed.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		return
+	if feed.size != FEED_PARADO: feed.size = FEED_PARADO
+	if not monitor_power:
+		feed.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		return
+	feed_clock += delta
+	if feed_clock < 1.0 / maxf(feed_hz, 0.5): return
+	feed_clock = 0.0
+	feed.render_target_update_mode = SubViewport.UPDATE_ONCE

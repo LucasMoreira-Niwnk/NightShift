@@ -42,11 +42,40 @@ var upper: Node3D
 var fuse_visual: Node3D
 var camera_mounts: Array = []
 var drifting_fog: Node3D
+var light_culling: Node
+# Mascara do jogador guardada enquanto o terminal cobre a tela. Sem isto o
+# calculo abaixo partia da propria mascara ja zerada e nunca mais voltava: ao
+# sair das cameras a tela ficava preta.
+var saved_cull_mask := 0
+var occluders := 0
 
 # Camada visual exclusiva do 2o andar. O andar sai do cull_mask da camera do
 # jogador em vez de `visible = false`, porque o feed do CCTV compartilha o
 # mesmo World3D (cull_mask 5) e precisa continuar enxergando a CAM-04.
 const UPPER_LAYER := 8
+# A camada do CCTV entra junto, e a camada 1 TEM de sair. Com `layers |= 8` a
+# malha ficava em 1|8: a camera do jogador sempre carrega o bit 1, entao tirar
+# o bit 8 nao escondia nada e o culling de andar era decorativo.
+const CCTV_LAYER := 4
+# A cenografia autorada entra no segundo andar depois do _ready, entao uma
+# etiquetagem so nao alcanca tudo: as malhas de cenario_editavel.tscn ficavam
+# de fora e o culling de andar nao escondia nada.
+const RETAG_AT := [30, 120, 300, 600]
+# Porta, placa, luminaria e objeto interativo do segundo andar sao criados pelo
+# mundo, nao dentro do no `upper`: so pelo pai, 95 portas e 70 objetos ficavam
+# de fora do culling. Acima da laje (o terreo termina em 4,20) e segundo andar.
+const UPPER_SLAB := 4.35
+# Oclusao: parede e laje grandes ganham um BoxOccluder3D e passam a esconder o
+# que esta atras delas. Olhar no eixo longo do predio custava o dobro de draw
+# calls porque o motor nao sabia que havia parede no caminho.
+# So peca estrutural, e so se as duas maiores medidas passarem do minimo: um
+# occluder pequeno custa CPU e nao esconde nada.
+const OCCLUDER_KINDS := ["wall", "wall_cream", "wall_green", "wall_concrete", "ceiling", "upper_floor", "facade", "floor_reception", "floor_security", "floor_archive", "floor_concrete"]
+const OCCLUDER_MIN := 1.6
+# Encolhe a caixa: um occluder maior que a parede esconde o que aparece na
+# quina dela.
+const OCCLUDER_FOLGA := 0.12
+var tag_ticks := 0
 # Acima disto o jogador esta no 2o andar. Escadas contam como comodo proprio:
 # de dentro do vao os dois niveis aparecem juntos.
 const UPPER_FLOOR_Y := 2.0
@@ -262,7 +291,11 @@ func _ready() -> void:
 	preload("res://scripts/security_camera_layout.gd").install(self)
 	architecture.build()
 	capture_building_power()
-	tag_upper_layer(upper)
+	tag_upper_layer(self)
+	light_culling = preload("res://scripts/light_culling.gd").new()
+	light_culling.game = game
+	add_child(light_culling)
+	light_culling.build()
 
 func box(parent: Node3D, location: Vector3, size: Vector3, kind: String = "wall", collision: bool = true, color: Color = Color.WHITE) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
@@ -285,8 +318,28 @@ func box(parent: Node3D, location: Vector3, size: Vector3, kind: String = "wall"
 		collider.shape = shape
 		body.position = location
 		body.add_child(collider)
+		# O vidro barra o jogador mas nao a vista: a oclusao de luz precisa
+		# enxergar atraves dele, senao a rua apaga quando olhada da recepcao.
+		if kind == "glass": body.set_meta("transparente", true)
 		parent.add_child(body)
+	if OCCLUDER_KINDS.has(kind): add_occluder(parent, location, size)
 	return mesh
+
+func add_occluder(parent: Node3D, location: Vector3, size: Vector3) -> void:
+	var medidas := [size.x, size.y, size.z]
+	medidas.sort()
+	# medidas[1] e medidas[2] sao as duas maiores: e a area que tapa a vista.
+	if medidas[1] < OCCLUDER_MIN: return
+	var shape := BoxOccluder3D.new()
+	shape.size = Vector3(
+		maxf(size.x - OCCLUDER_FOLGA, 0.02),
+		maxf(size.y - OCCLUDER_FOLGA, 0.02),
+		maxf(size.z - OCCLUDER_FOLGA, 0.02))
+	var instance := OccluderInstance3D.new()
+	instance.occluder = shape
+	instance.position = location
+	parent.add_child(instance)
+	occluders += 1
 
 func wall(location: Vector3, size: Vector3) -> void:
 	var kind := "wall_cream" if location.z > 4 else ("wall_concrete" if location.x < -2 and location.z < -6 else "wall_green")
@@ -463,6 +516,8 @@ func set_interior_power(powered: bool) -> void:
 		game.computer.monitor_glow.visible = powered and game.computer.monitor_power
 
 func _process(delta: float) -> void:
+	tag_ticks += 1
+	if RETAG_AT.has(tag_ticks): tag_upper_layer(self)
 	update_floor_culling()
 	if corridor_lights.is_empty(): return
 	rhythm_time += delta
@@ -514,16 +569,39 @@ func add_floor_plan(location: Vector3, angle: float, id: String) -> void:
 	floor_plans.append(board)
 
 
-func tag_upper_layer(node: Node) -> void:
+func tag_upper_layer(node: Node, within: bool = false) -> void:
 	# Malhas e luzes ja movidas de proposito para a camada do jogador (2) ou do
 	# CCTV (4) ficam como estao; so o que esta no padrao ganha a camada do andar.
+	# `1 | UPPER_LAYER` e o valor que a versao errada desta funcao gravava, e
+	# ele foi parar salvo dentro de cenario_editavel.tscn. Retagueia tambem,
+	# senao as malhas autoradas ficam fora do culling para sempre.
 	for child in node.get_children():
-		if child is VisualInstance3D and child.layers == 1:
-			child.layers |= UPPER_LAYER
-		tag_upper_layer(child)
+		# A escadaria e o exterior nunca somem: a escada e comodo permanente e a
+		# fachada e o que se ve da rua e pela janela.
+		if child == staircases or child == architecture: continue
+		var dentro: bool = within or child == upper
+		if child is VisualInstance3D and (dentro or child.global_position.y > UPPER_SLAB):
+			if child.layers == 1 or child.layers == (1 | UPPER_LAYER):
+				child.layers = UPPER_LAYER | CCTV_LAYER
+			# Suportes de camera ficam na camada so-do-jogador (2) de proposito:
+			# somem com o andar, mas continuam fora do proprio feed do CCTV.
+			elif child.layers == 2:
+				child.layers = UPPER_LAYER
+		tag_upper_layer(child, dentro)
 
 func update_floor_culling() -> void:
 	if game.player == null: return
+	# O overlay do terminal e opaco e cobre a tela: desenhar o 3D atras dele e
+	# trabalho jogado fora (79 -> 110 fps na sala de seguranca).
+	if game.computer != null and game.computer.active:
+		if saved_cull_mask == 0: saved_cull_mask = game.player.camera.cull_mask
+		game.player.camera.cull_mask = 0
+		return
+	if saved_cull_mask != 0:
+		# Devolve exatamente o que era, inclusive o bit da mao que o desconforto
+		# mexe por conta propria.
+		game.player.camera.cull_mask = saved_cull_mask
+		saved_cull_mask = 0
 	var point: Vector3 = game.player.global_position
 	# Visivel da rua tambem, senao as janelas do 2o andar ficariam vazias.
 	var sees_upper: bool = point.y > UPPER_FLOOR_Y or staircases.is_main(point) or staircases.is_service(point) or is_outdoors(point)

@@ -73,6 +73,7 @@ func _ready() -> void:
 	collider.shape = shape
 	collider.position.y = 1.25
 	add_child(collider)
+	add_leaf_occluder(Vector3(0.75, 1.25, 0), box.size)
 
 func interact() -> void:
 	if override_action.is_valid() and override_action.call(): return
@@ -103,6 +104,7 @@ func restore_open(value: bool) -> void:
 	handle.rotation.z = 0
 	is_open = value
 	set_collision_layer_value(1, not is_open)
+	if leaf_occluder != null: leaf_occluder.visible = not is_open
 	set_collision_layer_value(2, true)
 	pivot.rotation.y = -PI / 2.0 if is_open else 0.0
 
@@ -115,6 +117,7 @@ func set_open(value: bool) -> void:
 	# The closed doorway is the interaction target even while the door is open.
 	# Disable physical obstruction, retaining ray detection on collision layer 2.
 	set_collision_layer_value(1, not is_open)
+	if leaf_occluder != null: leaf_occluder.visible = not is_open
 	set_collision_layer_value(2, true)
 	animation = create_tween()
 	animation.tween_property(pivot, "rotation:y", -PI / 2.0 if is_open else 0.0, 0.35)
@@ -126,3 +129,18 @@ func aged_box(parent: Node3D, point: Vector3, size: Vector3, color: Color) -> Me
 	var mesh := preload("res://scripts/art.gd").box(parent,point,size,color)
 	mesh.material_override = preload("res://scripts/materials.gd").fitting(color)
 	return mesh
+
+# A folha fechada tapa a sala inteira atras dela. O occluder fica no corpo da
+# porta, nao no `pivot`: parado, para o motor poder contar com ele, e some
+# quando a porta abre. Porta envidracada nao entra: atraves dela se ve.
+var leaf_occluder: OccluderInstance3D
+
+func add_leaf_occluder(point: Vector3, size: Vector3) -> void:
+	if glazed: return
+	var shape := BoxOccluder3D.new()
+	shape.size = Vector3(maxf(size.x - 0.12, 0.02), maxf(size.y - 0.12, 0.02), maxf(size.z, 0.05))
+	leaf_occluder = OccluderInstance3D.new()
+	leaf_occluder.occluder = shape
+	leaf_occluder.position = point
+	add_child(leaf_occluder)
+	leaf_occluder.visible = not is_open

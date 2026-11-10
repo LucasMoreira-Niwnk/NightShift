@@ -1046,3 +1046,38 @@ O motivo de cada par, lido no código e não deduzido:
 energia 0,35 e mesmo assim projeta sombra. Fill quase nunca precisa. Tirar das
 três corta metade das passadas da escada de serviço — mas aquela iluminação
 foi afinada à mão, então é decisão de arte, e não foi medida nem mexida.
+
+### Medido: tirar a sombra da rebatida da escada rende 4%, e não vale
+
+As três rebatidas estão em (-14, 6.1, -8.9 / -4.3 / 1.9), alcance 3,8 m,
+energia 0,35. Medido com a oclusão ligada, forçando a sombra delas a cada
+quadro:
+
+| vista | como está | rebatida sem sombra |
+|---|---|---|
+| escada, patamar alto | 117,0 fps (10 luzes com sombra) | 121,1 fps (7) |
+| escada, piso de baixo | 227,7 fps (10) | 240,0 fps (7) |
+
+**3,5% e 5,4%.** Eu havia especulado "metade das passadas da escada"; está
+errado, e o motivo é que a oclusão por linha de visão já limita quantas
+lâmpadas ficam acesas de uma vez — a conta que a rebatida acrescenta é pequena
+porque a cena ali não é limitada por sombra.
+
+Recomendação: **não mexer**. Quatro por cento não paga alterar iluminação
+afinada à mão, com comentário no código explicando a escolha.
+
+**Cuidado para quem for repetir a medição:** as capturas que tirei (`.local/
+fill-escada-*.png`) **não servem** para comparar o visual. As duas lâmpadas
+pulsam no ritmo do reator e os dois quadros caíram em fases diferentes do
+pisca — a imagem "sem sombra" saiu mais escura, que é o contrário do efeito
+esperado. Para comparar imagem é preciso congelar o `_process` do mundo na
+mesma fase.
+
+Detalhe que se repetiu: as rebatidas não foram encontradas por nome
+(`ServiceWallFixture*` não existe mais na árvore montada) e sim pela
+assinatura — omni de fill que divide o pai com um spot. E, de novo, o
+`shadow_enabled` lido em jogo vinha `false` por causa da oclusão, não do
+cenário.
+
+**Validado:** os números acima. **Não validado:** o efeito visual, pelo motivo
+acima.

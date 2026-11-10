@@ -1195,3 +1195,48 @@ pegou o corredor, não o interior da sala.
 **Limite conhecido:** lâmpada muito fora do eixo da porta (a do arquivo em
 x=5, com a porta em x=2) continua dependendo de o vão estar no volume dela.
 Se não estiver, ela só acende ao entrar.
+
+### O que escondia a sala pelo vão era o occluder — desligado por padrão
+
+Bissecção com a mesma vista da copa, porta aberta, jogador no corredor:
+
+| estado | resultado |
+|---|---|
+| como estava | sala preta, sem móvel |
+| só sem alcance de props | ainda preta |
+| só sem oclusão de luz | ainda preta |
+| **só sem oclusão por occluder** | **sala inteira aparece** |
+
+A oclusão por `BoxOccluder3D` esconde demais num interior denso: vista de um
+vão em ângulo, ela engolia o conteúdo da sala. Aumentar a folga de 12 para
+40 cm trouxe o piso de volta mas não os móveis, e abriu um buraco no piso do
+corredor — trocar um buraco por outro.
+
+Decisão: **`occlusion_culling` passa a nascer desligada.** Continua como opção,
+agora rotulada como experimental no menu, com a folga em 40 cm. O ganho medido
+(52% numa vista do 2º andar, 3 a 5% nas outras) não paga geometria sumindo.
+
+### Dez lâmpadas nunca eram cullas
+
+`build()` só aceitava lâmpada com sombra, então as outras dez — entre elas a
+do teto da copa — nunca eram apagadas. Com a sombra do cenário desligada, são
+exatamente essas que atravessam parede. Agora entram todas, menos as presas
+aos vultos, que andam e teriam o volume calculado no lugar errado.
+
+E, pelo mesmo motivo de sempre, `build()` virou idempotente e roda de novo nos
+quadros 30/120/300/600: metade das lâmpadas nasce depois do `_ready` do mundo.
+A lâmpada da copa era uma delas — por isso aparecia como não gerenciada.
+
+Resultado na copa, que é o caso relatado:
+
+| | lâmpadas acesas | objetos sumidos |
+|---|---|---|
+| porta aberta, visto do vão | **2 de 2** | **0 de 213** |
+| porta fechada, do corredor | **0 de 2** | 0 |
+
+Que é o pedido: com a porta aberta se vê tudo sem entrar, com ela fechada a
+sala continua cullada.
+
+**Validado:** a tabela acima e as capturas `.local/copa-*.png`; `check` limpo;
+as dez suítes passam. **Não validado:** andando pelo prédio inteiro com a
+oclusão por occluder ligada — ela fica como opção e sabidamente tem buracos.

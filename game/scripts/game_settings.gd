@@ -11,7 +11,7 @@ const DEFAULTS := {
 	"pause_on_focus_loss": true,
 	"light_culling": true,
 	"static_shadows": false,
-	"occlusion_culling": true,
+	"occlusion_culling": false,
 	"shadow_range": 14.0,
 	"light_cone_extra": 40.0,
 	"prop_range": 14.0,

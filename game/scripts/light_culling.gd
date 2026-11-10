@@ -80,14 +80,30 @@ var cursor := 0
 func _ready() -> void:
 	name = "LightCulling"
 
+# Idempotente de proposito: metade das lampadas nasce depois do _ready do
+# mundo, entao isto roda de novo nos primeiros segundos e so acrescenta o que
+# ainda nao esta na lista.
 func build() -> void:
 	var space: PhysicsDirectSpaceState3D = game.world.get_world_3d().direct_space_state
 	for lamp in game.world.find_children("*", "Light3D", true, false):
-		if lamp is DirectionalLight3D or not lamp.shadow_enabled: continue
+		if lamps.has(lamp): continue
+		if lamp is DirectionalLight3D: continue
+		# Antes so entravam as que projetam sombra, e as outras dez nunca eram
+		# apagadas: com a sombra do cenario desligada, elas atravessam parede.
+		# Fora ficam so as dos vultos, que andam — o volume delas e calculado
+		# uma vez e deixaria de valer no primeiro passo.
+		if vulto(lamp): continue
 		lamps.append(lamp)
 		volumes.append(lit_volume(space, lamp))
 		grace.append(GRACE)
 		base_layers.append(lamp.layers)
+
+# Luz presa a uma criatura que anda: nao entra na oclusao.
+func vulto(lamp: Node) -> bool:
+	for nome in ["figure", "figure_volume", "figure_mesh"]:
+		var dono = game.world.get(nome)
+		if dono != null and (dono == lamp or dono.is_ancestor_of(lamp)): return true
+	return false
 
 func reach(lamp: Light3D) -> float:
 	if lamp is OmniLight3D: return lamp.omni_range
@@ -251,6 +267,7 @@ func _process(_delta: float) -> void:
 	# O alcance dos objetos vale com a sombra do cenario ligada ou desligada,
 	# entao a varredura roda nos dois casos.
 	if REFRESH_AT.has(ticks):
+		build()
 		if static_shadows: collect_static()
 		else: set_static_shadows(false)
 	if not enabled or lamps.is_empty(): return

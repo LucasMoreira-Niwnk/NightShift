@@ -506,7 +506,7 @@ func show_light_settings() -> void:
 	label_at(column, Vector2.ZERO, "Medido nesta máquina: a recepção saiu de 34 para 244 fps com tudo isto ligado.", 16)
 	label_at(column, Vector2.ZERO, "— O QUE SOME DE VISTA", 16).modulate = Style.ACCENT
 	toggle_row("Oclusão de lâmpadas (linha de visão)", bool(values.get("light_culling", true)), func(on: bool): game.update_setting("light_culling", on))
-	toggle_row("Oclusão por parede (occluder)", bool(values.get("occlusion_culling", true)), func(on: bool): game.update_setting("occlusion_culling", on))
+	toggle_row("Oclusão por parede — experimental, some com móvel visto de porta aberta", bool(values.get("occlusion_culling", false)), func(on: bool): game.update_setting("occlusion_culling", on))
 	toggle_row("Sombra do cenário (visual cheio, metade do FPS)", bool(values.get("static_shadows", false)), func(on: bool): game.update_setting("static_shadows", on))
 
 	label_at(column, Vector2.ZERO, "— ALCANCES", 16).modulate = Style.ACCENT

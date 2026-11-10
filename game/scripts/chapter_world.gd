@@ -65,7 +65,11 @@ const RETAG_AT := [30, 120, 300, 600]
 # mundo, nao dentro do no `upper`: so pelo pai, 95 portas e 70 objetos ficavam
 # de fora do culling. Acima da laje (o terreo termina em 4,20) e segundo andar.
 const UPPER_SLAB := 4.35
-# Oclusao: parede e laje grandes ganham um BoxOccluder3D e passam a esconder o
+# Oclusao por occluder: DESLIGADA por padrao. Ela esconde demais num interior
+# denso — com a porta aberta, o movel da sala sumia visto do vao, e aumentar a
+# folga so trocava um buraco por outro. O ganho medido (52% numa vista do 2o
+# andar, 3 a 5% nas outras) nao paga geometria sumindo. Fica como opcao.
+# Parede e laje grandes ganham um BoxOccluder3D e passam a esconder o
 # que esta atras delas. Olhar no eixo longo do predio custava o dobro de draw
 # calls porque o motor nao sabia que havia parede no caminho.
 # So peca estrutural, e so se as duas maiores medidas passarem do minimo: um
@@ -74,7 +78,7 @@ const OCCLUDER_KINDS := ["wall", "wall_cream", "wall_green", "wall_concrete", "c
 const OCCLUDER_MIN := 1.6
 # Encolhe a caixa: um occluder maior que a parede esconde o que aparece na
 # quina dela.
-const OCCLUDER_FOLGA := 0.12
+const OCCLUDER_FOLGA := 0.4
 var tag_ticks := 0
 # Acima disto o jogador esta no 2o andar. Escadas contam como comodo proprio:
 # de dentro do vao os dois niveis aparecem juntos.

@@ -21,6 +21,14 @@ const INDICE := "res://scenes/bake/predio-malhas.json"
 # — continua recebendo luz real. Abaixo deste piso é que o bake está velho
 # demais para o cenário, e aí aplicar seria pior que não aplicar.
 const MINIMO := 0.4
+# Apagar a lampada cuja luz ja estaria no mapa renderia 116 -> 201 fps na
+# recepcao. Esta DESLIGADO porque, medido, este bake carrega quase nada: com as
+# lampadas apagadas a sala fica preta, e com elas acesas ligar a luz assada mal
+# muda a imagem. Qualidade baixa, um salto e lampada de energia 0,3 a 0,9 dao
+# um mapa fraco demais para substituir a luz real. Para ligar isto, primeiro um
+# bake mais forte — e conferir se o `uv2_triplanar` dos materiais do projeto
+# nao atrapalha a leitura do mapa.
+const APAGAR_COBERTAS := false
 # Tolerância ao casar posição, em metros.
 const TOLERANCIA := 0.02
 
@@ -29,6 +37,7 @@ var aplicado := false
 var casadas := 0
 var total := 0
 var lightmap: LightmapGI
+var apagadas := 0
 
 func disponivel() -> bool:
 	return ResourceLoader.exists(DADOS) and FileAccess.file_exists(ProjectSettings.globalize_path(INDICE))
@@ -36,7 +45,7 @@ func disponivel() -> bool:
 func estado() -> String:
 	if not disponivel(): return "Nenhum bake em disco. Gere com tools/godot.ps1 -Mode export e asse no editor."
 	if not aplicado: return "Bake em disco, desligado. %d de %d malhas casariam." % [casadas, total]
-	return "Luz assada ativa em %d de %d malhas." % [casadas, total]
+	return "Luz assada ativa em %d de %d malhas; %d lâmpadas apagadas." % [casadas, total, apagadas]
 
 func aplicar(ligado: bool) -> void:
 	if ligado == aplicado: return
@@ -48,6 +57,9 @@ func aplicar(ligado: bool) -> void:
 
 func limpar() -> void:
 	aplicado = false
+	apagadas = 0
+	if game.world != null and game.world.light_culling != null:
+		game.world.light_culling.cobertas_pelo_bake.clear()
 	if lightmap != null and is_instance_valid(lightmap):
 		lightmap.queue_free()
 		lightmap = null
@@ -123,3 +135,23 @@ func montar() -> void:
 		return
 	lightmap.light_data = novo
 	aplicado = true
+	if APAGAR_COBERTAS: apagar_cobertas()
+
+# A luz dessas lampadas ja esta no mapa. O corredor fica de fora: o pisca do
+# reator e personagem da casa, e com a lampada apagada ele sumiria.
+func apagar_cobertas() -> void:
+	var culling = game.world.light_culling
+	if culling == null: return
+	culling.cobertas_pelo_bake.clear()
+	apagadas = 0
+	for lamp in culling.lamps:
+		if game.world.corridor_lights.has(lamp): continue
+		culling.cobertas_pelo_bake[lamp] = true
+		apagadas += 1
+
+# O blecaute tem de continuar escurecendo tudo: escondido, o no para de
+# contribuir, e a sala volta a depender so do que estiver aceso.
+func _process(_delta: float) -> void:
+	if not aplicado or lightmap == null: return
+	var ligado: bool = game.world.interior_powered
+	if lightmap.visible != ligado: lightmap.visible = ligado

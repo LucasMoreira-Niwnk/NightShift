@@ -86,6 +86,10 @@ const VAO_RAIO := 9.0
 # liberar objeto nos dois modos.
 var com_alcance: Array = []
 var liberados: Dictionary = {}
+# Lampadas cuja luz ja esta no lightmap assado: ficam apagadas enquanto a luz
+# assada estiver ligada, senao a sala recebe a mesma luz duas vezes e nao ha
+# ganho nenhum de desempenho.
+var cobertas_pelo_bake: Dictionary = {}
 var assinatura_portas := ""
 var cursor := 0
 
@@ -324,6 +328,9 @@ func _process(_delta: float) -> void:
 		else:
 			grace[cursor] = maxi(grace[cursor] - 1, 0)
 		var lamp: Light3D = lamps[cursor]
+		if cobertas_pelo_bake.has(lamp):
+			light_on(cursor, false)
+			continue
 		light_on(cursor, grace[cursor] > 0)
 		# So o CCTV enxerga: sai da vista do jogador em vez de atravessar parede.
 		lamp.layers = CCTV_ONLY if so_cctv else int(base_layers[cursor])

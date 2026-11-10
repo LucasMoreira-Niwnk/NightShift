@@ -1324,3 +1324,33 @@ menos de 40% casarem, idem.
 suítes passam. **Não validado:** o ganho de FPS. A luz assada hoje **soma** à
 dinâmica em vez de substituí-la — para virar desempenho, seria preciso apagar
 as lâmpadas reais das áreas cobertas, e isso é outra conversa.
+
+### Apagar as lâmpadas cobertas: o ganho existe, o bake não aguenta
+
+Pedido: fazer a luz assada apagar as lâmpadas reais, para virar desempenho.
+Implementado e medido, com a sombra do cenário ligada:
+
+| recepção | lâmpadas acesas | fps |
+|---|---|---|
+| luz assada desligada | 4 | 116,2 |
+| luz assada ligada, lâmpadas apagadas | 0 | **201,5** |
+
+**+73%. E a sala fica preta** (`.local/ganho-recepcao-com.png`). O teste
+seguinte explica por quê: mantendo as lâmpadas acesas nos dois casos, ligar a
+luz assada muda 118 para 121 fps e **quase não muda a imagem**. Ou seja, este
+bake carrega quase nenhuma energia — não tem como substituir a luz real.
+
+Causas prováveis, nenhuma verificada: qualidade baixa com um salto só, lâmpadas
+de energia 0,3 a 0,9, e o `uv2_triplanar` dos materiais do projeto, que pode
+atrapalhar a leitura do mapa.
+
+Por isso o desligamento ficou atrás de `APAGAR_COBERTAS := false`, com o porquê
+escrito no código. Trocar para `true` liga o ganho — e a sala preta junto.
+
+Também entrou, e esse fica valendo: enquanto a luz assada está ligada, o nó
+`LightmapGI` segue a energia do prédio, senão o blecaute deixaria de escurecer
+o que foi assado. E o corredor fica fora do desligamento de propósito: o pisca
+do reator é personagem da casa e some junto com a lâmpada.
+
+**Validado:** as duas medições e as capturas. **Não validado:** se um bake em
+qualidade alta resolveria — são ~10 min de forno por tentativa e não testei.

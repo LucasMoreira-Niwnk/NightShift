@@ -516,7 +516,9 @@ func show_light_settings() -> void:
 	slider_row("Atualização do feed do CCTV", float(values.get("cctv_hz", 6.0)), 1.0, 30.0, 1.0, " Hz", func(v: float): game.update_setting("cctv_hz", v))
 
 	label_at(column, Vector2.ZERO, "— MAPA DE LUZ ASSADO", 16).modulate = Style.ACCENT
-	label_at(column, Vector2.ZERO, "%s  (%d lâmpadas, %d vidraças mapeadas)" % [estado_do_bake(), culling.lamps.size(), culling.panes.size()], 16)
+	var assada = game.world.baked_light
+	toggle_row("Usar luz e sombra assadas", bool(values.get("baked_light", false)), func(on: bool): game.update_setting("baked_light", on))
+	label_at(column, Vector2.ZERO, "%s  (%d lâmpadas, %d vidraças mapeadas)" % [assada.estado(), culling.lamps.size(), culling.panes.size()], 16)
 	button("Restaurar padrões", func():
 		for chave in ["light_culling", "occlusion_culling", "static_shadows", "shadow_range", "prop_range", "light_cone_extra", "cctv_hz"]:
 			game.update_setting(chave, Settings.DEFAULTS[chave])

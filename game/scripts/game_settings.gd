@@ -16,6 +16,7 @@ const DEFAULTS := {
 	"light_cone_extra": 40.0,
 	"prop_range": 14.0,
 	"cctv_hz": 6.0,
+	"baked_light": false,
 }
 
 static func load_all() -> Dictionary:
@@ -44,6 +45,8 @@ static func apply(game: Node, values: Dictionary) -> void:
 		game.world.light_culling.prop_range = float(values.prop_range)
 		if game.world.is_inside_tree():
 			game.world.get_viewport().use_occlusion_culling = bool(values.occlusion_culling)
+	if game.world != null and game.world.baked_light != null:
+		game.world.baked_light.aplicar(bool(values.baked_light))
 	if game.computer != null:
 		game.computer.feed_hz = float(values.cctv_hz)
 	if game.player != null:

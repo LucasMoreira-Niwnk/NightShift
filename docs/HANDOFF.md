@@ -1284,3 +1284,43 @@ alcance, válida nos dois modos.
 
 **Validado:** os números acima com o jogo rodando; `check` limpo; as dez
 suítes passam. **Não validado:** em tela, com a sombra do cenário ligada.
+
+## 2026-11-10 — Claude — Opção de usar luz e sombra assadas
+
+Eu havia dito que não dava: o `LightmapGIData` não tem getter para a escala de
+UV nem para a fatia do atlas de cada malha. **Estava errado** — a propriedade
+de armazenamento `user_data` é legível e traz, por usuário, caminho, escala,
+fatia e sub-instância. Com isso dá para refazer o vínculo com as malhas que o
+jogo monta em código.
+
+| Arquivo | O quê |
+|---|---|
+| `scene_export.gd` | grava `predio-malhas.json` com a posição de cada malha, na ordem exportada |
+| `baked_light.gd` (novo) | carrega o bake, cria o `LightmapGI` e reaponta cada fatia para a malha que está naquele ponto |
+| `chapter_world.gd` | `box()` passa a criar as malhas com `add_uv2`; sem UV2 o lightmap não tem onde pousar |
+| `game_settings.gd`, `chapter_ui.gd` | opção "Usar luz e sombra assadas", desligada por padrão, com o estado ao lado |
+
+Resultado medido: **1781 de 3559 malhas recebem o lightmap**. As outras são
+modelos importados, que não têm UV2 — continuam iluminadas pela luz real. A
+aplicação foi vista em imagem (`.local/assada-2-com.png`): o corredor da
+recepção ganha luz de parede e piso que a versão dinâmica não dá.
+
+Três armadilhas do motor encontradas pelo caminho, todas por bissecção:
+
+1. **`duplicate()` de um `LightmapGIData` derruba o Godot 4.0** na hora, sem
+   mensagem nenhuma. O código monta um recurso novo e reaproveita só a textura
+   do atlas.
+2. **Posição não é chave única**: 380 das 3559 malhas dividem o ponto com
+   outra. O índice guarda uma fila por posição e a varredura consome em ordem.
+3. **O exportador acendia a luz vermelha de emergência**, que nunca acende em
+   jogo — o editor mostrou o prédio inteiro vermelho antes de assar. Agora ele
+   respeita o estado autorado de cada luminária: 34 luzes viraram 30.
+
+Travas de segurança: se a contagem do bake não bater com a do cenário, recusa
+e manda reexportar (fatia errada em cada malha seria pior que nada); e se
+menos de 40% casarem, idem.
+
+**Validado:** a aplicação em jogo, a contagem e a imagem; `check` limpo; as dez
+suítes passam. **Não validado:** o ganho de FPS. A luz assada hoje **soma** à
+dinâmica em vez de substituí-la — para virar desempenho, seria preciso apagar
+as lâmpadas reais das áreas cobertas, e isso é outra conversa.

@@ -20,6 +20,10 @@ const DESTINO := "res://scenes/bake/predio.scn"
 # Tamanho de texel do desdobramento. Menor = lightmap mais fino e bake mais
 # lento. 0,2 m dá um mapa grosseiro e rápido para a primeira tentativa.
 const TEXEL := 0.2
+# Posicao de cada malha exportada, na ordem em que foi exportada. E por ela que
+# o jogo reencontra, em tempo de execucao, qual malha corresponde a cada fatia
+# do lightmap: a ordem da varredura nao se repete, a posicao sim.
+const INDICE := "res://scenes/bake/predio-malhas.json"
 
 var game: Node
 # Malhas preparadas, por recurso de origem: sem isto cada uma das 3737 copias
@@ -37,6 +41,7 @@ func run() -> void:
 	classificador.game = game
 	var malhas := 0
 	var sem_uv2 := 0
+	var posicoes: Array = []
 	for mesh in game.world.find_children("*", "MeshInstance3D", true, false):
 		if mesh.mesh == null or not mesh.visible: continue
 		if not classificador.reason(mesh).is_empty(): continue
@@ -52,11 +57,16 @@ func run() -> void:
 		raiz.add_child(copia)
 		copia.owner = raiz
 		copia.global_transform = mesh.global_transform
+		posicoes.append([
+			snappedf(mesh.global_position.x, 0.001),
+			snappedf(mesh.global_position.y, 0.001),
+			snappedf(mesh.global_position.z, 0.001)])
 		malhas += 1
 	classificador.free()
 	var luzes := 0
 	for lamp in game.world.find_children("*", "Light3D", true, false):
 		if lamp is DirectionalLight3D: continue
+		if not lamp.visible: continue
 		var copia: Light3D = lamp.duplicate(0) as Light3D
 		if copia == null: continue
 		raiz.add_child(copia)
@@ -78,6 +88,8 @@ func run() -> void:
 	assador.max_texture_size = 2048
 	raiz.add_child(assador)
 	assador.owner = raiz
+	var indice := FileAccess.open(INDICE, FileAccess.WRITE)
+	if indice != null: indice.store_string(JSON.stringify(posicoes))
 	conferir(raiz)
 	gravar(raiz, malhas, luzes, sem_uv2)
 	print("EXPORT_DONE")
@@ -97,8 +109,14 @@ func acender_tudo() -> void:
 	if game.world.upper != null: game.world.upper.apply_state()
 	# O ritmo do corredor reescreve `visible` todo quadro: para o relogio.
 	game.world.set_process(false)
-	for entrada in game.world.building_lights: entrada.light.visible = true
+	# Respeita o estado autorado de cada luminaria: forcar todas acendia tambem
+	# a luz vermelha de emergencia do segundo andar, que nunca acende em jogo,
+	# e o bake sairia com as salas em vermelho.
+	for entrada in game.world.building_lights: entrada.light.visible = bool(entrada.enabled)
 	for luz in game.world.corridor_lights: luz.visible = true
+	if game.world.upper != null:
+		for luz in game.world.upper.emergency_lights:
+			if is_instance_valid(luz): luz.visible = false
 
 func preparar(origem: Mesh) -> Mesh:
 	if origem is PrimitiveMesh:

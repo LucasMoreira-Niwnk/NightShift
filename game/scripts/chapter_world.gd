@@ -43,6 +43,7 @@ var fuse_visual: Node3D
 var camera_mounts: Array = []
 var drifting_fog: Node3D
 var light_culling: Node
+var baked_light: Node
 # Mascara do jogador guardada enquanto o terminal cobre a tela. Sem isto o
 # calculo abaixo partia da propria mascara ja zerada e nunca mais voltava: ao
 # sair das cameras a tela ficava preta.
@@ -297,11 +298,17 @@ func _ready() -> void:
 	light_culling.game = game
 	add_child(light_culling)
 	light_culling.build()
+	baked_light = preload("res://scripts/baked_light.gd").new()
+	baked_light.game = game
+	add_child(baked_light)
 
 func box(parent: Node3D, location: Vector3, size: Vector3, kind: String = "wall", collision: bool = true, color: Color = Color.WHITE) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
 	var geometry := BoxMesh.new()
 	geometry.size = size
+	# UV2 de fabrica: sem ela o lightmap assado nao tem onde pousar. Em malha
+	# parametrica isto e so uma flag, nao custa memoria de vertice.
+	geometry.add_uv2 = true
 	mesh.mesh = geometry
 	mesh.position = location
 	if materials.has(kind):

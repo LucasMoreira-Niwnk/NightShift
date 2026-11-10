@@ -1240,3 +1240,47 @@ sala continua cullada.
 **Validado:** a tabela acima e as capturas `.local/copa-*.png`; `check` limpo;
 as dez suítes passam. **Não validado:** andando pelo prédio inteiro com a
 oclusão por occluder ligada — ela fica como opção e sabidamente tem buracos.
+
+## 2026-11-10 — Claude — Sombra das luzes de fora de volta, e a porta liberando alcance
+
+### Regressão: luz de fora parou de projetar
+
+Causada pela entrada anterior. Ao passar a gerenciar as dez lâmpadas que antes
+ficavam fora da oclusão, elas caíram no corte de sombra por distância — e
+poste de rua é justamente o que fica longe.
+
+Duas correções:
+- a oclusão só pode **tirar** sombra de quem já tinha. O estado autorado é
+  guardado em `base_shadow` no `build()`; lâmpada feita sem sombra nunca ganha
+  uma;
+- o corte passou a somar o **alcance da própria lâmpada**: `shadow_range +
+  reach`. Um poste de 17 m de alcance ainda ilumina área visível a 20 m, e
+  cortar pela distância nua apagava a sombra da rua inteira.
+
+Verificado da calçada, com a sombra do cenário ligada: os quatro postes do
+estacionamento (alcance 17 m, 10 a 15 m do jogador) voltaram a `agora=true`.
+Os da escada de serviço, a 24–33 m e com 7 m de alcance, seguem apagados, que
+é o certo.
+
+### Porta aberta libera o alcance dos objetos
+
+Pedido: amarrar o gatilho da porta aberta à hitbox de luz **e** à distância de
+renderização. A primeira metade já existia (o vão entra como ponto de amostra
+do volume). Agora a segunda: enquanto a porta está aberta, os objetos num raio
+de 9 m do vão perdem o corte por distância e voltam quando ela fecha.
+
+| copa, objetos sem corte de distância | |
+|---|---|
+| porta fechada | 125 de 213 |
+| porta aberta | **213 de 213** |
+
+São 590 malhas liberadas com as portas abertas do prédio. A conta só é refeita
+quando o conjunto de portas abertas muda, então andar não custa nada.
+
+**Um erro no caminho:** a liberação usava `static_meshes`, que é esvaziada
+quando a sombra do cenário está ligada — então no modo com sombra ela não
+fazia nada (`liberados 0`). Agora há uma lista própria dos objetos com
+alcance, válida nos dois modos.
+
+**Validado:** os números acima com o jogo rodando; `check` limpo; as dez
+suítes passam. **Não validado:** em tela, com a sombra do cenário ligada.

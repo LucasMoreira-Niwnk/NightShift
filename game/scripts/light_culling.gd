@@ -75,6 +75,18 @@ var grace: Array = []
 # Sem isto, 22 lampadas ficavam acesas por causa da camera de seguranca e
 # atravessavam parede na vista do jogador, com a sombra do cenario desligada.
 var base_layers: Array = []
+# Sombra como o cenario autorou. O corte por distancia so pode TIRAR sombra de
+# quem tinha; nunca dar sombra a quem foi feito sem ela.
+var base_shadow: Array = []
+# Porta aberta abre a sala: enquanto estiver aberta, o alcance dos objetos do
+# outro lado nao vale, senao o movel some justamente quando se olha de fora.
+const VAO_RAIO := 9.0
+# Lista propria dos objetos que receberam alcance. `static_meshes` nao serve:
+# ela e esvaziada quando a sombra do cenario esta ligada, e a porta precisa
+# liberar objeto nos dois modos.
+var com_alcance: Array = []
+var liberados: Dictionary = {}
+var assinatura_portas := ""
 var cursor := 0
 
 func _ready() -> void:
@@ -97,6 +109,7 @@ func build() -> void:
 		volumes.append(lit_volume(space, lamp))
 		grace.append(GRACE)
 		base_layers.append(lamp.layers)
+		base_shadow.append(lamp.shadow_enabled)
 
 # Luz presa a uma criatura que anda: nao entra na oclusao.
 func vulto(lamp: Node) -> bool:
@@ -222,14 +235,19 @@ func livre(space: PhysicsDirectSpaceState3D, eye: Vector3, point: Vector3) -> bo
 		origem = hit["position"] + (point - origem).normalized() * 0.05
 	return false
 
+# O alcance da propria lampada entra na conta: um poste de rua com 10 m de
+# alcance ainda ilumina area visivel a 20 m, e cortar a sombra dele pela
+# distancia nua apagava a sombra da rua inteira.
 func perto(lamp: Light3D) -> bool:
+	var limite: float = shadow_range + reach(lamp)
 	for camera in cameras():
-		if lamp.global_position.distance_to(camera.global_position) < shadow_range: return true
+		if lamp.global_position.distance_to(camera.global_position) < limite: return true
 	return false
 
-func light_on(lamp: Light3D, on: bool) -> void:
+func light_on(index: int, on: bool) -> void:
+	var lamp: Light3D = lamps[index]
 	lamp.light_cull_mask = FULL_MASK if on else 0
-	lamp.shadow_enabled = on and perto(lamp)
+	lamp.shadow_enabled = on and bool(base_shadow[index]) and perto(lamp)
 
 func set_enabled(value: bool) -> void:
 	enabled = value
@@ -239,7 +257,7 @@ func set_enabled(value: bool) -> void:
 	for index in range(lamps.size()):
 		grace[index] = GRACE
 		lamps[index].light_cull_mask = FULL_MASK
-		lamps[index].shadow_enabled = true
+		lamps[index].shadow_enabled = bool(base_shadow[index])
 		lamps[index].layers = int(base_layers[index])
 
 # So a conta do frustum, sem raio: se o vidro esta no quadro o exterior fica,
@@ -261,8 +279,31 @@ func update_exterior() -> void:
 			if mostra: break
 	game.world.architecture.visible = mostra
 
+# Quais portas estao abertas agora. So refaz a liberacao quando o conjunto
+# muda, entao andar pelo predio nao custa nada.
+func update_doorways() -> void:
+	if game.world.doors.is_empty(): return
+	var assinatura := ""
+	for id in game.world.doors:
+		var porta = game.world.doors[id]
+		if is_instance_valid(porta) and porta.is_open: assinatura += str(id) + ","
+	if assinatura == assinatura_portas: return
+	assinatura_portas = assinatura
+	for mesh in liberados:
+		if is_instance_valid(mesh): mesh.visibility_range_end = float(liberados[mesh])
+	liberados.clear()
+	for id in game.world.doors:
+		var porta = game.world.doors[id]
+		if not is_instance_valid(porta) or not porta.is_open: continue
+		for mesh in com_alcance:
+			if not is_instance_valid(mesh) or mesh.visibility_range_end <= 0.0: continue
+			if mesh.global_position.distance_to(porta.global_position) > VAO_RAIO: continue
+			liberados[mesh] = mesh.visibility_range_end
+			mesh.visibility_range_end = 0.0
+
 func _process(_delta: float) -> void:
 	ticks += 1
+	update_doorways()
 	update_exterior()
 	# O alcance dos objetos vale com a sombra do cenario ligada ou desligada,
 	# entao a varredura roda nos dois casos.
@@ -283,7 +324,7 @@ func _process(_delta: float) -> void:
 		else:
 			grace[cursor] = maxi(grace[cursor] - 1, 0)
 		var lamp: Light3D = lamps[cursor]
-		light_on(lamp, grace[cursor] > 0)
+		light_on(cursor, grace[cursor] > 0)
 		# So o CCTV enxerga: sai da vista do jogador em vez de atravessar parede.
 		lamp.layers = CCTV_ONLY if so_cctv else int(base_layers[cursor])
 
@@ -296,6 +337,7 @@ func apply_prop_range(mesh: MeshInstance3D) -> void:
 	if (mesh.global_transform * mesh.mesh.get_aabb()).size.length() > PROP_MAX: return
 	mesh.visibility_range_end = prop_range
 	mesh.visibility_range_end_margin = PROP_FADE
+	com_alcance.append(mesh)
 
 # Mudar o alcance pelo menu tem de alcancar o que ja esta em cena.
 func set_prop_range(value: float) -> void:
@@ -305,6 +347,10 @@ func set_prop_range(value: float) -> void:
 
 func collect_static() -> void:
 	static_meshes.clear()
+	com_alcance.clear()
+	# A liberacao precisa ser refeita contra a lista nova.
+	liberados.clear()
+	assinatura_portas = ""
 	if game.world == null: return
 	var classifier := preload("res://scripts/shadow_map.gd").new()
 	classifier.game = game

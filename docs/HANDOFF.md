@@ -943,3 +943,26 @@ mouse em jogo.
 **Aviso:** apaguei o `settings.cfg` do perfil de teste ao final — ele tinha
 valores que os meus próprios testes escreveram. O jogo volta a abrir com os
 padrões da tabela acima, com a oclusão ligada.
+
+### Câmera dentro do volume da lâmpada: acesa, sem perguntar
+
+Pedido: "se a hitbox das lâmpadas for vista de dentro dela para fora dela
+mantenha ela ligada". Entrou como primeira condição do teste, antes de
+qualquer raio: `volumes[index].has_point(camera.global_position)`.
+
+O motivo é que o teste anterior podia falhar justamente onde a luz mais
+importa. Com o jogador parado sob o facho, os pontos de amostra caem atrás da
+câmera ou contra o teto, e a lâmpada apagava com ele dentro da própria poça de
+luz. Estar dentro do volume já é a resposta: a luz chega ali por definição,
+mesmo com o bulbo escondido atrás de luminária ou viga.
+
+| ponto | lâmpadas acesas | com a câmera dentro do volume |
+|---|---|---|
+| sob a marquise, olhando para a rua | 6 | 3 |
+| recepção, de costas para a lâmpada | 6 | 4 |
+
+Custo: 0,029 ms por lâmpada, 0,2 ms por quadro com a fatia de 7 — é um teste
+de ponto em caixa, mais barato que o raio que ele evita.
+
+**Validado:** números acima com o jogo rodando; `check` limpo; as dez suítes
+passam. **Não validado:** em movimento, atravessando a borda do volume.

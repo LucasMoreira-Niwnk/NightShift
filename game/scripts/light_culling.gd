@@ -132,6 +132,11 @@ func sample_points(index: int) -> Array:
 
 func seen_from(camera: Camera3D, index: int) -> bool:
 	if camera == null: return false
+	# Camera dentro do volume iluminado: a luz chega nela por definicao, mesmo
+	# com o bulbo escondido atras de luminaria ou viga. Sem este teste a
+	# lampada apagava com o jogador parado embaixo do proprio facho, porque os
+	# pontos de amostra caem atras da camera ou contra o teto.
+	if volumes[index].has_point(camera.global_position): return true
 	var space: PhysicsDirectSpaceState3D = game.world.get_world_3d().direct_space_state
 	var eye: Vector3 = camera.global_position
 	for point in sample_points(index):

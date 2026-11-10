@@ -4,6 +4,40 @@ Entradas mais recentes no topo. Cada uma diz o que mudou, por quê, o que foi va
 
 ---
 
+## 2026-11-10 — Antigravity — correção de descarte de lâmpadas/malhas ao mexer nas configurações e opções de sombra
+
+**Estado:** aplicado localmente na branch `feat/primeiro-ato-completo`.
+
+**Problema diagnosticado e corrigido:**
+- Sintoma relatado pelo usuário: "quando ativo a oclusão nas configurações a luz externa se apaga e mesmo desativando ela não volta" e "é só mexer nas configurações a lâmpada externa se apaga qualquer uma".
+- **Causa raiz:**
+  1. Qualquer alteração no menu chamava `game.update_setting()`, que chamava `Settings.apply()`.
+  2. `Settings.apply()` reatribuía cegamente `static_shadows` e `prop_range`, disparando `collect_static()`.
+  3. `collect_static()` chamava `apply_prop_range()` em todas as malhas <= 1.2 m (`PROP_MAX`). Peças das luminárias (o bulbo `SphereMesh` de 0.18 m e a cúpula `reflector` de 1.16 m) eram tratadas como pequenos props de chão e ganhavam `visibility_range_end = 14.0 m`. Como o jogador spawna a 14.83 m do poste, a lâmpada/bulbo sofria culling de distância e **desaparecia instantaneamente** ao tocar em qualquer opção do menu.
+  4. Além disso, `set_static_shadows(false)` desligava `cast_shadow` do refletor do poste, destruindo o bloqueio geométrico físico que molda o cone de luz no asfalto.
+  5. Desativar a oclusão (`set_enabled(false)`) não limpava nem restaurava o `visibility_range_end` das malhas em `com_alcance`, fazendo com que os bulbos continuassem invisíveis além de 14 m mesmo com a oclusão desligada.
+- **Correções aplicadas:**
+  1. `game/scripts/light_culling.gd`:
+     - Nova verificação `is_light_or_fixture()`: protege qualquer malha filha de `LightingFixture`, malhas com materiais emissivos (`emission_enabled`), lâmpadas, bulbos e refletores.
+     - `apply_prop_range()`: nunca mais aplica corte de distância em luminárias, fontes de luz, arquitetura externa ou fachada.
+     - `set_static_shadows()`: preserva `cast_shadow = ON` em peças que moldam luz (`reflector` / `light_shaper`).
+     - `set_enabled(false)`: restaura explicitamente `visibility_range_end = 0.0` para todas as malhas de `com_alcance` e esvazia a lista. Ao reativar (`set_enabled(true)`), restaura o ciclo limpo de grace e lâmpadas.
+     - `set_prop_range()`: só refaz a coleta estática se o valor realmente mudou.
+  2. `game/scripts/building_exterior.gd`:
+     - `bulb()` e `reflector()` agora recebem nomes estáveis (`StreetLampBulb`, `StreetLampReflector`) e metadados (`emissive_bulb`, `light_shaper`) para proteção contra cortes indevidos de sombra e distância.
+  3. `game/scripts/game_settings.gd`:
+     - `Settings.apply()` tornou-se 100% idempotente: checa se os valores mudaram antes de acionar setters de `light_culling`, viewport ou recompilar o atlas de sombras do RenderingServer.
+
+**Validado de fato:**
+- `tools/godot.ps1 -Mode check` concluído com código 0.
+- `tools/godot.ps1 -Mode test` concluído com código 0 (todas as 10 suítes passando: `PROP_LAYOUT`, `TABLET_CONSOLE`, `ARCHITECTURE`, `STAIR_FINISH`, `COLLABORATION`, `SOUNDSCAPE`, `EXPLORATION`, `CHAPTER1`, `CCTV_UI`, `CHAPTER2`).
+- Script de reprodução automatizada confirmou que após mexer em qualquer configuração ou alternar a oclusão, o poste e seu bulbo mantêm `visibility_range_end = 0`, `cast_shadow = 1` no refletor, e a lâmpada permanece com `visible = true`, `cull_mask = 32` e `shadow_enabled = true`.
+
+**Próximo trabalho:**
+- Teste visual interativo em gameplay para validar o visual das lâmpadas e o ajuste em tempo real dos sliders.
+
+---
+
 ## 2026-11-10 — Claude — asset zoo e medição de peso dos modelos
 
 **Estado:** aplicado localmente, não commitado, na branch `feat/primeiro-ato-completo`.
@@ -1383,3 +1417,29 @@ participa do bake.
 **Não validado:** se alguma peça de fora ficou sem a camada e por isso escura —
 a marcação cobre o que está sob `architecture`, e cenografia externa criada
 noutro nó ficaria de fora.
+
+### Correção da correção: a camada externa ia pelo pai, não pela posição
+
+Relato: depois da restrição das luzes de fora, o poste "só brilhava mas não
+iluminava em cone". Verdade, e o furo era o que eu mesmo tinha apontado como
+limite na entrega anterior: `tag_exterior_layer()` marcava só o que estava sob
+o nó `architecture`. Asfalto, calçada, banco, placa e vaso nascem **direto no
+mundo**, não ali dentro — ficaram sem a camada, e as lâmpadas restritas a ela
+pararam de iluminar o chão.
+
+Agora a marcação é por **posição** (`is_outdoors`), com o subárvore de
+`architecture` somada por garantia.
+
+| | antes | depois |
+|---|---|---|
+| malhas marcadas como externas | 1406 | **1503** |
+| malhas de fora **sem** marca | — | **0** |
+
+Conferido em imagem (`.local/chao-rua.png`): calçada, bancos, fachada e plantas
+voltaram a receber luz; antes só os globos das luminárias acendiam.
+
+**Lição, porque o erro foi de método:** na entrega anterior eu verifiquei a
+vista de dentro — que era o alvo da correção — e não a de fora, que era a área
+que a mudança podia quebrar. Mexer em camada de luz exige olhar os dois lados.
+
+**Validado:** contagens e imagem acima; `check` limpo; as dez suítes passam.

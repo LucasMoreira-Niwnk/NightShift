@@ -610,10 +610,16 @@ func add_floor_plan(location: Vector3, angle: float, id: String) -> void:
 
 # A geometria de fora ganha um bit a mais, sem perder o que tinha: camera
 # nenhuma muda de comportamento, e a luz passa a poder escolher so ela.
+# Por POSICAO, nao por quem e o pai: asfalto, calcada, banco e placa nascem
+# direto no mundo, nao dentro do no da fachada. Marcar so pelo pai deixava o
+# chao do estacionamento fora da camada, e o poste parava de iluminar o chao.
 func tag_exterior_layer() -> void:
-	if architecture == null: return
-	for mesh in architecture.find_children("*", "VisualInstance3D", true, false):
-		mesh.layers |= EXTERIOR_LAYER
+	for mesh in find_children("*", "VisualInstance3D", true, false):
+		if mesh is Light3D: continue
+		var de_fora: bool = is_outdoors(mesh.global_position)
+		if not de_fora and architecture != null and architecture.is_ancestor_of(mesh):
+			de_fora = true
+		if de_fora: mesh.layers |= EXTERIOR_LAYER
 
 func tag_upper_layer(node: Node, within: bool = false) -> void:
 	# Malhas e luzes ja movidas de proposito para a camada do jogador (2) ou do

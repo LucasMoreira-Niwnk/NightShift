@@ -1007,3 +1007,42 @@ ponto está na cabeça do abajur; `check` limpo; as dez suítes passam.
 **Não validado:** se o halo do bloom está do tamanho que você quer — o
 ambiente tem `glow_intensity` baixo de propósito, e o que dá para subir sem
 mexer no global é a energia da emissão.
+
+### Correção da entrada acima: as luzes repetidas projetam sombra, sim
+
+Na auditoria eu escrevi que "nenhuma delas projeta sombra, então nenhuma
+estava custando passada". **Está errado.** Eu li o estado em tempo de
+execução, já depois da oclusão ter desligado a sombra daquelas lâmpadas
+naquele instante — não o que está escrito no código.
+
+O que está autorado:
+
+| | sombra no código |
+|---|---|
+| vulto, as duas (`memesis.gd`, `memesis_corpo.gd`) | não, documentado |
+| escada de serviço: facho (`folded_stairs.gd:130`) | **sim** |
+| escada de serviço: rebatida (`:143`) | **sim** |
+| 2º andar: teto (`second_floor.gd:130`) | **sim** |
+| 2º andar: emergência | não, e nunca acende |
+
+Os três pares da escada de serviço são **seis luzes com sombra**, e custam
+quando estão à vista. Lição para quem auditar daqui em diante: ler o valor em
+jogo mede o efeito da oclusão, não a intenção do cenário. Para saber o que foi
+autorado, leia o código.
+
+O motivo de cada par, lido no código e não deduzido:
+
+- **Vulto:** são duas criaturas alternativas, não uma com duas luzes. Cada uma
+  traz seu brilho porque névoa não acende parede. As três nascem escondidas
+  (`figure.hide()` e companhia) e o F5 escolhe uma, então os brilhos nunca
+  estão acesos juntos.
+- **Escada:** facho da arandela mais uma rebatida curta que acende a parede da
+  própria luminária. Substituiu um omni de alcance largo que vazava pelos dois
+  lances. Pulsam juntas no ritmo do reator, senão o fill sustenta o ambiente
+  justo na batida em que o facho cai.
+- **Segundo andar:** teto e emergência vermelha no mesmo ponto de cada sala.
+
+**Candidato a otimização que sobrou:** a rebatida da escada tem 3,8 m e
+energia 0,35 e mesmo assim projeta sombra. Fill quase nunca precisa. Tirar das
+três corta metade das passadas da escada de serviço — mas aquela iluminação
+foi afinada à mão, então é decisão de arte, e não foi medida nem mexida.

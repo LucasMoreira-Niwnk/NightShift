@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 const Style = preload("res://scripts/ui_style.gd")
+const Settings = preload("res://scripts/game_settings.gd")
 var chapter_label: Label
 var zone_label: Label
 var time_label: Label
@@ -148,9 +149,16 @@ func _ready() -> void:
 	for edge in ["left", "right", "top", "bottom"]:
 		margin.add_theme_constant_override("margin_" + edge, 24)
 	panel.add_child(margin)
+	# PanelContainer cresce ate caber o conteudo, entao uma tela cheia de
+	# controles passava da borda e sumia fora do monitor. Com a rolagem no
+	# meio, o painel para no tamanho das ancoras em qualquer resolucao.
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	margin.add_child(scroll)
 	column = VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_theme_constant_override("separation", 12)
-	margin.add_child(column)
+	scroll.add_child(column)
 	panel.hide()
 	if not OS.get_cmdline_user_args().has("--smoke-test"):
 		opening()
@@ -228,6 +236,11 @@ func label_at(parent: Node, location: Vector2, text: String, font_size: int) -> 
 	label.add_theme_color_override("font_shadow_color", Color.BLACK)
 	label.add_theme_constant_override("shadow_offset_x", 2)
 	label.add_theme_constant_override("shadow_offset_y", 2)
+	# Texto dentro do painel quebra linha: sem isto a frase longa empurra a
+	# largura e o painel vaza para fora da tela em resolucao menor.
+	if parent == column:
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	parent.add_child(label)
 	return label
 
@@ -483,12 +496,52 @@ func show_discomfort_settings() -> void:
 	button("Voltar", show_settings)
 	button("Continuar", toggle_pause)
 
+func show_light_settings() -> void:
+	clear_panel()
+	panel.anchor_top = 0.04
+	panel.anchor_bottom = 0.96
+	title("QUALIDADE DE LUZ E SOMBRA")
+	var culling = game.world.light_culling
+	var values: Dictionary = game.settings
+	label_at(column, Vector2.ZERO, "Medido nesta máquina: a recepção saiu de 34 para 244 fps com tudo isto ligado.", 16)
+	label_at(column, Vector2.ZERO, "— O QUE SOME DE VISTA", 16).modulate = Style.ACCENT
+	toggle_row("Oclusão de lâmpadas (linha de visão)", bool(values.get("light_culling", true)), func(on: bool): game.update_setting("light_culling", on))
+	toggle_row("Oclusão por parede (occluder)", bool(values.get("occlusion_culling", true)), func(on: bool): game.update_setting("occlusion_culling", on))
+	toggle_row("Sombra do cenário (visual cheio, metade do FPS)", bool(values.get("static_shadows", false)), func(on: bool): game.update_setting("static_shadows", on))
+
+	label_at(column, Vector2.ZERO, "— ALCANCES", 16).modulate = Style.ACCENT
+	slider_row("Lâmpada projeta sombra até", float(values.get("shadow_range", 14.0)), 4.0, 40.0, 1.0, " m", func(v: float): game.update_setting("shadow_range", v))
+	slider_row("Objetos pequenos somem além de", float(values.get("prop_range", 14.0)), 6.0, 40.0, 1.0, " m", func(v: float): game.update_setting("prop_range", v))
+	slider_row("Folga do campo de visão da luz", float(values.get("light_cone_extra", 40.0)), 0.0, 80.0, 5.0, "°", func(v: float): game.update_setting("light_cone_extra", v))
+	slider_row("Atualização do feed do CCTV", float(values.get("cctv_hz", 6.0)), 1.0, 30.0, 1.0, " Hz", func(v: float): game.update_setting("cctv_hz", v))
+
+	label_at(column, Vector2.ZERO, "— MAPA DE LUZ ASSADO", 16).modulate = Style.ACCENT
+	label_at(column, Vector2.ZERO, "%s  (%d lâmpadas, %d vidraças mapeadas)" % [estado_do_bake(), culling.lamps.size(), culling.panes.size()], 16)
+	button("Restaurar padrões", func():
+		for chave in ["light_culling", "occlusion_culling", "static_shadows", "shadow_range", "prop_range", "light_cone_extra", "cctv_hz"]:
+			game.update_setting(chave, Settings.DEFAULTS[chave])
+		show_light_settings())
+	button("Voltar", show_settings)
+	button("Continuar", toggle_pause)
+
+# O bake existe em disco, mas ainda não é aplicável em jogo: o `LightmapGIData`
+# guarda o caminho de cada malha e não devolve a escala de UV nem a fatia do
+# atlas, então não há como reapontá-lo para as malhas criadas em código. Por
+# isso aqui é estado, não botão: botão que não faz nada é pior que nenhum.
+func estado_do_bake() -> String:
+	if not ResourceLoader.exists("res://scenes/bake/predio.lmbake"):
+		return "Nenhum bake encontrado. Gere com: tools/godot.ps1 -Mode export, depois assar no editor."
+	var dados = load("res://scenes/bake/predio.lmbake")
+	if dados == null: return "Bake encontrado, mas não foi possível ler."
+	return "Bake em disco: %d malhas no mapa. Ainda não é usado em jogo — o prédio é montado em código e o mapa está preso à cena exportada." % dados.get_user_count()
+
 func show_settings() -> void:
 	clear_panel()
 	title("CONFIGURAÇÕES")
 	button("Som", show_audio_settings)
 	button("Controles e vídeo", show_control_settings)
 	button("Dificuldade — desconforto", show_discomfort_settings)
+	button("Qualidade de luz", show_light_settings)
 	button("Continuar", toggle_pause)
 
 func show_control_settings() -> void:

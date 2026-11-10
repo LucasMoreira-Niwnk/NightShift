@@ -9,6 +9,13 @@ const DEFAULTS := {
 	"invert_y": false,
 	"fullscreen": false,
 	"pause_on_focus_loss": true,
+	"light_culling": true,
+	"static_shadows": false,
+	"occlusion_culling": true,
+	"shadow_range": 14.0,
+	"light_cone_extra": 40.0,
+	"prop_range": 14.0,
+	"cctv_hz": 6.0,
 }
 
 static func load_all() -> Dictionary:
@@ -29,6 +36,16 @@ static func save_all(values: Dictionary) -> void:
 	file.save(PATH)
 
 static func apply(game: Node, values: Dictionary) -> void:
+	if game.world != null and game.world.light_culling != null:
+		game.world.light_culling.enabled = bool(values.light_culling)
+		game.world.light_culling.static_shadows = bool(values.static_shadows)
+		game.world.light_culling.shadow_range = float(values.shadow_range)
+		game.world.light_culling.extra_angulo = float(values.light_cone_extra)
+		game.world.light_culling.prop_range = float(values.prop_range)
+		if game.world.is_inside_tree():
+			game.world.get_viewport().use_occlusion_culling = bool(values.occlusion_culling)
+	if game.computer != null:
+		game.computer.feed_hz = float(values.cctv_hz)
 	if game.player != null:
 		game.player.sensitivity = BASE_SENSITIVITY * float(values.mouse_sensitivity)
 		game.player.invert_y = bool(values.invert_y)

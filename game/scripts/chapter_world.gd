@@ -58,6 +58,10 @@ const UPPER_LAYER := 8
 # malha ficava em 1|8: a camera do jogador sempre carrega o bit 1, entao tirar
 # o bit 8 nao escondia nada e o culling de andar era decorativo.
 const CCTV_LAYER := 4
+# Camada da geometria de fora. O poste da rua so ilumina quem esta nela, senao
+# a luz dele entra no predio inteiro — parede nao barra luz quando a sombra do
+# cenario esta desligada, e mesmo com ela o alcance atravessava o vao.
+const EXTERIOR_LAYER := 32
 # A cenografia autorada entra no segundo andar depois do _ready, entao uma
 # etiquetagem so nao alcanca tudo: as malhas de cenario_editavel.tscn ficavam
 # de fora e o culling de andar nao escondia nada.
@@ -550,7 +554,9 @@ func set_interior_power(powered: bool) -> void:
 
 func _process(delta: float) -> void:
 	tag_ticks += 1
-	if RETAG_AT.has(tag_ticks): tag_upper_layer(self)
+	if RETAG_AT.has(tag_ticks):
+		tag_upper_layer(self)
+		tag_exterior_layer()
 	update_floor_culling()
 	if corridor_lights.is_empty(): return
 	rhythm_time += delta
@@ -601,6 +607,13 @@ func add_floor_plan(location: Vector3, angle: float, id: String) -> void:
 	board.add_child(collision)
 	floor_plans.append(board)
 
+
+# A geometria de fora ganha um bit a mais, sem perder o que tinha: camera
+# nenhuma muda de comportamento, e a luz passa a poder escolher so ela.
+func tag_exterior_layer() -> void:
+	if architecture == null: return
+	for mesh in architecture.find_children("*", "VisualInstance3D", true, false):
+		mesh.layers |= EXTERIOR_LAYER
 
 func tag_upper_layer(node: Node, within: bool = false) -> void:
 	# Malhas e luzes ja movidas de proposito para a camada do jogador (2) ou do

@@ -78,6 +78,9 @@ var base_layers: Array = []
 # Sombra como o cenario autorou. O corte por distancia so pode TIRAR sombra de
 # quem tinha; nunca dar sombra a quem foi feito sem ela.
 var base_shadow: Array = []
+# Mascara de iluminacao de cada lampada. A do poste de rua cobre so a camada
+# externa; a oclusao precisa devolver ESSA mascara ao reacender, nao a cheia.
+var base_cull: Array = []
 # Porta aberta abre a sala: enquanto estiver aberta, o alcance dos objetos do
 # outro lado nao vale, senao o movel some justamente quando se olha de fora.
 const VAO_RAIO := 9.0
@@ -114,6 +117,10 @@ func build() -> void:
 		grace.append(GRACE)
 		base_layers.append(lamp.layers)
 		base_shadow.append(lamp.shadow_enabled)
+		# Lampada de fora ilumina so a geometria de fora.
+		if game.world.is_outdoors(lamp.global_position):
+			lamp.light_cull_mask = game.world.EXTERIOR_LAYER
+		base_cull.append(lamp.light_cull_mask if lamp.light_cull_mask != 0 else FULL_MASK)
 
 # Luz presa a uma criatura que anda: nao entra na oclusao.
 func vulto(lamp: Node) -> bool:
@@ -250,7 +257,7 @@ func perto(lamp: Light3D) -> bool:
 
 func light_on(index: int, on: bool) -> void:
 	var lamp: Light3D = lamps[index]
-	lamp.light_cull_mask = FULL_MASK if on else 0
+	lamp.light_cull_mask = int(base_cull[index]) if on else 0
 	lamp.shadow_enabled = on and bool(base_shadow[index]) and perto(lamp)
 
 func set_enabled(value: bool) -> void:
@@ -260,7 +267,7 @@ func set_enabled(value: bool) -> void:
 	# quer o estado original de volta, nao um meio-termo.
 	for index in range(lamps.size()):
 		grace[index] = GRACE
-		lamps[index].light_cull_mask = FULL_MASK
+		lamps[index].light_cull_mask = int(base_cull[index])
 		lamps[index].shadow_enabled = bool(base_shadow[index])
 		lamps[index].layers = int(base_layers[index])
 

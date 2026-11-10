@@ -1354,3 +1354,32 @@ do reator é personagem da casa e some junto com a lâmpada.
 
 **Validado:** as duas medições e as capturas. **Não validado:** se um bake em
 qualidade alta resolveria — são ~10 min de forno por tentativa e não testei.
+
+## 2026-11-10 — Claude — Poste de rua parou de iluminar o prédio por dentro
+
+Relato: as luzes de fora estavam corretas no `main` mas "globais" dentro do
+prédio. Verdade: parede não barra luz com a sombra do cenário desligada, e o
+alcance dos postes (17 m) atravessa a fachada inteira.
+
+Resolvido por máscara de iluminação, não por sombra:
+- a geometria de fora ganha a camada `EXTERIOR_LAYER` (32) **somada** à que já
+  tinha, então nenhuma câmera muda de comportamento. São 1406 malhas;
+- toda lâmpada cujo ponto é `is_outdoors()` passa a iluminar só essa camada.
+  São 5: os quatro postes do estacionamento e a da marquise;
+- a oclusão guarda a máscara autorada em `base_cull` e devolve **essa**, não a
+  cheia, ao reacender a lâmpada. Sem isso ela desfazia a restrição no primeiro
+  ciclo.
+
+Conferido em imagem (`.local/vaza-interior.png`): a recepção fica iluminada só
+pela luminária dela, e o poste aparece pela janela como objeto de fora, que é
+o comportamento certo.
+
+**Sobre assar:** o exportador já faz o que foi pedido — `acender_tudo()`
+desliga a oclusão de luz e liga a sombra do cenário antes de coletar
+(`scene_export.gd:105-106`). A oclusão por occluder é ajuste de viewport e não
+participa do bake.
+
+**Validado:** as contagens, a imagem, `check` limpo e as dez suítes.
+**Não validado:** se alguma peça de fora ficou sem a camada e por isso escura —
+a marcação cobre o que está sob `architecture`, e cenografia externa criada
+noutro nó ficaria de fora.

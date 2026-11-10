@@ -1,0 +1,318 @@
+[
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/concrete_floor_worn_001",
+    "file": "concrete_floor_worn_001/diff.jpg",
+    "resolution": "2k",
+    "md5": "6a3645f19f2ac4b7f60f43419c5d09ec",
+    "authors": {
+      "Dimitrios Savva": "Photography",
+      "Rico Cilliers": "Processing"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_floor_worn_001/concrete_floor_worn_001_diff_2k.jpg",
+    "map": "Diffuse",
+    "asset": "concrete_floor_worn_001"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/concrete_floor_worn_001",
+    "file": "concrete_floor_worn_001/nor_gl.jpg",
+    "resolution": "1k",
+    "md5": "9de6626758f8793b71182b892c110827",
+    "authors": {
+      "Dimitrios Savva": "Photography",
+      "Rico Cilliers": "Processing"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_worn_001/concrete_floor_worn_001_nor_gl_1k.jpg",
+    "map": "nor_gl",
+    "asset": "concrete_floor_worn_001"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/concrete_floor_worn_001",
+    "file": "concrete_floor_worn_001/rough.jpg",
+    "resolution": "1k",
+    "md5": "b158eae73029ac6a849481274a0e1b35",
+    "authors": {
+      "Dimitrios Savva": "Photography",
+      "Rico Cilliers": "Processing"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_worn_001/concrete_floor_worn_001_rough_1k.jpg",
+    "map": "Rough",
+    "asset": "concrete_floor_worn_001"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/concrete_floor_worn_001",
+    "file": "concrete_floor_worn_001/ao.jpg",
+    "resolution": "1k",
+    "md5": "b03dc724a630cfa899542912a42c9a4c",
+    "authors": {
+      "Dimitrios Savva": "Photography",
+      "Rico Cilliers": "Processing"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_worn_001/concrete_floor_worn_001_ao_1k.jpg",
+    "map": "AO",
+    "asset": "concrete_floor_worn_001"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/worn_cracked_plaster",
+    "file": "worn_cracked_plaster/diff.jpg",
+    "resolution": "2k",
+    "md5": "6f8be501897694a4d197b5f009e6e409",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/worn_cracked_plaster/worn_cracked_plaster_diff_2k.jpg",
+    "map": "Diffuse",
+    "asset": "worn_cracked_plaster"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/worn_cracked_plaster",
+    "file": "worn_cracked_plaster/nor_gl.jpg",
+    "resolution": "1k",
+    "md5": "3e569aba490661a7f7fc12e7d1412e01",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/worn_cracked_plaster/worn_cracked_plaster_nor_gl_1k.jpg",
+    "map": "nor_gl",
+    "asset": "worn_cracked_plaster"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/worn_cracked_plaster",
+    "file": "worn_cracked_plaster/rough.jpg",
+    "resolution": "1k",
+    "md5": "6ca8fbd687683ddfa47d8f402fb6c56e",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/worn_cracked_plaster/worn_cracked_plaster_rough_1k.jpg",
+    "map": "Rough",
+    "asset": "worn_cracked_plaster"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/worn_cracked_plaster",
+    "file": "worn_cracked_plaster/ao.jpg",
+    "resolution": "1k",
+    "md5": "bcd4293934ea77e815928ce8abcfb157",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/worn_cracked_plaster/worn_cracked_plaster_ao_1k.jpg",
+    "map": "AO",
+    "asset": "worn_cracked_plaster"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/damaged_plaster",
+    "file": "damaged_plaster/diff.jpg",
+    "resolution": "2k",
+    "md5": "3f3ff6dab4400dd6fca7b3512741bd4e",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/damaged_plaster/damaged_plaster_diff_2k.jpg",
+    "map": "Diffuse",
+    "asset": "damaged_plaster"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/damaged_plaster",
+    "file": "damaged_plaster/nor_gl.jpg",
+    "resolution": "1k",
+    "md5": "f51f2fb57309e9d1974b9841f9b605ea",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/damaged_plaster/damaged_plaster_nor_gl_1k.jpg",
+    "map": "nor_gl",
+    "asset": "damaged_plaster"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/damaged_plaster",
+    "file": "damaged_plaster/rough.jpg",
+    "resolution": "1k",
+    "md5": "bbdad97a6d7c74e24b58b6e398e8eb19",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/damaged_plaster/damaged_plaster_rough_1k.jpg",
+    "map": "Rough",
+    "asset": "damaged_plaster"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/damaged_plaster",
+    "file": "damaged_plaster/ao.jpg",
+    "resolution": "1k",
+    "md5": "c7b9d2269caa02e3641ea0d889d3a5a7",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/damaged_plaster/damaged_plaster_ao_1k.jpg",
+    "map": "AO",
+    "asset": "damaged_plaster"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/worn_mossy_plasterwall",
+    "file": "worn_mossy_plasterwall/diff.jpg",
+    "resolution": "2k",
+    "md5": "efce8e2f4012ed4afcffdcf9ee5f47db",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/worn_mossy_plasterwall/worn_mossy_plasterwall_diff_2k.jpg",
+    "map": "Diffuse",
+    "asset": "worn_mossy_plasterwall"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/worn_mossy_plasterwall",
+    "file": "worn_mossy_plasterwall/nor_gl.jpg",
+    "resolution": "1k",
+    "md5": "d9c20e0db2c6ef279e4afb3010d8d999",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/worn_mossy_plasterwall/worn_mossy_plasterwall_nor_gl_1k.jpg",
+    "map": "nor_gl",
+    "asset": "worn_mossy_plasterwall"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/worn_mossy_plasterwall",
+    "file": "worn_mossy_plasterwall/rough.jpg",
+    "resolution": "1k",
+    "md5": "e4dc2a169c2cf3b11516623e101a3669",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/worn_mossy_plasterwall/worn_mossy_plasterwall_rough_1k.jpg",
+    "map": "Rough",
+    "asset": "worn_mossy_plasterwall"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/worn_mossy_plasterwall",
+    "file": "worn_mossy_plasterwall/ao.jpg",
+    "resolution": "1k",
+    "md5": "271a72e8fa3a93dd513e495f172a0425",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/worn_mossy_plasterwall/worn_mossy_plasterwall_ao_1k.jpg",
+    "map": "AO",
+    "asset": "worn_mossy_plasterwall"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/worn_asphalt",
+    "file": "worn_asphalt/diff.jpg",
+    "resolution": "2k",
+    "md5": "7bd15211eea2137bfcc6af510e17cd3d",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/worn_asphalt/worn_asphalt_diff_2k.jpg",
+    "map": "Diffuse",
+    "asset": "worn_asphalt"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/worn_asphalt",
+    "file": "worn_asphalt/nor_gl.jpg",
+    "resolution": "1k",
+    "md5": "706a5c4e817c4d927029920578c01312",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/worn_asphalt/worn_asphalt_nor_gl_1k.jpg",
+    "map": "nor_gl",
+    "asset": "worn_asphalt"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/worn_asphalt",
+    "file": "worn_asphalt/rough.jpg",
+    "resolution": "1k",
+    "md5": "7a1258305d51852b6378508d57dcbe2e",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/worn_asphalt/worn_asphalt_rough_1k.jpg",
+    "map": "Rough",
+    "asset": "worn_asphalt"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/worn_asphalt",
+    "file": "worn_asphalt/ao.jpg",
+    "resolution": "1k",
+    "md5": "2aa3d2c957a4130d1ecc798d3794063e",
+    "authors": {
+      "Amal Kumar": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/worn_asphalt/worn_asphalt_ao_1k.jpg",
+    "map": "AO",
+    "asset": "worn_asphalt"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/brown_mud_leaves_01",
+    "file": "brown_mud_leaves_01/diff.jpg",
+    "resolution": "2k",
+    "md5": "e8b45aee8e00a253eb3a2b08cea89776",
+    "authors": {
+      "Rob Tuytel": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brown_mud_leaves_01/brown_mud_leaves_01_diff_2k.jpg",
+    "map": "Diffuse",
+    "asset": "brown_mud_leaves_01"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/brown_mud_leaves_01",
+    "file": "brown_mud_leaves_01/nor_gl.jpg",
+    "resolution": "1k",
+    "md5": "3698df51ef8262ddf2248ffca1e73196",
+    "authors": {
+      "Rob Tuytel": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_mud_leaves_01/brown_mud_leaves_01_nor_gl_1k.jpg",
+    "map": "nor_gl",
+    "asset": "brown_mud_leaves_01"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/brown_mud_leaves_01",
+    "file": "brown_mud_leaves_01/rough.jpg",
+    "resolution": "1k",
+    "md5": "3896f151d1b1de421a61c3c5d9a742b0",
+    "authors": {
+      "Rob Tuytel": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_mud_leaves_01/brown_mud_leaves_01_rough_1k.jpg",
+    "map": "Rough",
+    "asset": "brown_mud_leaves_01"
+  },
+  {
+    "license": "CC0-1.0",
+    "source": "https://polyhaven.com/a/brown_mud_leaves_01",
+    "file": "brown_mud_leaves_01/ao.jpg",
+    "resolution": "1k",
+    "md5": "f9195054f2368febc0358bfabaf12148",
+    "authors": {
+      "Rob Tuytel": "All"
+    },
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_mud_leaves_01/brown_mud_leaves_01_ao_1k.jpg",
+    "map": "AO",
+    "asset": "brown_mud_leaves_01"
+  }
+]

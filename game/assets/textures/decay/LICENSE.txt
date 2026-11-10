@@ -1,0 +1,6 @@
+Poly Haven asset license: CC0 1.0 Universal (CC0-1.0).
+https://polyhaven.com/license
+https://creativecommons.org/publicdomain/zero/1.0/
+
+These original texture photographs are redistributed as project assets.
+The source pages and contributors are listed in README.md and manifest.json.

@@ -1,0 +1,292 @@
+[
+  {
+    "file": "rain.wav",
+    "seconds": 6.577,
+    "loop": true,
+    "peak_db": -6.02,
+    "sha256": "1b0129ab8e89186f8a2ab48a04b38f9c99184ef7e00c757b694d9269efb020a5",
+    "sources": [
+      {
+        "file": "water/loop_rain.ogg",
+        "sha256": "4e836ff06b7d88b97c17ec08f43c3678201bee1ec414bcb456252f784a7be4a4"
+      }
+    ]
+  },
+  {
+    "file": "rain_inside.wav",
+    "seconds": 6.577,
+    "loop": true,
+    "peak_db": -6.02,
+    "sha256": "849d0e76c9e7a1b3cfaa56fed8b5fa2d223041b42a3b46fc573afac933bad398",
+    "sources": [
+      {
+        "file": "water/loop_rain.ogg",
+        "sha256": "4e836ff06b7d88b97c17ec08f43c3678201bee1ec414bcb456252f784a7be4a4"
+      }
+    ]
+  },
+  {
+    "file": "hum.wav",
+    "seconds": 9.755,
+    "loop": true,
+    "peak_db": -6.02,
+    "sha256": "ad0ef410352007810640c0ba8d00e4c1859c247d624413138b2e9dbf62f2c19e",
+    "sources": [
+      {
+        "file": "fan.ogg",
+        "sha256": "3971ce3a174fe265e2175b3c45c9e91525263ae94f9fd16d0750fca7e736463a"
+      }
+    ]
+  },
+  {
+    "file": "step_hard_0.wav",
+    "seconds": 0.135,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "f72b2c3788bfe0a93eb6636e48d5a489df4d251d823408ab224d8bd426325e10",
+    "sources": [
+      {
+        "file": "steps0.ogg",
+        "sha256": "33c9bef5e8aeb1069455699a34a0c5e1ef1787fd3f61594b0859d7e6bb9f9dec"
+      }
+    ]
+  },
+  {
+    "file": "step_hard_1.wav",
+    "seconds": 0.169,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "786993b40773124904e1a00b9588233b4e384ab96ae5ad6199f6d1f876442128",
+    "sources": [
+      {
+        "file": "steps1.ogg",
+        "sha256": "f05396c807eb8eaecffb2a1ead611ec971c5a7914d1d081c91d7796e852692a2"
+      }
+    ]
+  },
+  {
+    "file": "step_hard_2.wav",
+    "seconds": 0.313,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "3ae005d312e7a65f55712bb1666b85d246cfbf1f940bb9236357c3d6fd84b2b7",
+    "sources": [
+      {
+        "file": "steps2.ogg",
+        "sha256": "9817cc93897ed1de5da87675b26be4196bfda3daa6f1de9dc4398a68d250cdb9"
+      }
+    ]
+  },
+  {
+    "file": "step_hard_3.wav",
+    "seconds": 0.244,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "1ead098dcfe7aacfa9e79d45aae451975df726e28b39a5a95e3ba37a9d028267",
+    "sources": [
+      {
+        "file": "steps3.ogg",
+        "sha256": "b373ff981e44d6f7ba2291225a4803078771029615ed81606136fdb9599906d5"
+      }
+    ]
+  },
+  {
+    "file": "step_hard_4.wav",
+    "seconds": 0.314,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "f601b20c08fb3aca26cc2c0438ee529bb11c1e4751a75337afbc284b971cf9e8",
+    "sources": [
+      {
+        "file": "steps4.ogg",
+        "sha256": "f1b4893dd3cebe23438567a0dcaf047848a52b594e7eb03e5c212d99e83d2298"
+      }
+    ]
+  },
+  {
+    "file": "step_hard_5.wav",
+    "seconds": 0.246,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "3aec923e79ad0b703eaab598b0a7c544a2a383f09e637c4742101b3585305c03",
+    "sources": [
+      {
+        "file": "steps5.ogg",
+        "sha256": "39147cc1b98abb4b5378ad07b15d50d18f2aa0f0fd2f5514f078c1e574d14773"
+      }
+    ]
+  },
+  {
+    "file": "step_wood_0.wav",
+    "seconds": 0.32,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "87c12407dc9477d5c0ab124f08a9ae69200cb9e5ac4477027152e0dad70dd5d5",
+    "sources": [
+      {
+        "file": "woodsteps0.wav",
+        "sha256": "aae50329e6b702c23a2e6e21f0eb673a0bca5aa9386fb9eb4ea6e9acdcb05536"
+      }
+    ]
+  },
+  {
+    "file": "step_wood_1.wav",
+    "seconds": 0.32,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "13a4b67b911e2fddfe4258715415c83883b69eb5fa3e3dd9efeb27b337838463",
+    "sources": [
+      {
+        "file": "woodsteps0.wav",
+        "sha256": "aae50329e6b702c23a2e6e21f0eb673a0bca5aa9386fb9eb4ea6e9acdcb05536"
+      }
+    ]
+  },
+  {
+    "file": "step_wood_2.wav",
+    "seconds": 0.32,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "d80f944791348913b257536d61857692d0b3ccc9aab957f23594389016f41b4a",
+    "sources": [
+      {
+        "file": "woodsteps0.wav",
+        "sha256": "aae50329e6b702c23a2e6e21f0eb673a0bca5aa9386fb9eb4ea6e9acdcb05536"
+      }
+    ]
+  },
+  {
+    "file": "step_wood_3.wav",
+    "seconds": 0.32,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "5eca7a05925d8aaeccba2e9b02e50aa6d60f855c64e9ee4c855efad8725ffc14",
+    "sources": [
+      {
+        "file": "woodsteps0.wav",
+        "sha256": "aae50329e6b702c23a2e6e21f0eb673a0bca5aa9386fb9eb4ea6e9acdcb05536"
+      }
+    ]
+  },
+  {
+    "file": "door_open.wav",
+    "seconds": 0.246,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "a3c38f80ecf2555f47234e7addb434e0f38876a2336f4522d82247fac1068f45",
+    "sources": [
+      {
+        "file": "foley/door_open.ogg",
+        "sha256": "62b42cdf0d8b25ef80c0f3bc815aa65977b78b20225481461ea134798172f59d"
+      }
+    ]
+  },
+  {
+    "file": "door_close.wav",
+    "seconds": 0.503,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "42da19a6041d1bf418d6663d76877755184e63058fdfa132c1606a8198115eff",
+    "sources": [
+      {
+        "file": "foley/door_close_02.ogg",
+        "sha256": "3f4ce43f7a676d8907258908c90e88caecffd4526fce43e40df6726bf67ed91b"
+      }
+    ]
+  },
+  {
+    "file": "switch.wav",
+    "seconds": 0.102,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "ea53fc19a694a6d7043576473a4d833f09b85a19c74ca5ef1a6948b173e161d3",
+    "sources": [
+      {
+        "file": "foley/switch_01.ogg",
+        "sha256": "a24004ad0adbc08571324456963533c496bd27cf4808b40cb90833dc06b95792"
+      }
+    ]
+  },
+  {
+    "file": "knock.wav",
+    "seconds": 0.227,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "a22e6cbda2a54f24e75feb0b8bd7fcb4dda78ae30dcace3e3d52ce4463c0daa6",
+    "sources": [
+      {
+        "file": "wood-metal/wood_hit_02.ogg",
+        "sha256": "533144d0633e756d91a7ee6d3a1f00bed81ad85d221232c5e4812e4fd7b14177"
+      }
+    ]
+  },
+  {
+    "file": "drag.wav",
+    "seconds": 1.5,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "78a6cb5a2bd2a359edaab9dc448013eb6198aa0dd72f065c01494a6b10669009",
+    "sources": [
+      {
+        "file": "wood-metal/wood_squeak_01.ogg",
+        "sha256": "c6c90e02993b2e044937f344351b417aeff6841aa4cd683f208d85ececf23392"
+      },
+      {
+        "file": "wood-metal/wood_squeak_02.ogg",
+        "sha256": "841793c92034e419afec66538f7cf08f0f36f307aa3a1a5aaf7b664a0a178dee"
+      }
+    ]
+  },
+  {
+    "file": "ring.wav",
+    "seconds": 1.45,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "47fe144a8791077c6653ea666632e7221e9e49de121f7ff9be2ff0d26b0676cc",
+    "sources": [
+      {
+        "file": "phone.ogg",
+        "sha256": "e7e9250c9d9514b79d1b982669fc218a69b6f1b937386c719e885522433a7782"
+      }
+    ]
+  },
+  {
+    "file": "printer.wav",
+    "seconds": 4.5,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "f9c2bee87f8b9931355763616d5ea053b7d53664a7b36540689733d754210a69",
+    "sources": [
+      {
+        "file": "printer.ogg",
+        "sha256": "e345d1daf62d69ecbf64c2178afd8317b3efdfa30773fab5b883e78218622265"
+      }
+    ]
+  },
+  {
+    "file": "engine.wav",
+    "seconds": 3.2,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "1733977d057d1ff752ed9c5e4805ef5ba62b033a9345998726e2edc81e6be77a",
+    "sources": [
+      {
+        "file": "car.ogg",
+        "sha256": "544eeb3bfb5ba3d3a55e98b77c320f665cbca79e4b9fbad0e5fe99d91114a678"
+      }
+    ]
+  },
+  {
+    "file": "car_door.wav",
+    "seconds": 0.257,
+    "loop": false,
+    "peak_db": -3.1,
+    "sha256": "a65469ca9c85e68de6d40d3cd55faa0fefe01b2189ac20ceb36b01a6883b22c4",
+    "sources": [
+      {
+        "file": "foley/door_close_04.ogg",
+        "sha256": "db9247416558f6758aef358342ae5f96eb2be6ad3b9e39a230e7c46174ed733a"
+      }
+    ]
+  }
+]

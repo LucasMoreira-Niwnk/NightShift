@@ -1,0 +1,279 @@
+[gd_scene load_steps=2 format=3 uid="uid://hud_tablet_nightshift"]
+
+[ext_resource type="Script" path="res://scripts/huds/hud_tablet.gd" id="1_tab"]
+
+[node name="HUDTablet" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_tab")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.07, 0.09, 0.95)
+
+[node name="ContentMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 24
+
+[node name="HBox" type="HBoxContainer" parent="ContentMargin"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="LeftCol" type="VBoxContainer" parent="ContentMargin/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="MapTitle" type="Label" parent="ContentMargin/HBox/LeftCol"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.65, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "📍 PLANTA BAIXA — EDIFÍCIO VESPER (TÉRREO)"
+
+[node name="MapContainer" type="Panel" parent="ContentMargin/HBox/LeftCol"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RoomRecepcao" type="ReferenceRect" parent="ContentMargin/HBox/LeftCol/MapContainer"]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 40.0
+offset_right = 240.0
+offset_bottom = 180.0
+border_color = Color(0.3, 0.6, 0.9, 0.8)
+border_width = 2.0
+editor_only = false
+
+[node name="Label" type="Label" parent="ContentMargin/HBox/LeftCol/MapContainer/RoomRecepcao"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -11.0
+offset_right = 40.0
+offset_bottom = 11.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 13
+text = "Recepção"
+
+[node name="RoomCorredor" type="ReferenceRect" parent="ContentMargin/HBox/LeftCol/MapContainer"]
+layout_mode = 0
+offset_left = 280.0
+offset_top = 40.0
+offset_right = 640.0
+offset_bottom = 120.0
+border_color = Color(0.5, 0.5, 0.6, 0.8)
+border_width = 2.0
+editor_only = false
+
+[node name="Label" type="Label" parent="ContentMargin/HBox/LeftCol/MapContainer/RoomCorredor"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -60.0
+offset_top = -11.0
+offset_right = 60.0
+offset_bottom = 11.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 13
+text = "Corredor Principal"
+
+[node name="RoomSeguranca" type="ReferenceRect" parent="ContentMargin/HBox/LeftCol/MapContainer"]
+layout_mode = 0
+offset_left = 280.0
+offset_top = 160.0
+offset_right = 440.0
+offset_bottom = 300.0
+border_color = Color(0.1, 0.8, 0.4, 0.9)
+border_width = 2.0
+editor_only = false
+
+[node name="Label" type="Label" parent="ContentMargin/HBox/LeftCol/MapContainer/RoomSeguranca"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -50.0
+offset_top = -11.0
+offset_right = 50.0
+offset_bottom = 11.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.2, 0.9, 0.5, 1)
+theme_override_font_sizes/font_size = 13
+text = "Segurança"
+
+[node name="RoomArquivo" type="ReferenceRect" parent="ContentMargin/HBox/LeftCol/MapContainer"]
+layout_mode = 0
+offset_left = 480.0
+offset_top = 160.0
+offset_right = 640.0
+offset_bottom = 300.0
+border_color = Color(0.5, 0.5, 0.6, 0.8)
+border_width = 2.0
+editor_only = false
+
+[node name="Label" type="Label" parent="ContentMargin/HBox/LeftCol/MapContainer/RoomArquivo"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -30.0
+offset_top = -11.0
+offset_right = 30.0
+offset_bottom = 11.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 13
+text = "Arquivo"
+
+[node name="PlayerMarker" type="ColorRect" parent="ContentMargin/HBox/LeftCol/MapContainer"]
+layout_mode = 0
+offset_left = 345.0
+offset_top = 220.0
+offset_right = 359.0
+offset_bottom = 234.0
+color = Color(0.1, 1, 0.4, 1)
+
+[node name="PlayerLabel" type="Label" parent="ContentMargin/HBox/LeftCol/MapContainer"]
+layout_mode = 0
+offset_left = 330.0
+offset_top = 240.0
+offset_right = 380.0
+offset_bottom = 258.0
+theme_override_colors/font_color = Color(0.2, 1, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "Daniel"
+
+[node name="RightCol" type="VBoxContainer" parent="ContentMargin/HBox"]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="MiniFeed" type="PanelContainer" parent="ContentMargin/HBox/RightCol"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="ContentMargin/HBox/RightCol/MiniFeed"]
+layout_mode = 2
+
+[node name="Header" type="HBoxContainer" parent="ContentMargin/HBox/RightCol/MiniFeed/VBox"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="ContentMargin/HBox/RightCol/MiniFeed/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.35, 0.65, 1, 1)
+theme_override_font_sizes/font_size = 13
+text = "📹 FEED AO VIVO — CAM-02"
+
+[node name="Rec" type="Label" parent="ContentMargin/HBox/RightCol/MiniFeed/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 12
+text = "● REC"
+
+[node name="FeedDisplay" type="ColorRect" parent="ContentMargin/HBox/RightCol/MiniFeed/VBox"]
+custom_minimum_size = Vector2(0, 140)
+layout_mode = 2
+color = Color(0.02, 0.02, 0.03, 1)
+
+[node name="Sub" type="Label" parent="ContentMargin/HBox/RightCol/MiniFeed/VBox/FeedDisplay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -70.0
+offset_top = -11.0
+offset_right = 70.0
+offset_bottom = 11.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.4, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 12
+text = "Corredor — Sem movimento"
+
+[node name="ChecklistPanel" type="PanelContainer" parent="ContentMargin/HBox/RightCol"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBox" type="VBoxContainer" parent="ContentMargin/HBox/RightCol/ChecklistPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="ContentMargin/HBox/RightCol/ChecklistPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.65, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "✅ CHECKLIST DE PROTOCOLO"
+
+[node name="Check1" type="CheckBox" parent="ContentMargin/HBox/RightCol/ChecklistPanel/VBox"]
+layout_mode = 2
+button_pressed = true
+text = "Verificar recepção"
+
+[node name="Check2" type="CheckBox" parent="ContentMargin/HBox/RightCol/ChecklistPanel/VBox"]
+layout_mode = 2
+button_pressed = true
+text = "Testar porta de emergência"
+
+[node name="Check3" type="CheckBox" parent="ContentMargin/HBox/RightCol/ChecklistPanel/VBox"]
+layout_mode = 2
+button_pressed = true
+text = "Checar sincronização CAM-01/02"
+
+[node name="Check4" type="CheckBox" parent="ContentMargin/HBox/RightCol/ChecklistPanel/VBox"]
+layout_mode = 2
+text = "Verificar setor de arquivos"
+
+[node name="Check5" type="CheckBox" parent="ContentMargin/HBox/RightCol/ChecklistPanel/VBox"]
+layout_mode = 2
+text = "Reportar anomalias no terminal"
+
+[node name="AlertPanel" type="PanelContainer" parent="ContentMargin/HBox/RightCol"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="ContentMargin/HBox/RightCol/AlertPanel"]
+layout_mode = 2
+
+[node name="AlertTitle" type="Label" parent="ContentMargin/HBox/RightCol/AlertPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 13
+text = "⚠️ ALERTA DE MOVIMENTO"
+
+[node name="AlertText" type="Label" parent="ContentMargin/HBox/RightCol/AlertPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "CAM-03 — Objeto deslocado detectado"

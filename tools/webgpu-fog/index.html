@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<meta charset="utf-8"><title>Fog Creature — WebGPU</title>
+<style>
+ html,body{margin:0;height:100%;background:radial-gradient(circle at 50% 45%,#121a28,#05070c 70%);color:#9fb;font:13px monospace;overflow:hidden}
+ canvas{display:block;width:100vw;height:100vh}
+ #ui{position:fixed;top:8px;left:8px;background:#0008;padding:8px;line-height:1.7}
+ #ui label{display:block}
+ input[type=range]{width:160px;vertical-align:middle}
+ #err{color:#f66;white-space:pre-wrap;max-width:60ch}
+ #sk{position:fixed;top:8px;right:8px;background:#0b0f17e0;padding:8px;line-height:1.6;max-height:96vh;overflow:auto}
+ #sk.grande{right:50%;transform:translateX(50%);z-index:5}
+ #sk.oculto .sk-cv,#sk.oculto .sk-bot{display:none}
+ .sk-cv{background:#0003;cursor:crosshair;touch-action:none;display:block}
+ .sk-top label,.sk-bot label{display:inline-block;margin-right:6px}
+ .sk-bot select,.sk-bot button{margin-top:4px}
+ .sk-bot input[type=range]{width:100px}
+</style>
+<canvas id=c></canvas>
+<div id=sk class=oculto>
+  <label><input id=skon type=checkbox> usar esqueleto</label>
+  <div id=skui></div>
+</div>
+<div id=ui>
+  <b>fog creature</b> — arraste um sprite sheet (png) aqui<br>
+  <label>mascara <select id=mask><option value=auto>auto</option><option value=alpha>alpha</option><option value=escuro>sujeito escuro</option><option value=claro>sujeito claro</option></select></label>
+  <div id=maskinfo></div>
+  <label>frames <input id=frames type=number value=1 min=1 max=64 style=width:50px></label>
+  <label>fps <input id=fps type=range min=1 max=24 value=8></label>
+  <label>resolucao <input id=scale type=range min=25 max=100 value=50></label>
+  <label>steps <input id=steps type=range min=8 max=128 value=32></label>
+  <label>densidade <input id=dens type=range min=1 max=200 value=60></label>
+  <label>espessura Z <input id=thick type=range min=5 max=100 value=35></label>
+  <label>espessura XY <input id=inflate type=range min=0 max=100 value=0></label>
+  <label>cor <input id=col type=color value="#9ec8ff"> brilho <input id=glow type=range min=0 max=100 value=15 style=width:90px></label>
+  <label>cor do png <input id=corpng type=range min=0 max=100 value=0>
+    <label><input id=corpura type=checkbox> pura</label></label>
+  <label>desenho <input id=detail type=range min=0 max=100 value=60></label>
+  <label>ruido <input id=noise type=range min=0 max=100 value=55></label>
+  <label><input id=spin type=checkbox checked> girar (ou arraste na tela)</label>
+  <label><input id=freeze type=checkbox> desenho parado</label>
+  <hr style="border-color:#234">
+  <b>1. modelo</b>
+  <label>angulos <input id=angN type=number value=16 min=4 max=64 style=width:44px>
+    <button id=salvar>salvar modelo</button></label>
+  <label><input id=solido type=checkbox> usar modelo salvo (solido)</label>
+  <button id=baixar>baixar png</button>
+  <div id=modeloinfo></div>
+  <b>2. esqueleto</b>
+  <label>malha res <input id=malhaRes type=number value=96 min=32 max=192 style=width:46px>
+    <button id=glb>exportar .glb</button></label>
+  <div id=glbinfo></div>
+  <label>assar ciclo <input id=bakeN type=number value=16 min=2 max=48 style=width:44px>
+    <button id=bake>assar</button>
+    <button id=animpng>exportar png</button></label>
+  <div id=bakeinfo></div>
+  <div id=fpsout></div><div id=err></div>
+</div>
+<script type="module">
+import { criarEditor, deformar, poseAndar, poses } from './skeleton.js';
+import { gerarMalha, pesos, exportarGLB } from './mesh.js';
+function escreverOssos(){
+  if(!usarSk()) return 0;
+  const ossos = skel.bones.slice(0, MAX_OSSOS);
+  const P = poses(skel.bones).slice(0, MAX_OSSOS);
+  P.forEach((p, i) => {
+    const b = ossos[i], m = p.inv;
+    // segmento de REPOUSO: e contra ele que o pixel desfeito e testado
+    dadosOssos.set([m.m00, m.m01, m.m10, m.m11, m.tx, m.ty,
+                    b.ax, b.ay, b.bx, b.by, b.r, b.ang || 0,
+                    b.pai, 0, 0, 0], i*FLOATS_OSSO);
+  });
+  dev.queue.writeBuffer(sbo, 0, dadosOssos, 0, P.length*FLOATS_OSSO);
+  return P.length;
+}
+
+function criarBind(){
+  return dev.createBindGroup({layout:pipe.getBindGroupLayout(0),entries:[
+    {binding:0,resource:{buffer:ubo}},{binding:1,resource:smp},
+    {binding:2,resource:view},{binding:3,resource:viewCor},
+    {binding:4,resource:viewModelo},{binding:5,resource:{buffer:sbo}}]});
+}
+function escreverUniforms(){
+  // o esqueleto so deforma o modelo salvo; no volumetrico quem deforma e a CPU
+  const nOssos = $('solido').checked ? escreverOssos() : 0;
+  const nf = Math.max(1, +$('frames').value);
+  const f = Math.floor(animT * +$('fps').value) % nf;
+  dev.queue.writeBuffer(ubo,0,new Float32Array([
+    cv.width, cv.height, animT, nf,
+    f, +$('steps').value, +$('dens').value/10, +$('thick').value/100,
+    +$('noise').value/100, srcAspect/nf, yaw, +$('detail').value/100,
+    +$('inflate').value/100, ...hexRGB($('col').value),
+    +$('glow').value/100, +$('corpng').value/100, $('corpura').checked?1:0,
+    $('solido').checked?1:0, angCols, angRows, bakeAsp,
+    nAng, nOssos, aspectArte, 0,0]));
+}
+function desenharQuadro(){
+  const enc = dev.createCommandEncoder();
+  const pass = enc.beginRenderPass({colorAttachments:[{view:ctx.getCurrentTexture().createView(),
+    loadOp:'clear',storeOp:'store',clearValue:{r:0,g:0,b:0,a:0}}]});
+  pass.setPipeline(pipe); pass.setBindGroup(0,bind); pass.draw(3); pass.end();
+  dev.queue.submit([enc.finish()]);
+}
+const $=id=>document.getElementById(id);
+const hexRGB=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16)/255);
+const err=(m)=>$('err').textContent=m;
+if(!navigator.gpu) err('WebGPU indisponivel. Chrome/Edge 113+ ou habilite chrome://flags/#enable-unsafe-webgpu');
+const adapter = navigator.gpu && await navigator.gpu.requestAdapter();
+if(navigator.gpu && !adapter) err('sem adapter WebGPU');
+const dev = await adapter.requestDevice();
+const cv = document.getElementById('c');
+const ctx = cv.getContext('webgpu');
+const fmt = navigator.gpu.getPreferredCanvasFormat();
+ctx.configure({device:dev, format:fmt, alphaMode:'premultiplied'});
+
+// silhueta padrao: humanoide desenhado em canvas 2D (trocavel por drag&drop)
+function procedural(){
+  const s=256, k=document.createElement('canvas'); k.width=s; k.height=s;
+  const g=k.getContext('2d'); g.clearRect(0,0,s,s); g.fillStyle='#fff';
+  const blob=(x,y,rx,ry)=>{g.beginPath();g.ellipse(x,y,rx,ry,0,0,7);g.fill();};
+  blob(128,52,26,30);        // cabeca
+  blob(128,130,42,62);       // tronco
+  blob(80,120,16,52);        // bracos
+  blob(176,120,16,52);
+  blob(108,215,18,45);       // pernas
+  blob(148,215,18,45);
+  return k;
+}
+// Muito PNG "sem fundo" na verdade nao tem alpha: o xadrez vem gravado nos pixels.
+// Sem isso o volume vira um bloco solido. Detecta e reconstroi a mascara pelo brilho.
+const clamp01=v=>Math.min(1,Math.max(0,v));
+function buildMask(bmp, mode){
+  const k=document.createElement('canvas'); k.width=bmp.width; k.height=bmp.height;
+  const g=k.getContext('2d',{willReadFrequently:true}); g.drawImage(bmp,0,0);
+  const img=g.getImageData(0,0,k.width,k.height), d=img.data;
+  const n=d.length/4;
+  let transp=0;
+  for(let i=3;i<d.length;i+=4) if(d[i]<250) transp++;
+  const hasAlpha = transp/n > 0.02;
+  const use = mode==='auto' ? (hasAlpha?'alpha':'escuro') : mode;
+
+  // tom do desenho, pixel a pixel (sombreado, rugas do manto, caveira)
+  const ink=new Float32Array(n);
+  for(let i=0,j=0;i<d.length;i+=4,j++)
+    ink[j]=(0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2])/255;
+
+  if(use!=='alpha'){
+    for(let i=0,j=0;i<d.length;i+=4,j++){
+      let m = use==='escuro' ? 1-ink[j] : ink[j];
+      if(d[i+3]<250) m=0;                    // ja transparente continua fora
+      d[i+3]=Math.round(clamp01((m-0.12)/0.5)*255);
+    }
+  }
+
+  // Normaliza o tom dentro da mascara e escolhe a polaridade: o desenho precisa
+  // ficar DENSO onde tem tinta, seja ele claro sobre escuro ou o contrario.
+  let lo=1, hi=0, sum=0, cnt=0;
+  for(let i=3,j=0;i<d.length;i+=4,j++) if(d[i]>128){ lo=Math.min(lo,ink[j]); hi=Math.max(hi,ink[j]); sum+=ink[j]; cnt++; }
+  const span=Math.max(hi-lo, 0.05), invert = cnt>0 && sum/cnt < 0.5;
+
+  // Mapa de espessura: alpha borrado ~= distancia ate a borda. Tronco fica grosso,
+  // dedo fica fino. E o que transforma o recorte chapado em corpo com volume.
+  g.putImageData(img,0,0);
+  const b=document.createElement('canvas'); b.width=k.width; b.height=k.height;
+  const gb=b.getContext('2d',{willReadFrequently:true});
+  gb.filter=`blur(${Math.max(2, Math.round(k.width*0.04))}px)`;
+  gb.drawImage(k,0,0);
+  const bd=gb.getImageData(0,0,b.width,b.height).data;
+
+  for(let i=0,j=0;i<d.length;i+=4,j++){
+    let det=(ink[j]-lo)/span; if(invert) det=1-det;
+    d[i]  =Math.round(Math.min(1, bd[i+3]/255*1.35)*255);  // R = espessura
+    d[i+1]=Math.round(clamp01(det)*255);                   // G = tom do desenho
+    d[i+2]=0;                                              // A = silhueta
+  }
+  g.putImageData(img,0,0);
+
+  // camada de cor: o desenho original recortado pela mascara, para quem quiser
+  // a nevoa com as cores da propria arte em vez de uma cor chapada
+  const cor=document.createElement('canvas'); cor.width=k.width; cor.height=k.height;
+  const gc=cor.getContext('2d'); gc.drawImage(bmp,0,0);
+  const ci=gc.getImageData(0,0,cor.width,cor.height), cd=ci.data;
+  for(let i=0;i<cd.length;i+=4) cd[i+3]=d[i+3];
+  gc.putImageData(ci,0,0);
+
+  document.getElementById('maskinfo').textContent =
+    `mascara: ${use}${mode==='auto'?' (auto)':''}${invert?' · tom invertido':''} · ${bmp.width}x${bmp.height}`;
+  return { mascara:k, cor };
+}
+let view, viewCor, viewModelo, bind=null, srcBitmap=null, srcAspect=1, maskCv=null, corCv=null;
+// A textura fica numa variavel viva e a anterior e destruida na mao: deixar o
+// GPUTexture so como local fazia a textura sumir embaixo da view ainda em uso.
+const texturas = {};
+async function subir(cvs, chave, premult){
+  const bmp = await createImageBitmap(cvs);
+  const t = dev.createTexture({size:[bmp.width,bmp.height],format:'rgba8unorm',
+    usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST|GPUTextureUsage.RENDER_ATTACHMENT});
+  dev.queue.copyExternalImageToTexture({source:bmp},
+    {texture:t, premultipliedAlpha: !!premult},[bmp.width,bmp.height]);
+  texturas[chave] = t;   // sem destroy: o frame em voo ainda pode estar usando a anterior
+  return t.createView();
+}
+const usarSk = () => document.getElementById('skon').checked;
+async function setTexture(src){
+  if(src) srcBitmap = src instanceof HTMLCanvasElement ? await createImageBitmap(src) : src;
+  const m = buildMask(srcBitmap, document.getElementById('mask').value);
+  maskCv = m.mascara; corCv = m.cor;
+  srcAspect = maskCv.width / maskCv.height;
+  aspectArte = srcAspect;
+  $('frames').value = '1';
+  skel.definirFundo(srcBitmap, srcAspect);
+  await enviarTextura();
+}
+// separado porque posar o esqueleto refaz so esta parte, nao a mascara inteira
+async function enviarTextura(){
+  const [m, c] = usarSk() ? deformar([maskCv, corCv], skel.bones, srcAspect) : [maskCv, corCv];
+  view = await subir(m, 'mascara'); viewCor = await subir(c, 'cor'); bind = null;
+}
+let poseSuja = false, assado = false, ultimoBake = 0, pausado = false;
+let yaw=0, animT=0, drag=false, lastX=0;
+const skel = criarEditor({
+  raiz: document.getElementById('skui'),
+  aoMudar: () => { if(usarSk()) poseSuja = true; },
+});
+document.getElementById('skon').addEventListener('change', e => {
+  document.getElementById('sk').classList.toggle('oculto', !e.target.checked);
+  assado = false; $('frames').value = '1'; poseSuja = true;
+});
+
+// Assar o ciclo: a deformacao e cara porque roda na CPU pixel a pixel. Rodando
+// ao vivo ela come o frame inteiro. Assada vira um sprite sheet comum e a
+// reproducao passa a custar o mesmo que uma animacao qualquer: zero deformacao.
+let aspectArte = 1;
+async function assarCiclo(){
+  const n = Math.max(2, Math.min(48, +$('bakeN').value));
+  skel.pararAndar();
+  assado = true;   // antes do laco: posar durante o bake marca a pose como suja
+                   // e o rebake ao vivo sobrescreveria a folha com 1 so frame
+  const larg = Math.min(256, Math.floor(8192/n));   // o sheet inteiro cabe na GPU
+  const folhas = [null, null];
+  const ctxs = [];
+  for(let i=0;i<n;i++){
+    poseAndar(skel.bones, i/n);
+    const [m, c] = deformar([maskCv, corCv], skel.bones, aspectArte, larg);
+    if(!folhas[0]){
+      [m, c].forEach((q, k) => {
+        const f=document.createElement('canvas'); f.width=q.width*n; f.height=q.height;
+        folhas[k]=f; ctxs[k]=f.getContext('2d');
+      });
+    }
+    ctxs[0].drawImage(m, i*m.width, 0);
+    ctxs[1].drawImage(c, i*c.width, 0);
+    $('bakeinfo').textContent = `assando ${i+1}/${n}`;
+    await new Promise(r=>setTimeout(r));   // deixa a pagina respirar
+  }
+  poseAndar(skel.bones, 0);
+  view = await subir(folhas[0], 'mascara'); viewCor = await subir(folhas[1], 'cor'); bind = null;
+  srcAspect = folhas[0].width / folhas[0].height;
+  $('frames').value = String(n);
+  poseSuja = false;
+  $('bakeinfo').textContent = `ciclo assado: ${n} frames de ${folhas[0].width/n}px`;
+}
+
+let nAng = 1, angCols = 1, angRows = 1, bakeAsp = 0.75, folhaModelo = null;
+{ const vazio=document.createElement('canvas'); vazio.width=1; vazio.height=1;
+  viewModelo = await subir(vazio, 'modelo', true); }
+
+// Salvar modelo: grava o visual ja pronto de varios angulos. Nao e o volume,
+// e o resultado dele - o raymarch roda uma vez por angulo aqui e nunca mais.
+async function salvarModelo(){
+  const n = Math.max(4, Math.min(64, +$('angN').value));
+  const fw = 384, fh = Math.round(fw / bakeAspAlvo());
+  const limite = dev.limits.maxTextureDimension2D;
+  const cols = Math.max(1, Math.min(n, Math.floor(limite/fw)));
+  const linhas = Math.ceil(n/cols);
+  if(linhas*fh > limite) throw new Error(`${n} angulos nao cabem em ${limite}px`);
+  const folha = document.createElement('canvas');
+  folha.width = fw*cols; folha.height = fh*linhas;
+  const fg = folha.getContext('2d');
+  const yawAntes = yaw, larguraAntes = cv.width, alturaAntes = cv.height;
+  const girAntes = $('spin').checked; $('spin').checked = false;
+  const solidoAntes = $('solido').checked; $('solido').checked = false;
+  pausado = true;
+  cv.width = fw; cv.height = fh;
+  for(let i=0;i<n;i++){
+    yaw = i/n * Math.PI*2;
+    escreverUniforms();
+    bind = bind || criarBind();
+    desenharQuadro();
+    fg.drawImage(await createImageBitmap(cv), (i%cols)*fw, Math.floor(i/cols)*fh);
+    $('modeloinfo').textContent = `gravando ${i+1}/${n}`;
+  }
+  cv.width = larguraAntes; cv.height = alturaAntes;
+  $('solido').checked = solidoAntes;
+  pausado = false;
+  yaw = yawAntes; $('spin').checked = girAntes;
+  folhaModelo = folha; nAng = n; angCols = cols; angRows = linhas; bakeAsp = fw/fh;
+  viewModelo = await subir(folha, 'modelo', true); bind = null;
+  $('solido').checked = true;
+  $('modeloinfo').textContent =
+    `modelo: ${n} angulos de ${fw}x${fh} · folha ${folha.width}x${folha.height}`;
+}
+const bakeAspAlvo = () => 0.75;
+
+// Folha da CAMINHADA, para usar como textura animada: cada quadro e a criatura
+// renderizada com os efeitos, numa pose do ciclo. Diferente de "salvar modelo",
+// que varre angulos; aqui o angulo e fixo e o que varia e o passo.
+async function exportarAnimacaoPNG(){
+  if(!usarSk()) throw new Error('ligue "usar esqueleto" para ter o que animar');
+  const n = Math.max(2, Math.min(48, +$('bakeN').value));
+  skel.pararAndar();
+  const fw = 384, fh = Math.round(fw / bakeAspAlvo());
+  const limite = dev.limits.maxTextureDimension2D;
+  const cols = Math.max(1, Math.min(n, Math.floor(limite/fw)));
+  const linhas = Math.ceil(n/cols);
+  const folha = document.createElement('canvas');
+  folha.width = fw*cols; folha.height = fh*linhas;
+  const fg = folha.getContext('2d');
+
+  const lA = cv.width, aA = cv.height, yA = yaw, girA = $('spin').checked;
+  $('spin').checked = false;
+  pausado = true;
+  cv.width = fw; cv.height = fh; yaw = 0;
+  try {
+    for(let i=0;i<n;i++){
+      poseAndar(skel.bones, i/n);
+      // no solido a GPU deforma sozinha; no volumetrico a mascara tem de ser
+      // refeita antes de desenhar, senao todos os quadros saem iguais
+      if(!$('solido').checked) await enviarTextura();
+      escreverUniforms(); bind = bind || criarBind();
+      desenharQuadro();
+      fg.drawImage(await createImageBitmap(cv), (i%cols)*fw, Math.floor(i/cols)*fh);
+      $('bakeinfo').textContent = `gravando passo ${i+1}/${n}`;
+    }
+  } finally {
+    cv.width = lA; cv.height = aA; yaw = yA; $('spin').checked = girA;
+    pausado = false;
+    poseAndar(skel.bones, 0);
+    poseSuja = true;
+  }
+  const blob = await new Promise(r => folha.toBlob(r, 'image/png'));
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'caminhada.png'; a.click();
+  $('bakeinfo').textContent =
+    `caminhada: ${n} passos de ${fw}x${fh} · folha ${folha.width}x${folha.height} (${cols}x${linhas})`;
+}
+
+const qImg = new URLSearchParams(location.search).get('img');   // ?img=criatura.png
+await setTexture(qImg ? await createImageBitmap(await (await fetch(qImg)).blob()) : procedural());
+
+const smp = dev.createSampler({magFilter:'linear',minFilter:'linear',addressModeU:'clamp-to-edge',addressModeV:'clamp-to-edge'});
+const MAX_OSSOS = 16, FLOATS_OSSO = 16;
+const sbo = dev.createBuffer({size: MAX_OSSOS*FLOATS_OSSO*4,
+  usage: GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
+const dadosOssos = new Float32Array(MAX_OSSOS*FLOATS_OSSO);
+const ubo = dev.createBuffer({size:112, usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
+
+const shader = dev.createShaderModule({code:`
+struct U {
+  res: vec2f, time: f32, frames: f32,
+  frame: f32, steps: f32, density: f32, thick: f32,
+  noiseAmt: f32, aspect: f32, yaw: f32, detail: f32,
+  inflate: f32, colR: f32, colG: f32, colB: f32,
+  glow: f32, corPng: f32, corPura: f32, solido: f32,
+  angCols: f32, angRows: f32, bakeAsp: f32, nAng: f32,
+  nOssos: f32, artAsp: f32, pf: f32, pg: f32,
+};
+@group(0) @binding(0) var<uniform> u: U;
+@group(0) @binding(1) var samp: sampler;
+@group(0) @binding(2) var silh: texture_2d<f32>;
+@group(0) @binding(3) var arte: texture_2d<f32>;
+@group(0) @binding(4) var modelo: texture_2d<f32>;
+
+struct Osso { inv: vec4f, t: vec2f, ra: vec2f, rb: vec2f, raio: f32, ang: f32,
+              pai: f32, p1: f32, p2: f32, p3: f32 };
+@group(0) @binding(5) var<storage, read> ossos: array<Osso>;
+
+fn distRepouso(p: vec2f, o: Osso) -> f32 {
+  let d = o.rb - o.ra;
+  let e = p - o.ra;
+  let l2 = dot(d, d);
+  let tt = select(0.0, clamp(dot(e, d)/l2, 0.0, 1.0), l2 > 0.0);
+  return length(e - d*tt) / max(o.raio, 0.001);
+}
+fn projRepouso(p: vec2f, o: Osso) -> vec2f {
+  let d = o.rb - o.ra;
+  let e = p - o.ra;
+  let l2 = dot(d, d);
+  let tt = select(0.0, clamp(dot(e, d)/l2, 0.0, 1.0), l2 > 0.0);
+  return o.ra + d*tt;
+}
+fn porOsso(p: vec2f, o: Osso) -> vec2f {
+  return vec2f(o.inv.x*p.x + o.inv.y*p.y + o.t.x,
+               o.inv.z*p.x + o.inv.w*p.y + o.t.y);
+}
+
+// Deforma a UV do quadro ja gravado. Aqui nao ha volume para remarchar: e uma
+// imagem, entao o esqueleto sai da CPU e vira algumas contas por pixel.
+//
+// Cada pixel pergunta "de qual osso eu vim?": desfaz a pose de cada osso e ve
+// se cai dentro do alcance dele no REPOUSO. Misturar pesos como em malha 3D
+// duplicava o membro - o braco aparecia na pose nova E no lugar antigo, porque
+// a area abandonada continuava sendo copiada da arte original.
+fn ossosUV(uvQuadro: vec2f) -> vec3f {
+  let n = i32(u.nOssos);
+  if (n <= 0) { return vec3f(uvQuadro, 1.0); }
+  // quadro -> espaco da arte (a camera do bake e fixa, entao e um afim simples)
+  let x = (uvQuadro.x - 0.5) * 2.0 * u.bakeAsp;
+  let y = (0.5 - uvQuadro.y) * 2.0;
+  let arte = vec2f(x / max(u.artAsp, 0.001) + 0.5, 0.5 - y);
+
+  var melhor = 1e9; var origem = arte;
+  for (var i = 0; i < n; i = i + 1) {
+    let q = porOsso(arte, ossos[i]);
+    let d = distRepouso(q, ossos[i]);
+    if (d < melhor) { melhor = d; origem = q; }
+  }
+  if (melhor >= 1.0) {
+    origem = arte;
+    // Ninguem reivindicou: este ponto foi abandonado por um osso que girou.
+    // Em vez de vazar, puxa a amostra para o eixo do osso PAI, fechando o vao
+    // com o proprio corpo. Borra um pouco, mas le como corpo e nao como recorte.
+    for (var i = 0; i < n; i = i + 1) {
+      if (abs(ossos[i].ang) > 0.02 && distRepouso(arte, ossos[i]) < 1.0) {
+        let ip = i32(ossos[i].pai);
+        if (ip < 0) { return vec3f(uvQuadro, 0.0); }
+        let pai = ossos[ip];
+        let dp = distRepouso(arte, pai);
+        if (dp > 0.6) {
+          origem = mix(arte, projRepouso(arte, pai), (dp - 0.6) / max(dp, 0.001));
+        }
+        break;
+      }
+    }
+  }
+  // volta para o espaco do quadro
+  let x2 = (origem.x - 0.5) * max(u.artAsp, 0.001);
+  let y2 = 0.5 - origem.y;
+  return vec3f(x2 / (2.0 * u.bakeAsp) + 0.5, 0.5 - y2 * 0.5, 1.0);
+}
+
+fn impostor(frag: vec2f) -> vec4f {
+  let voltas = u.yaw / 6.28318531;
+  let idx = floor((voltas - floor(voltas)) * u.nAng + 0.5) % u.nAng;
+  // a folha e uma GRADE: em fila unica, 24 angulos de 384px ja passam do limite
+  // de 8192px de largura da GPU e a textura nem chega a ser criada
+  let col = idx % u.angCols;
+  let row = floor(idx / u.angCols);
+  // encaixa o quadro assado na tela mantendo a proporcao com que foi gravado
+  let telaAsp = u.res.x / u.res.y;
+  var uv = frag / u.res;
+  if (telaAsp > u.bakeAsp) {
+    uv.x = (uv.x - 0.5) * telaAsp / u.bakeAsp + 0.5;
+  } else {
+    uv.y = (uv.y - 0.5) * u.bakeAsp / telaAsp + 0.5;
+  }
+  let r = ossosUV(uv);
+  if (r.z < 0.5) { return vec4f(0.0); }   // area que o membro abandonou
+  uv = r.xy;
+  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { return vec4f(0.0); }
+  return textureSampleLevel(modelo, samp,
+    vec2f((uv.x + col) / u.angCols, (uv.y + row) / u.angRows), 0.0);
+}
+
+@vertex fn vs(@builtin(vertex_index) i:u32) -> @builtin(position) vec4f {
+  var p = array(vec2f(-1,-1), vec2f(3,-1), vec2f(-1,3));
+  return vec4f(p[i], 0, 1);
+}
+
+fn hash(p: vec3f) -> f32 {
+  return fract(sin(dot(p, vec3f(12.9898, 78.233, 37.719))) * 43758.5453);
+}
+fn vnoise(p: vec3f) -> f32 {
+  let i = floor(p); let f = p - i; let w = f*f*(3.0 - 2.0*f);
+  let a = mix(hash(i+vec3f(0,0,0)), hash(i+vec3f(1,0,0)), w.x);
+  let b = mix(hash(i+vec3f(0,1,0)), hash(i+vec3f(1,1,0)), w.x);
+  let c = mix(hash(i+vec3f(0,0,1)), hash(i+vec3f(1,0,1)), w.x);
+  let d = mix(hash(i+vec3f(0,1,1)), hash(i+vec3f(1,1,1)), w.x);
+  return mix(mix(a,b,w.y), mix(c,d,w.y), w.z);
+}
+fn fbm(p: vec3f) -> f32 {   // 2 oitavas: a 3a custava ~30% e quase nao aparecia
+  return 0.65*vnoise(p) + 0.35*vnoise(p*2.3);
+}
+// mantem a proporcao do sprite dentro da caixa: senao um png alto vira um bloco esticado
+fn localUV(q: vec3f) -> vec2f {
+  return vec2f(q.x / max(u.aspect, 0.001) + 0.5, 0.5 - q.y);
+}
+fn silhTex(uv: vec2f) -> vec3f {   // x = espessura, y = silhueta, z = tom do desenho
+  if (uv.x < 0.0 || uv.x > 1.0) { return vec3f(0.0); }
+  let t = textureSampleLevel(silh, samp, vec2f((uv.x + u.frame) / u.frames, uv.y), 0.0);
+  return vec3f(t.r, t.a, t.g);
+}
+// Espessura em X e Y: o mapa borrado vaza pra fora da silhueta, entao baixar o
+// corte nele infla o corpo lateralmente - mesmo principio da espessura em Z.
+// Dilatacao real: pega o maior valor num anel em volta do ponto. So roda quando
+// o slider sai do zero, e engorda em X e Y do mesmo jeito que thick engorda em Z.
+fn dilate(uv: vec2f, base: f32) -> f32 {
+  if (u.inflate < 0.01) { return base; }
+  let r = u.inflate * 0.07;
+  let rx = r / max(u.aspect, 0.001);
+  var m = base;
+  for (var i = 0; i < 6; i = i + 1) {
+    let a = f32(i) * 1.0472;
+    m = max(m, silhTex(uv + vec2f(cos(a)*rx, sin(a)*r)).y);
+  }
+  return m;
+}
+// Cor da arte no ponto. Usa so o MATIZ (divide pelo canal mais forte): um manto
+// quase preto tem a cor certa mas escura demais, e apagaria a nevoa.
+fn albedoAt(uv: vec2f) -> vec3f {
+  let tinta = vec3f(u.colR, u.colG, u.colB);
+  if (u.corPng < 0.01) { return tinta; }
+  let c = textureSampleLevel(arte, samp, vec2f((uv.x + u.frame) / u.frames, uv.y), 0.0).rgb;
+  if (u.corPura > 0.5) { return mix(tinta, c, u.corPng); }   // crua, como esta no arquivo
+  let m = max(max(c.r, c.g), c.b);
+  return tinta * mix(vec3f(1.0), c / max(m, 0.02), u.corPng);
+}
+// 0 = silhueta chapada, 1 = o desenho inteiro aparecendo na nevoa
+fn inkMul(det: f32) -> f32 {
+  return mix(1.0, 0.15 + 2.2*det*det, u.detail);
+}
+
+// densidade da criatura no espaco local [-0.5,0.5]^3
+fn densityAt(q: vec3f) -> f32 {
+  if (abs(q.x) > 0.5 || abs(q.y) > 0.5 || abs(q.z) > 0.5) { return 0.0; }
+  let uv0 = localUV(q);
+  let s0 = silhTex(uv0);
+  // teste barato: fora da silhueta sai antes de tocar no ruido (o caro)
+  if (dilate(uv0, s0.y) < 0.02) { return 0.0; }
+  // AQUI vira 3D: a espessura em Z vem de quao fundo o ponto esta dentro do corpo,
+  // entao tronco fica gordo e dedo fica fino, em vez de tudo com a mesma chapa.
+  let halfZ = max(s0.x + u.inflate*0.6, 0.03) * u.thick;   // XY gordo pede Z gordo
+  let zf = smoothstep(1.0, 0.25, abs(q.z) / halfZ);
+  if (zf < 0.01) { return 0.0; }
+  let w = fbm(vec3f(q.xy*4.0, u.time*0.35)) - 0.5;   // ondulacao de fumaca
+  let uv1 = uv0 + vec2f(w, w*0.6) * 0.06;
+  let s1 = silhTex(uv1);
+  let n = mix(1.0, fbm(q*6.0 + vec3f(0.0, -u.time*0.5, u.time*0.2)), u.noiseAmt);
+  return smoothstep(0.25, 0.85, dilate(uv1, s1.y)) * zf * n * inkMul(s1.z) * u.density;
+}
+// densidade sem ruido, so pra sombra: 1 fetch, zero fbm
+fn densityShadow(q: vec3f) -> f32 {
+  if (abs(q.x) > 0.5 || abs(q.y) > 0.5 || abs(q.z) > 0.5) { return 0.0; }
+  let uvs = localUV(q);
+  let s0 = silhTex(uvs);
+  let zf = smoothstep(1.0, 0.25, abs(q.z) / max((s0.x + u.inflate*0.6) * u.thick, 0.03));
+  return smoothstep(0.25, 0.85, dilate(uvs, s0.y)) * zf * inkMul(s0.z) * u.density;
+}
+
+@fragment fn fs(@builtin(position) pos: vec4f) -> @location(0) vec4f {
+  if (u.solido > 0.5) { return impostor(pos.xy); }   // antes do raymarch: e o ponto
+  let p = (pos.xy / u.res) * 2.0 - 1.0;
+  let aspect = u.res.x / u.res.y;
+  let cy = cos(u.yaw); let sy = sin(u.yaw);
+  var ro = vec3f(0.0, 0.0, -2.0);
+  var rd = normalize(vec3f(p.x*aspect*0.5, -p.y*0.5, 1.0));
+  ro = vec3f(ro.x*cy + ro.z*sy, ro.y, -ro.x*sy + ro.z*cy);
+  rd = vec3f(rd.x*cy + rd.z*sy, rd.y, -rd.x*sy + rd.z*cy);
+
+  let lp = vec3f(cos(u.time*0.6)*1.1, 0.45, sin(u.time*0.6)*1.1);  // luz girando
+  let lcol = vec3f(1.0, 0.85, 0.6) * 2.2;
+
+
+  let inv = 1.0 / rd;
+  let t1 = (vec3f(-0.5) - ro) * inv;
+  let t2 = (vec3f( 0.5) - ro) * inv;
+  let tmin = max(max(min(t1.x,t2.x), min(t1.y,t2.y)), min(t1.z,t2.z));
+  let tmax = min(min(max(t1.x,t2.x), max(t1.y,t2.y)), max(t1.z,t2.z));
+
+  var col = vec3f(0.0);
+  var alfa = 0.0;
+
+  if (tmax > max(tmin, 0.0)) {
+    let n = i32(u.steps);
+    let dt = (tmax - max(tmin, 0.0)) / f32(n);
+    var t = max(tmin, 0.0) + dt * hash(vec3f(pos.xy, u.time));   // jitter mata banding
+    var trans = 1.0;
+    var acc = vec3f(0.0);
+    for (var i = 0; i < n; i = i + 1) {
+      let q = ro + rd * t;
+      let d = densityAt(q);
+      if (d > 0.001) {
+        let sigma = d * dt;
+        let ldir = normalize(lp - q);
+        var sh = 0.0;
+        for (var j = 1; j <= 2; j = j + 1) {   // sombra: 2 amostras, passo maior
+          sh = sh + densityShadow(q + ldir * (f32(j) * 0.14)) * 0.14;
+        }
+        let albedo = albedoAt(localUV(q));
+        let ambient = albedo * 0.35 + vec3f(u.glow);   // glow = brilho proprio
+        let lighting = ambient + lcol * exp(-sh * 1.6) / (1.0 + dot(lp-q, lp-q));
+        acc = acc + trans * (1.0 - exp(-sigma)) * albedo * lighting;
+        trans = trans * exp(-sigma);
+        if (trans < 0.01) { break; }
+      }
+      t = t + dt;
+    }
+    col = acc;
+    alfa = 1.0 - trans;
+  }
+  // tonemap pelo canal mais forte: o /(1+col) por canal lavava a cor toda
+  col = col / (1.0 + max(max(col.r, col.g), col.b));
+  col = pow(col, vec3f(1.0/2.2));
+  return vec4f(col, alfa);   // premultiplicado: o acumulado ja embute a cobertura
+}`});
+
+const pipe = dev.createRenderPipeline({layout:'auto',
+  vertex:{module:shader,entryPoint:'vs'},
+  fragment:{module:shader,entryPoint:'fs',targets:[{format:fmt}]},
+  primitive:{topology:'triangle-list'}});
+
+let last=performance.now(), accT=0, nF=0;
+function frame(now){
+  // Durante a gravacao o canvas fica no tamanho do quadro. Sem esta pausa o loop
+  // o redimensionava de volta entre um angulo e outro e os quadros saiam com o
+  // tamanho da janela, espremidos dentro da folha.
+  if(pausado){ last = now; requestAnimationFrame(frame); return; }
+  // renderiza menor e deixa o CSS esticar: custo cai com o quadrado da escala
+  const s = (+$('scale').value)/100 * Math.min(devicePixelRatio, 2);
+  const w = Math.floor(innerWidth*s), h = Math.floor(innerHeight*s);
+  if(w<1||h<1){ requestAnimationFrame(frame); return; }   // aba oculta / pane com 0px
+  if(cv.width!==w||cv.height!==h){ cv.width=w; cv.height=h; }
+  if(!bind) bind = criarBind();
+
+  const dt = (now-last)/1000;
+  if($('spin').checked) yaw += dt * 0.5;
+  if(!$('freeze').checked) animT += Math.min(dt, 0.1);   // congela so a nevoa
+  if(skel.tick(now)) poseSuja = true;
+  // andar ao vivo deforma na CPU: limita a ~12 rebakes/s para nao comer o frame.
+  // Para rodar liso de verdade, use "assar ciclo" — ai nao deforma mais nada.
+  // no solido quem deforma e a GPU: o rebake na CPU so queimaria frame
+  const podeRebake = (!skel.andando || now - ultimoBake > 80) && !$('solido').checked;
+  if(poseSuja && maskCv && !assado && podeRebake){
+    poseSuja = false; ultimoBake = now;
+    enviarTextura().catch(x=>err(String(x)));
+  }
+  escreverUniforms();
+  desenharQuadro();
+
+  accT += now-last; last=now; nF++;
+  if(accT>500){ $('fpsout').textContent = (1000*nF/accT).toFixed(0)+' fps @ '+cv.width+'x'+cv.height; accT=0; nF=0; }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+
+cv.addEventListener('pointerdown',e=>{drag=true; lastX=e.clientX; cv.setPointerCapture(e.pointerId);});
+cv.addEventListener('pointerup',()=>drag=false);
+cv.addEventListener('pointermove',e=>{ if(drag){ yaw += (e.clientX-lastX)*0.01; lastX=e.clientX; $('spin').checked=false; } });
+
+// arraste seu sprite sheet (png com alpha) pra ca
+document.body.addEventListener('dragover',e=>e.preventDefault());
+document.body.addEventListener('drop',async e=>{
+  e.preventDefault(); const f=e.dataTransfer.files[0]; if(!f) return;
+  try{ await setTexture(await createImageBitmap(f)); err(''); }catch(x){ err(String(x)); }
+});
+$('salvar').addEventListener('click', ()=>{
+  err(''); $('salvar').disabled = true;
+  salvarModelo().catch(x=>err(String(x)))
+    .finally(()=>{ pausado = false; $('salvar').disabled = false; });
+});
+$('baixar').addEventListener('click', ()=>{
+  if(!folhaModelo){ err('salve o modelo primeiro'); return; }
+  folhaModelo.toBlob(b=>{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(b); a.download='modelo.png'; a.click();
+  });
+});
+// Exporta a criatura como malha de verdade: o campo de densidade ja e 3D,
+// entao da para extrair a superficie e levar os ossos junto como Skeleton3D.
+// A textura nao pode ser a arte crua: o ceifador e quase preto, entao a malha
+// saia preta no Godot. Usa a FRENTE ja renderizada, com nevoa e luz dentro.
+// A projecao da UV e exatamente a camera do bake, entao basta recortar o centro.
+async function texturaFrontal(){
+  const lA = cv.width, aA = cv.height, yA = yaw;
+  const girA = $('spin').checked, solA = $('solido').checked;
+  $('spin').checked = false; $('solido').checked = false;
+  pausado = true;
+  const W = 768, H = 1024;
+  cv.width = W; cv.height = H; yaw = 0;
+  escreverUniforms(); bind = bind || criarBind();
+  desenharQuadro();
+  const bmp = await createImageBitmap(cv);
+  cv.width = lA; cv.height = aA; yaw = yA;
+  $('spin').checked = girA; $('solido').checked = solA; pausado = false;
+
+  const asp = W/H;                       // o quadro cobre x em [-asp, asp], y em [-1,1]
+  const fx = Math.min(1, (aspectArte/2)/asp), fy = 0.5;   // a malha ocupa o centro
+  const t = document.createElement('canvas');
+  t.width = 512; t.height = Math.max(2, Math.round(512/aspectArte));
+  t.getContext('2d').drawImage(bmp, (1-fx)/2*W, (1-fy)/2*H, fx*W, fy*H,
+                               0, 0, t.width, t.height);
+  return t;
+}
+
+async function exportarMalha(){
+  if(!maskCv) throw new Error('carregue uma arte primeiro');
+  $('glbinfo').textContent = 'gerando malha...';
+  await new Promise(r=>setTimeout(r));
+  const malha = gerarMalha(maskCv, {
+    artAsp: aspectArte,
+    thick: +$('thick').value/100,
+    inflate: +$('inflate').value/100,
+    res: Math.max(32, Math.min(192, +$('malhaRes').value)),
+  });
+  if(!malha.idx.length) throw new Error('malha vazia: aumente densidade ou espessura');
+  $('glbinfo').textContent = `malha: ${malha.pos.length/3} vertices · gravando glb...`;
+  await new Promise(r=>setTimeout(r));
+  const ossos = skel.bones;
+  const textura = await texturaFrontal();
+  const glb = await exportarGLB(malha, pesos(malha, ossos, aspectArte),
+                                ossos, aspectArte, textura);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(glb); a.download = 'criatura.glb'; a.click();
+  $('glbinfo').textContent =
+    `glb: ${malha.pos.length/3} vertices, ${malha.idx.length/3} triangulos, ${ossos.length} ossos`;
+}
+$('glb').addEventListener('click', ()=>{
+  err(''); $('glb').disabled = true;
+  exportarMalha().catch(x=>{ err(String(x)); $('glbinfo').textContent=''; })
+    .finally(()=>{ $('glb').disabled = false; });
+});
+$('animpng').addEventListener('click', ()=>{
+  err(''); $('animpng').disabled = true;
+  exportarAnimacaoPNG().catch(x=>{ err(String(x)); $('bakeinfo').textContent=''; })
+    .finally(()=>{ $('animpng').disabled = false; });
+});
+$('bake').addEventListener('click', ()=>{
+  if(!usarSk()){ err('ligue "usar esqueleto" antes de assar'); return; }
+  err(''); $('bake').disabled = true;
+  assarCiclo().catch(x=>err(String(x))).finally(()=>{ $('bake').disabled = false; });
+});
+document.getElementById('mask').addEventListener('change',()=>setTexture(null).catch(x=>err(String(x))));
+</script>

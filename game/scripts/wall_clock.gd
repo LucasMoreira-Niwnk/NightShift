@@ -16,6 +16,7 @@ func _ready() -> void:
 	for number in [3, 6, 9, 12]:
 		var angle: float = number * TAU / 12.0
 		var label := Label3D.new()
+		label.shaded = true
 		label.text = str(number)
 		label.position = Vector3(sin(angle) * 0.205, cos(angle) * 0.205, 0.061)
 		label.font_size = 40
@@ -28,6 +29,7 @@ func _ready() -> void:
 	disc(0.018, 0.008, 0.087, Color(0.21, 0.12, 0.06))
 	Art.box(self, Vector3(0, -0.4, 0), Vector3(0.57, 0.13, 0.045), Color(0.07, 0.11, 0.1))
 	readout = Label3D.new()
+	readout.shaded = true
 	readout.position = Vector3(0, -0.4, 0.028)
 	readout.font_size = 48
 	readout.pixel_size = 0.0014

@@ -25,8 +25,185 @@ static func surface(kind: String) -> StandardMaterial3D:
 			material.albedo_color = Color(0.52, 0.43, 0.32)
 			material.uv1_scale = Vector3.ONE * 1.3
 		if kind == "ceiling": material.albedo_color = Color(0.36, 0.39, 0.36)
+		if kind == "tile": scuff_floor(material)
+		if kind == "wall": weather_wall(material)
 	else:
 		material.albedo_color = Color(0.16, 0.21, 0.2)
 		material.metallic = 0.55
 		material.roughness = 0.72
+	return material
+
+
+# O piso do Vesper e lajota velha: encerada ha anos demais, riscada por cadeira
+# e carrinho de limpeza. A luz tem que abrir num borrao opaco, nunca num ponto
+# especular limpo. Sem SSR no renderizador Compatibility, quem vende isso e a
+# rugosidade alta somada a uma camada de sujeira que nao cobre o piso inteiro.
+static func scuff_floor(material: StandardMaterial3D) -> void:
+	material.roughness = 1.0
+	material.metallic = 0.0
+	# praticamente sem especular: a poca da lanterna fica chapada no chao
+	material.metallic_specular = 0.05
+	material.albedo_color = Color(0.56, 0.57, 0.53)
+	material.detail_enabled = true
+	material.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL
+	material.detail_albedo = grime_texture()
+	material.detail_normal = scratch_normal_texture()
+	material.uv2_scale = Vector3.ONE * 0.42
+	material.uv2_triplanar = true
+	material.uv2_world_triplanar = true
+	material.detail_uv_layer = BaseMaterial3D.DETAIL_UV_2
+
+# Parede de pintura velha: casca de tinta soltando e um mofo discreto, raro.
+static func weather_wall(material: StandardMaterial3D) -> void:
+	material.roughness = 0.92
+	material.metallic_specular = 0.12
+	material.detail_enabled = true
+	material.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL
+	material.detail_albedo = peeling_texture()
+	material.detail_normal = scratch_normal_texture()
+	material.uv2_scale = Vector3.ONE * 0.12
+	material.uv2_triplanar = true
+	material.uv2_world_triplanar = true
+	material.detail_uv_layer = BaseMaterial3D.DETAIL_UV_2
+
+# Manchas largas de encardido, em escala bem maior que a lajota.
+static func grime_texture() -> NoiseTexture2D:
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(0.42, 0.41, 0.38))
+	ramp.set_color(1, Color(1.0, 1.0, 0.98))
+	return noise_texture(0.009, 4, 512, 512, ramp)
+
+# Tinta descascando e mofo, ambos raros: a rampa fica branca (neutra no MUL)
+# em quase toda a faixa do ruido e so pinta na ponta, o que mantem a parede
+# limpa fora de umas poucas placas.
+static func peeling_texture() -> NoiseTexture2D:
+	var ramp := Gradient.new()
+	ramp.offsets = PackedFloat32Array([0.0, 0.78, 0.84, 0.93, 0.97, 1.0])
+	ramp.colors = PackedColorArray([
+		Color(1.0, 1.0, 1.0),
+		Color(1.0, 1.0, 1.0),
+		Color(0.80, 0.77, 0.70),
+		Color(0.72, 0.70, 0.63),
+		Color(0.47, 0.54, 0.44),
+		Color(0.33, 0.42, 0.32),
+	])
+	return noise_texture(0.016, 3, 512, 512, ramp)
+
+# Riscos finos: ruido em textura achatada, esticada sobre UV quadrada, o que
+# alonga o padrao numa direcao so e faz ele ler como arranhao. A rampa fica
+# chapada no meio e so varia nas pontas, entao o relevo aparece em manchas,
+# nao no piso inteiro.
+static func scratch_normal_texture() -> NoiseTexture2D:
+	var ramp := Gradient.new()
+	ramp.offsets = PackedFloat32Array([0.0, 0.2, 0.74, 0.86, 1.0])
+	ramp.colors = PackedColorArray([
+		Color(0.2, 0.2, 0.2),
+		Color(0.5, 0.5, 0.5),
+		Color(0.5, 0.5, 0.5),
+		Color(0.78, 0.78, 0.78),
+		Color(1.0, 1.0, 1.0),
+	])
+	var texture := noise_texture(0.9, 3, 512, 20, ramp)
+	texture.as_normal_map = true
+	texture.bump_strength = 0.7
+	return texture
+
+static func noise_texture(frequency: float, octaves: int, width: int, height: int, ramp: Gradient) -> NoiseTexture2D:
+	var noise := FastNoiseLite.new()
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	noise.frequency = frequency
+	noise.fractal_octaves = octaves
+	var texture := NoiseTexture2D.new()
+	texture.width = width
+	texture.height = height
+	texture.seamless = true
+	texture.noise = noise
+	if ramp != null: texture.color_ramp = ramp
+	return texture
+
+# Photographic CC0 surfaces keep their actual cracks, chips and aggregate.
+static func architectural(kind: String) -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://shaders/aged_architecture.gdshader")
+	var style := 0
+	var tint := Color(0.88, 0.85, 0.74)
+	var source := "concrete_floor_worn_001"
+	var scale := 0.4
+	match kind:
+		"floor_reception", "floor_archive", "upper_floor":
+			material.set_shader_parameter("base_color", load("res://assets/textures/Tiles074/Tiles074_1K-JPG_Color.jpg"))
+			material.set_shader_parameter("base_normal", load("res://assets/textures/Tiles074/Tiles074_1K-JPG_NormalGL.jpg"))
+			scale = 0.48
+			if kind == "floor_archive": tint = Color(0.8, 0.61, 0.44)
+			if kind == "upper_floor": material.set_shader_parameter("upper_layout", true)
+		"floor_security", "floor_it":
+			style = 1
+			tint = Color(0.6, 0.76, 0.65)
+		"floor_concrete": style = 2
+		"ceiling":
+			source = "worn_cracked_plaster"
+			style = 6
+			tint = Color(0.84, 0.85, 0.81)
+			scale = 0.55
+		"wall_cream", "wall_green", "wall_concrete", "facade":
+			source = "worn_cracked_plaster"
+			style = 5
+			scale = 0.5
+			if kind == "wall_green": tint = Color(0.63, 0.76, 0.64)
+			material.set_shader_parameter("facade_faces", true)
+			material.set_shader_parameter("force_facade", kind == "facade")
+		"asphalt":
+			source = "worn_asphalt"
+			scale = 0.32
+			material.set_shader_parameter("outdoor_ground", true)
+		"pavers":
+			scale = 0.45
+			material.set_shader_parameter("outdoor_ground", true)
+	if not kind in ["floor_reception", "floor_archive", "upper_floor"]:
+		material.set_shader_parameter("base_color", decay_map(source,"diff"))
+		material.set_shader_parameter("base_normal", decay_map(source,"nor_gl"))
+	if kind in ["wall_cream", "wall_green", "wall_concrete", "facade", "ceiling"]:
+		var plaster := "res://assets/textures/PaintedPlaster017/PaintedPlaster017_1K-JPG_"
+		material.set_shader_parameter("base_color",load(plaster+"Color.jpg"))
+		material.set_shader_parameter("base_normal",load(plaster+"NormalGL.jpg"))
+	material.set_shader_parameter("rough_map", decay_map(source,"rough"))
+	material.set_shader_parameter("ao_map", decay_map(source,"ao"))
+	material.set_shader_parameter("facade_color", decay_map("worn_mossy_plasterwall","diff"))
+	material.set_shader_parameter("facade_normal", decay_map("worn_mossy_plasterwall","nor_gl"))
+	material.set_shader_parameter("broken_color", decay_map("damaged_plaster","diff"))
+	material.set_shader_parameter("broken_normal", decay_map("damaged_plaster","nor_gl"))
+	material.set_shader_parameter("dust_color", decay_map("concrete_floor_worn_001","diff"))
+	material.set_shader_parameter("mud_color", decay_map("brown_mud_leaves_01","diff"))
+	material.set_shader_parameter("mud_normal", decay_map("brown_mud_leaves_01","nor_gl"))
+	material.set_shader_parameter("wood_color", load("res://assets/textures/Wood051/Wood051_1K-JPG_Color.jpg"))
+	material.set_shader_parameter("wood_normal", load("res://assets/textures/Wood051/Wood051_1K-JPG_NormalGL.jpg"))
+	material.set_shader_parameter("pattern",style)
+	material.set_shader_parameter("tint",tint)
+	material.set_shader_parameter("texture_scale",scale)
+	material.resource_name = kind
+	return material
+
+static func decay_map(asset: String, map: String) -> Texture2D:
+	return load("res://assets/textures/decay/%s/%s.jpg" % [asset,map])
+
+static func photographic(asset: String, meters: float = 2.0) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_texture = decay_map(asset,"diff")
+	material.normal_enabled = true
+	material.normal_texture = decay_map(asset,"nor_gl")
+	material.normal_scale = 0.8
+	material.roughness_texture = decay_map(asset,"rough")
+	material.ao_enabled = true
+	material.ao_texture = decay_map(asset,"ao")
+	material.uv1_triplanar = true
+	material.uv1_world_triplanar = true
+	material.uv1_scale = Vector3.ONE / meters
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	return material
+
+
+static func fitting(color: Color, glazed: bool = false) -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://shaders/aged_glass.gdshader") if glazed else preload("res://shaders/aged_fittings.gdshader")
+	material.set_shader_parameter("paint", color)
 	return material

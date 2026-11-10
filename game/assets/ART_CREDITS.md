@@ -18,7 +18,7 @@ Imported GLB models: chair, office chair, desk, bookcases, books, radio, keyboar
 
 ## Original project geometry
 
-Paneled doors, frames, handles, hinges, individual narrative books, loose documents, switchboard details and telephone details are authored in `scripts/art.gd`, `door.gd` and `chapter_world.gd`. They supplement the imported models. Model visual detail does not replace the existing interaction and collision bodies.
+Structural frames, glazed architectural doors, loose narrative documents, labels, fuse/switch details and humanoid silhouettes use original project geometry. Opaque door leaves/frames, telephone, monitors and printer now use imported models. They supplement the imported models. Model visual detail does not replace the existing interaction and collision bodies.
 
 ## Poly Haven — CC0, textured glTF models
 
@@ -34,7 +34,7 @@ Downloaded through the official public API, using 1K textures and original geome
 
 License: https://polyhaven.com/license — Creative Commons Zero, commercial use and redistribution allowed. Runtime fitting adjusts scale and orientation to the established level and interaction bodies. `tools/download_polyhaven_models.ps1` reproduces the downloads.
 
-The rounded monitor housing, phone, humanoid silhouettes and HUD are original project geometry/code. The former primitive hand and Signal Flashlight viewmodel have been replaced as described below; the original Poly Haven download remains available in the asset folder.
+Humanoid silhouettes and HUD are original project geometry/code. Monitor and phone replacements are recorded below. The former primitive hand and Signal Flashlight viewmodel have been replaced as described below; the original Poly Haven download remains available in the asset folder.
 
 ## WRAD Arms — CC0
 
@@ -47,3 +47,48 @@ Imported rigged, textured FPS hand and forearm. The project derives a right-arm-
 Source: https://www.innerscene.com/tools/library/3d-parts/led-flashlight-torch-aluminium-tail-switch-b30191c2
 
 Original unbranded cylindrical flashlight, with embedded materials. Used for both the collectible and first-person item. License and source details: `models/flashlight/README.md`.
+
+## Additional Vesper set dressing
+
+`set_dressing.gd` builds the archive shelves and individual bound books, curved foliage and planters, vehicle bodywork/wheels, CRT housings/cabling, and exterior decay directly as project geometry. `aged_architecture.gdshader` adds room-specific joints, color variation and wear using the bundled ambientCG texture sources credited above. No additional third-party model pack or runtime dependency is required for these additions.
+
+## Poly Haven photographic decay textures — CC0
+
+Six additional texture sets supply actual cracked plaster, damaged plaster/exposed masonry, mossy facade, worn concrete, weathered asphalt and muddy leaf litter: `concrete_floor_worn_001`, `worn_cracked_plaster`, `damaged_plaster`, `worn_mossy_plasterwall`, `worn_asphalt`, `brown_mud_leaves_01`.
+
+Diffuse maps are 2K; OpenGL normal, roughness and AO maps are 1K. Contributors, source pages, source download URLs and checksums are recorded in `textures/decay/README.md` and `textures/decay/manifest.json`. License: https://polyhaven.com/license (CC0-1.0). Files are bundled locally; gameplay does not access the network.
+
+
+## Áudio — Vesper
+
+Gravações CC0 de rubberduck, GboxMikeFozzy, mikeask e Joseph SARDIN (BigSoundBank / LaSonothèque), editadas para o jogo. Fontes por arquivo, modificações e licença em [audio/vesper/SOURCES.md](audio/vesper/SOURCES.md). A interferência de rádio permanece procedural; os áudios anteriores do projeto são preservados.
+
+
+## Imported environment props — October 2026
+
+Additional Poly Haven glTF/1K models (CC0, original API checksums verified):
+
+- Mounted Fluorescent Lights — https://polyhaven.com/a/mounted_fluorescent_lights (single variant A, emission controlled by fixture power).
+- Industrial Wall Lamp — https://polyhaven.com/a/industrial_wall_lamp
+- Potted Plant 01 — https://polyhaven.com/a/potted_plant_01
+- Cardboard Box 01 — https://polyhaven.com/a/cardboard_box_01
+- Wooden Bookshelf Worn — https://polyhaven.com/a/wooden_bookshelf_worn
+- Clipboard — https://polyhaven.com/a/clipboard
+- Stationery Supplies — https://polyhaven.com/a/stationery_supplies
+- Korean Fire Extinguisher 01 — https://polyhaven.com/a/korean_fire_extinguisher_01
+- Plastic Broom — https://polyhaven.com/a/plastic_broom
+- Power Box 01 — https://polyhaven.com/a/power_box_01
+- Security Camera 01 — https://polyhaven.com/a/security_camera_01
+- Office Notepads — https://polyhaven.com/a/office_notepads
+
+Innerscene CC0 models: desktop printer, desk phone, vintage CRT, flush door, sedan and desktop PC. Exact pages/checksums: `models/innerscene/sources.json`; license: `models/innerscene/LICENSE.md`. GLBs and extracted source textures are included for offline Godot import. Door leaves and handles retain the project's interactive pivots and colliders. The CRT screen quads retain the shared live surveillance viewport.
+
+Additional Kenney Furniture Kit models are from the same original CC0 archive: bench and open cardboard box. Materials are adapted to the project palette. Architectural shells, stair geometry/rails, collisions and narrative UI remain native editable Godot geometry.
+
+Outdoor replacements from Poly Haven (CC0, API MD5 verified): Shrub 01 (https://polyhaven.com/a/shrub_01), Pine Sapling Small (https://polyhaven.com/a/pine_sapling_small, single variant A), Street Lamp 01 (https://polyhaven.com/a/street_lamp_01). Street lantern glass/bulbs use the same power controller as indoor fixtures. Trees and shrubs replace the former generated leaf geometry.
+
+### Assentos e volumes de arquivo
+
+- [Painted Wooden Bench](https://polyhaven.com/a/painted_wooden_bench) — Poly Haven, Kirill Sannikov, CC0. Modelo glTF com PBR 1K, ajustado ao espaço de espera/recepção.
+- [Book Encyclopedia Set 01](https://polyhaven.com/a/book_encyclopedia_set_01) — Poly Haven, CC0. Enciclopédias com capas, lombadas e páginas texturizadas; fileiras assentadas na geometria das prateleiras.
+- [Licença CC0 dos assets](https://polyhaven.com/license). Downloads com MD5 conferido; uso offline, sem API em tempo de execução. Powered by Poly Haven na preparação dos assets.

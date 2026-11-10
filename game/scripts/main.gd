@@ -5,9 +5,30 @@ var world: Node3D
 var chapter: Node
 var computer: StaticBody3D
 var ui: CanvasLayer
+var sound: Node
+var director: Node
+var shadows: Node3D
+var discomfort: CanvasLayer
+var scenery_applied := false
+var exploration: Node
+
+var tablet_hud: Control = null
+var hud_minimal: Control = null
+var crt_overlay_layer: CanvasLayer = null
+var hud_demo_instance: Control = null
+var hud_demo_layer: CanvasLayer = null
+
+const Settings = preload("res://scripts/game_settings.gd")
+var settings: Dictionary = {}
+# F1/F3/F4/F5 são ferramentas de desenvolvimento (demo da HUD, vulto na frente,
+# portas destrancadas/voo livre). Rodando pelo editor ou pelo launcher o build é
+# de debug; num export de release elas ficam desligadas para o jogador.
+var debug_tools := OS.is_debug_build()
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	var authored := get_node_or_null("CenarioEditavel") as Node3D
+	if authored != null: authored.hide()
 	configure_input()
 	chapter = preload("res://scripts/chapter.gd").new()
 	chapter.game = self
@@ -18,7 +39,7 @@ func _ready() -> void:
 	world.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(world)
 	player = preload("res://scripts/player.gd").new()
-	player.position = Vector3(0, 0.1, 10.5)
+	player.position = Vector3(1.5, 0.1, 23)
 	player.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(player)
 	player.ray.collision_mask = 3
@@ -29,15 +50,110 @@ func _ready() -> void:
 	computer.player = player
 	computer.chapter = chapter
 	computer.game = self
-	computer.position = Vector3(-6.5, 1.08, -0.18)
+	computer.position = Vector3(-6.5, 1.08, -1.35)
 	add_child(computer)
+	sound = preload("res://scripts/soundscape.gd").new()
+	sound.game = self
+	sound.process_mode = Node.PROCESS_MODE_PAUSABLE
+	add_child(sound)
+	shadows = preload("res://scripts/cast_shadows.gd").new()
+	shadows.game = self
+	shadows.process_mode = Node.PROCESS_MODE_PAUSABLE
+	add_child(shadows)
+	discomfort = preload("res://scripts/discomfort.gd").new()
+	discomfort.game = self
+	add_child(discomfort)
+	director = preload("res://scripts/event_director.gd").new()
+	director.game = self
+	director.process_mode = Node.PROCESS_MODE_PAUSABLE
+	add_child(director)
+	settings = Settings.DEFAULTS.duplicate() if OS.get_cmdline_user_args().has("--smoke-test") else Settings.load_all()
+	Settings.apply(self, settings)
+
+	# Inicializa integrações de HUD (CRT, Scanlines, Tablet móvel e Demo)
+	setup_hud_integrations()
+
+	# Sem isto o estado da etapa 0 so chegava ao mundo no primeiro advance(), e o
+	# corredor ficava com a energia desligada ate a primeira interacao: as luzes
+	# so comecavam a piscar depois que o jogador mexia em alguma coisa.
+	chapter.apply_world()
 	chapter.refresh()
-	ui.say("14 de novembro de 2008 — 23h57\nEdifício Vesper. Daniel Reis, seu primeiro turno começa agora.")
+	ui.say("14 de novembro de 2008 — 23h57\nEdifício Vesper. Daniel Reis, seu primeiro turno começa agora.\n[Tab] Tablet  |  [I] Bolsa de serviço  |  [J] Diário")
+	call_deferred("apply_authored_scenery")
+	if OS.get_cmdline_user_args().has("--export-scene"):
+		var exportador := preload("res://scripts/scene_export.gd").new()
+		exportador.game = self
+		add_child(exportador)
+		exportador.call_deferred("run")
+	if OS.get_cmdline_user_args().has("--map-shadows"):
+		var shadow_map := preload("res://scripts/shadow_map.gd").new()
+		shadow_map.game = self
+		add_child(shadow_map)
+		shadow_map.call_deferred("run")
 	if OS.get_cmdline_user_args().has("--smoke-test"):
 		var tests := preload("res://scripts/chapter_tests.gd").new()
 		tests.game = self
 		add_child(tests)
 		tests.call_deferred("run")
+
+func apply_authored_scenery() -> void:
+	var authored := get_node_or_null("CenarioEditavel") as Node3D
+	if authored == null: return
+	if not OS.get_cmdline_user_args().has("--bake-scenery"):
+		preload("res://scripts/scenery_layout.gd").new().apply(self,authored)
+		exploration = preload("res://scripts/exploration.gd").new()
+		exploration.game = self
+		add_child(exploration)
+		exploration.bind()
+		world.building_lights.clear()
+		world.powered_materials.clear()
+		world.capture_building_power()
+		world.set_interior_power(world.interior_powered)
+		scenery_applied = true
+	authored.free()
+
+
+func setup_hud_integrations() -> void:
+	# 1. Overlay global: grao de filme. O que Daniel ve nao e um monitor, entao
+	# nao ha curva nem varredura aqui — o tubo CRT fica nas telas de computador.
+	crt_overlay_layer = CanvasLayer.new()
+	crt_overlay_layer.layer = 8
+	add_child(crt_overlay_layer)
+	crt_overlay_layer.add_child(overlay_rect("res://shaders/film_grain.gdshader"))
+
+	# 2. HUD minimalista de exploração (relógio, prompt e bateria da lanterna)
+	var minimal_scene = load("res://scenes/huds/hud_minimal.tscn")
+	if minimal_scene:
+		var minimal_layer := CanvasLayer.new()
+		minimal_layer.layer = 15
+		add_child(minimal_layer)
+		hud_minimal = minimal_scene.instantiate()
+		minimal_layer.add_child(hud_minimal)
+		# ponytail: relogio e bateria ja vivem no card do chapter_ui; aqui so o prompt
+		hud_minimal.get_node("TopLeft").visible = false
+		hud_minimal.get_node("TopRight").visible = false
+
+	# 3. Tablet de Segurança de Daniel (Planta Baixa 2D & Checklist - Tecla Tab ou M)
+	var tablet_scene = load("res://scenes/huds/hud_tablet.tscn")
+	if tablet_scene:
+		var tablet_layer := CanvasLayer.new()
+		tablet_layer.layer = 18
+		add_child(tablet_layer)
+		tablet_hud = tablet_scene.instantiate()
+		tablet_hud.game = self
+		tablet_hud.visible = false
+		tablet_layer.add_child(tablet_hud)
+
+func overlay_rect(shader_path: String) -> ColorRect:
+	var rect := ColorRect.new()
+	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var shader = load(shader_path)
+	if shader:
+		var mat := ShaderMaterial.new()
+		mat.shader = shader
+		rect.material = mat
+	return rect
 
 func configure_input() -> void:
 	var bindings := {"move_forward": KEY_W, "move_back": KEY_S, "move_left": KEY_A, "move_right": KEY_D, "interact": KEY_E}
@@ -48,6 +164,26 @@ func configure_input() -> void:
 			key.physical_keycode = bindings[action]
 			InputMap.action_add_event(action, key)
 
+func update_setting(key: String, value) -> void:
+	settings[key] = value
+	Settings.apply(self, settings)
+	Settings.save_all(settings)
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT: pause_on_focus_loss()
+
+# Alt+Tab no meio da exploração abre a pausa, como em outros jogos de PC.
+# Terminal, tablet, documentos e finais ficam como estão: não estão em
+# movimento livre e cada um já tem sua própria forma de sair.
+func pause_on_focus_loss() -> void:
+	if ui == null or computer == null or player == null: return
+	if not bool(settings.get("pause_on_focus_loss", true)): return
+	if OS.get_cmdline_user_args().has("--smoke-test"): return
+	if ui.ending or ui.paused or ui.modal or computer.active: return
+	if tablet_hud != null and tablet_hud.visible: return
+	if hud_demo_layer != null and hud_demo_layer.visible: return
+	ui.toggle_pause()
+
 func set_player_control(enabled: bool) -> void:
 	player.controls_enabled = enabled
 	player.velocity = Vector3.ZERO
@@ -56,10 +192,14 @@ func set_player_control(enabled: bool) -> void:
 func _input(event: InputEvent) -> void:
 	if ui == null or ui.ending: return
 	if event.is_action_pressed("ui_cancel"):
-		if ui.modal:
+		if hud_demo_layer != null and hud_demo_layer.visible:
+			toggle_hud_demo()
+		elif tablet_hud != null and tablet_hud.visible:
+			toggle_tablet()
+		elif ui.modal:
 			ui.close_modal()
 		elif computer.active:
-			computer.close()
+			if not computer.console.cancel_report(): computer.close()
 		else:
 			ui.toggle_pause()
 		get_viewport().set_input_as_handled()
@@ -67,11 +207,226 @@ func _input(event: InputEvent) -> void:
 		if ui.modal and event.physical_keycode == KEY_E:
 			ui.close_modal()
 			get_viewport().set_input_as_handled()
-		elif not ui.paused and not ui.modal and not computer.active and event.physical_keycode == KEY_J:
-			ui.document("Protocolo de Vigilância", preload("res://scripts/chapter_data.gd").PROTOCOL)
+		elif not ui.paused and not ui.modal and not computer.active and (event.physical_keycode == KEY_TAB or event.physical_keycode == KEY_M):
+			toggle_tablet()
 			get_viewport().set_input_as_handled()
+		elif not ui.paused and not computer.active and event.physical_keycode == KEY_I:
+			if tablet_hud != null and tablet_hud.visible: toggle_tablet()
+			if ui.inventory_open: ui.close_modal()
+			elif not ui.modal: ui.show_inventory()
+			get_viewport().set_input_as_handled()
+		elif not ui.paused and not ui.modal and not computer.active and event.physical_keycode == KEY_J:
+			if tablet_hud != null and tablet_hud.visible: toggle_tablet()
+			ui.show_journal()
+			get_viewport().set_input_as_handled()
+		elif debug_tools and event.physical_keycode == KEY_F1:
+			if tablet_hud != null and tablet_hud.visible: toggle_tablet()
+			toggle_hud_demo()
+			get_viewport().set_input_as_handled()
+		elif debug_tools and event.physical_keycode == KEY_F3:
+			# Teste de arte: planta o Mêmesis na frente de quem joga, para olhar
+			# o vulto de perto sem esperar a etapa 5 do capítulo.
+			if world != null and world.figure != null and player != null:
+				world.figure.chamar_para_frente(player.camera)
+			get_viewport().set_input_as_handled()
+		elif debug_tools and event.physical_keycode == KEY_F5:
+			# Eram três vultos e só um atalho. Agora o F5 abre a lista e quem
+			# testa escolhe qual invocar, sem precisar decorar tecla por vulto.
+			if tablet_hud != null and tablet_hud.visible: toggle_tablet()
+			alternar_lista_memesis()
+			get_viewport().set_input_as_handled()
+		elif debug_tools and event.physical_keycode == KEY_F4:
+			toggle_debug_free_roam()
+			get_viewport().set_input_as_handled()
+		elif event.physical_keycode == KEY_F2:
+			if crt_overlay_layer:
+				crt_overlay_layer.visible = !crt_overlay_layer.visible
+			get_viewport().set_input_as_handled()
+
+## Lista do F5: nome, dica e o que fazer ao escolher.
+var lista_memesis: CanvasLayer = null
+
+func alternar_lista_memesis() -> void:
+	if lista_memesis != null:
+		fechar_lista_memesis()
+		return
+	if world == null:
+		return
+	lista_memesis = CanvasLayer.new()
+	lista_memesis.layer = 31
+	lista_memesis.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(lista_memesis)
+
+	var fundo := ColorRect.new()
+	fundo.color = Color(0, 0, 0, 0.55)
+	fundo.set_anchors_preset(Control.PRESET_FULL_RECT)
+	lista_memesis.add_child(fundo)
+
+	var caixa := VBoxContainer.new()
+	caixa.set_anchors_preset(Control.PRESET_CENTER)
+	caixa.position = Vector2(-190, -120)
+	caixa.custom_minimum_size = Vector2(380, 0)
+	caixa.add_theme_constant_override("separation", 8)
+	lista_memesis.add_child(caixa)
+
+	var titulo := Label.new()
+	titulo.text = "MÊMESIS DISPONÍVEIS  (F5 fecha)"
+	caixa.add_child(titulo)
+
+	for item in _memesis_disponiveis():
+		var b := Button.new()
+		b.text = item["nome"]
+		b.tooltip_text = item["dica"]
+		b.custom_minimum_size = Vector2(0, 34)
+		b.pressed.connect(item["acao"])
+		caixa.add_child(b)
+
+	set_player_control(false)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+func fechar_lista_memesis() -> void:
+	if lista_memesis == null:
+		return
+	lista_memesis.queue_free()
+	lista_memesis = null
+	set_player_control(true)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+func _memesis_disponiveis() -> Array:
+	var itens := []
+	if world.figure != null:
+		itens.append({
+			"nome": "1 · Vulto de névoa (coluna)",
+			"dica": "memesis.gd — a coluna de névoa do roteiro.",
+			"acao": func():
+				world.figure.chamar_para_frente(player.camera)
+				_escolhido("vulto de névoa na sua frente"),
+		})
+	if world.figure_volume != null:
+		itens.append({
+			"nome": "2 · Corpo da foto em névoa",
+			"dica": "memesis_corpo.gd — a foto virada campo de densidade.",
+			"acao": func():
+				world.figure_volume.chamar_para_frente(player.camera)
+				_escolhido("corpo da foto na sua frente"),
+		})
+	if world.figure_mesh != null and world.figure_mesh.corpo != null:
+		itens.append({
+			"nome": "3 · Criatura de malha — parada",
+			"dica": "criatura.glb com esqueleto, plantada na sua frente.",
+			"acao": func():
+				world.figure_mesh.chamar_para_frente(player.camera)
+				_escolhido("criatura de malha na sua frente"),
+		})
+		itens.append({
+			"nome": "4 · Criatura de malha — rondando as salas",
+			"dica": "Anda pelo corredor e entra na segurança, arquivo e sala técnica.",
+			"acao": func():
+				world.figure_mesh.rondar()
+				_escolhido("criatura rondando: comece pela boca do corredor"),
+		})
+		itens.append({
+			"nome": "5 · Guardar a criatura de malha",
+			"dica": "Tira a criatura de cena e para o ciclo.",
+			"acao": func():
+				world.figure_mesh.parar()
+				_escolhido("criatura guardada"),
+		})
+	else:
+		itens.append({
+			"nome": "— criatura de malha indisponível",
+			"dica": "Falta assets/models/criatura.glb (exporte em tools/webgpu-fog).",
+			"acao": func(): _escolhido("criatura.glb não está no projeto"),
+		})
+	return itens
+
+func _escolhido(aviso: String) -> void:
+	fechar_lista_memesis()
+	ui.say("DEBUG: %s." % aviso)
+
+const DEBUG_UPPER_Y := 4.2
+# Corredor -> porta da administracao -> dentro da sala, ida e volta.
+const DEBUG_PATROL := [
+	Vector3(0, DEBUG_UPPER_Y, -9),
+	Vector3(-1.6, DEBUG_UPPER_Y, -9),
+	Vector3(-4.8, DEBUG_UPPER_Y, -9),
+	Vector3(-4.8, DEBUG_UPPER_Y, -6.5),
+]
+var debug_patrol: Tween = null
+
+func toggle_debug_free_roam() -> void:
+	var tree := get_tree()
+	if tree.has_meta("debug_free_roam"):
+		tree.remove_meta("debug_free_roam")
+		stop_debug_figures()
+		ui.say("DEBUG: portas voltaram a obedecer o roteiro.")
+	else:
+		tree.set_meta("debug_free_roam", true)
+		start_debug_figures()
+		ui.say("DEBUG: portas destrancadas e Memesis em ronda no 2o andar (F4).")
+
+func start_debug_figures() -> void:
+	if world == null or world.figure == null or world.figure_volume == null: return
+	# O vulto do F3 fica parado no fim do corredor, de frente para a escadaria.
+	world.figure.position = Vector3(0, DEBUG_UPPER_Y, -11)
+	world.figure.rotation.y = PI
+	world.figure.show()
+	# A nevoa do F5 ronda: anda, para, entra e sai da administracao.
+	world.figure_volume.position = DEBUG_PATROL[0]
+	world.figure_volume.show()
+	debug_patrol = create_tween().set_loops()
+	for point in DEBUG_PATROL + [DEBUG_PATROL[2], DEBUG_PATROL[1]]:
+		debug_patrol.tween_property(world.figure_volume, "position", point, 2.2)
+		debug_patrol.tween_interval(1.1)
+
+func stop_debug_figures() -> void:
+	if debug_patrol != null and debug_patrol.is_valid(): debug_patrol.kill()
+	debug_patrol = null
+	if world == null or world.figure == null or world.figure_volume == null: return
+	world.figure.rotation.y = 0.0
+	world.figure.hide()
+	world.figure_volume.hide()
+	chapter.refresh()
+
+func toggle_tablet() -> void:
+	if tablet_hud == null or ui.modal or computer.active:
+		return
+	var is_open = not tablet_hud.visible
+	tablet_hud.visible = is_open
+	if is_open: tablet_hud._process(0.0)
+	set_player_control(not is_open)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if is_open else Input.MOUSE_MODE_CAPTURED
+
+func toggle_hud_demo() -> void:
+	if hud_demo_layer == null:
+		var demo_scene = load("res://scenes/huds/main_hud_demo.tscn")
+		if demo_scene:
+			hud_demo_layer = CanvasLayer.new()
+			hud_demo_layer.layer = 30
+			add_child(hud_demo_layer)
+			hud_demo_instance = demo_scene.instantiate()
+			hud_demo_layer.add_child(hud_demo_instance)
+			set_player_control(false)
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+			return
+	if hud_demo_layer:
+		var active_demo = not hud_demo_layer.visible
+		hud_demo_layer.visible = active_demo
+		set_demo_sublayers(active_demo)
+		set_player_control(not active_demo)
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if active_demo else Input.MOUSE_MODE_CAPTURED
+
+func set_demo_sublayers(shown: bool) -> void:
+	# CanvasLayer ignora a visibilidade do pai: alterna cada sub-layer do demo
+	if hud_demo_instance == null: return
+	for child in hud_demo_instance.get_children():
+		if child is CanvasLayer:
+			child.visible = shown
 
 func _process(_delta: float) -> void:
 	if player == null or ui == null: return
 	var target: Node = player.interaction_target()
 	ui.hint.text = target.interaction_prompt().trim_prefix("E — ") if player.controls_enabled and target != null and target.has_method("interaction_prompt") else ""
+	if hud_minimal != null:
+		hud_minimal.visible = player.controls_enabled
+		hud_minimal.set_prompt(ui.hint.text, not ui.hint.text.is_empty())

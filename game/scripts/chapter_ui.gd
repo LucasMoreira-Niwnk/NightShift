@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 const Style = preload("res://scripts/ui_style.gd")
+const Settings = preload("res://scripts/game_settings.gd")
 var chapter_label: Label
 var zone_label: Label
 var time_label: Label
@@ -19,6 +20,10 @@ var subtitle: Label
 var hint: Label
 var panel: PanelContainer
 var column: VBoxContainer
+var inventory_open := false
+var inventory_card: Control
+var controls_hint: Control
+var status_card: Control
 var modal := false
 var paused := false
 var ending := false
@@ -34,6 +39,8 @@ func _ready() -> void:
 	add_child(root)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var mission := hud_card(root)
+	mission.name = "MissionData"
+	mission.hide()
 	mission.position = Vector2(24, 24)
 	mission.size = Vector2(540, 148)
 	var mission_column := VBoxContainer.new()
@@ -49,7 +56,7 @@ func _ready() -> void:
 	var progress := HBoxContainer.new()
 	progress.add_theme_constant_override("separation", 6)
 	mission_column.add_child(progress)
-	for index in range(8):
+	for index in range(9):
 		var segment := ColorRect.new()
 		segment.custom_minimum_size = Vector2(0, 3)
 		segment.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -57,6 +64,8 @@ func _ready() -> void:
 		progress.add_child(segment)
 		progress_segments.append(segment)
 	var status := hud_card(root)
+	status_card = status
+	status.add_theme_stylebox_override("panel", Style.card(Color(0.02,0.03,0.03,0.4),2))
 	status.anchor_left = 1
 	status.anchor_right = 1
 	status.offset_left = -244
@@ -72,16 +81,19 @@ func _ready() -> void:
 	light_label.modulate = Style.ACCENT
 	inventory_label = Label.new()
 	var inventory := hud_card(root)
+	inventory_card = inventory
+	inventory.hide()
 	inventory.anchor_top = 1
 	inventory.anchor_bottom = 1
 	inventory.offset_left = 24
 	inventory.offset_right = 270
-	inventory.offset_top = -76
+	inventory.offset_top = -96
 	inventory.offset_bottom = -40
 	inventory.add_child(inventory_label)
 	inventory_label.add_theme_font_size_override("font_size", 12)
 	inventory_label.modulate = Style.MUTED
-	var controls := label_at(root, Vector2.ZERO, "[WASD] Mover    [F] Lanterna    [J] Protocolo    [Esc] Menu", 12)
+	var controls := label_at(root, Vector2.ZERO, "[Tab] Tablet     [I] Bolsa de serviço     [J] Diário", 11)
+	controls_hint = controls
 	controls.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	controls.offset_left = 24
 	controls.offset_top = -26
@@ -137,10 +149,38 @@ func _ready() -> void:
 	for edge in ["left", "right", "top", "bottom"]:
 		margin.add_theme_constant_override("margin_" + edge, 24)
 	panel.add_child(margin)
+	# PanelContainer cresce ate caber o conteudo, entao uma tela cheia de
+	# controles passava da borda e sumia fora do monitor. Com a rolagem no
+	# meio, o painel para no tamanho das ancoras em qualquer resolucao.
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	margin.add_child(scroll)
 	column = VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_theme_constant_override("separation", 12)
-	margin.add_child(column)
+	scroll.add_child(column)
 	panel.hide()
+	if not OS.get_cmdline_user_args().has("--smoke-test"):
+		opening()
+
+func opening() -> void:
+	var shade := ColorRect.new()
+	shade.color = Color.BLACK
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var caption := Label.new()
+	caption.text = "14 de novembro de 2008 — 23h57\nEdifício Vesper, Setor Administrativo."
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	caption.add_theme_font_size_override("font_size", 24)
+	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shade.add_child(caption)
+	caption.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var tween := create_tween()
+	tween.tween_interval(0.8)
+	tween.tween_property(shade, "modulate:a", 0.0, 2.5)
+	tween.tween_callback(shade.queue_free)
 
 func hud_card(parent: Control) -> PanelContainer:
 	var card := PanelContainer.new()
@@ -153,22 +193,38 @@ func _process(delta: float) -> void:
 	if game.player == null or game.chapter == null: return
 	var point: Vector3 = game.player.position
 	var zone := "CORREDOR PRINCIPAL"
-	if point.z > 4: zone = "RECEPÇÃO"
+	if game.world.is_outdoors(point): zone = "EXTERIOR / ESTACIONAMENTO"
+	elif point.z > 4: zone = "RECEPÇÃO"
 	elif point.x < -2 and point.z > -2: zone = "SEGURANÇA"
 	elif point.x > 2: zone = "ARQUIVO"
 	elif point.x < -2 and point.z < -6: zone = "SALA TÉCNICA"
+	if game.world.staircases.is_service(point): zone = "ESCADA / PASSAGEM DE SERVIÇO"
+	elif game.world.staircases.is_main(point): zone = "ESCADARIA PRINCIPAL"
+	elif point.y > 3.5:
+		zone = "2º / CORREDOR ADMINISTRATIVO"
+		if point.x < -1.6: zone = "2º / ADMINISTRAÇÃO" if point.z < -4 else "2º / SALA DE TI"
+		elif point.x > 1.6: zone = "2º / SALA DE REUNIÕES"
+	if game.exploration != null:
+		var explored_zone: String = game.exploration.zone(point)
+		if not explored_zone.is_empty(): zone = explored_zone
 	zone_label.text = zone
 	time_label.text = game.world.clocks[0].displayed_time
 	light_label.text = "LANTERNA / NÃO COLETADA"
-	if game.player.has_flashlight:
+	if game.player.has_flashlight and game.player.flashlight:
 		light_label.text = "LANTERNA / " + ("LIGADA" if game.player.flashlight.visible else "DESLIGADA")
 	inventory_label.text = "SEM EQUIPAMENTO"
 	if game.chapter.has_flag("badge"):
 		inventory_label.text = "CRACHÁ  ·  CHAVE"
 	if game.player.has_flashlight: inventory_label.text += "  ·  LANTERNA"
+	if game.chapter.has_flag("fuse20_owned"): inventory_label.text += "\nFUSÍVEL 20 A"
+	elif game.chapter.has_flag("fuse10_owned"): inventory_label.text += "\nFUSÍVEL 10 A"
+	elif game.chapter.has_flag("burnt_fuse_removed") and not game.chapter.has_flag("fuse_replaced"): inventory_label.text += "\nCARTUCHO QUEIMADO"
+	inventory_card.hide()
+	controls_hint.visible = not modal and not paused and not ending and game.chapter.elapsed < 28
 	if not modal and not paused and not ending:
-		prompt_card.visible = not hint.text.is_empty()
-		reticle.hovering = prompt_card.visible
+		# o prompt agora vive no hud_minimal; o card antigo some para nao duplicar
+		reticle.hovering = not hint.text.is_empty()
+		prompt_card.visible = reticle.hovering and game.hud_minimal == null
 		caption_card.visible = not subtitle.text.is_empty() and message_age < 16
 		caption_card.modulate.a = clampf((16 - message_age) / 2.0, 0, 1)
 
@@ -180,14 +236,23 @@ func label_at(parent: Node, location: Vector2, text: String, font_size: int) -> 
 	label.add_theme_color_override("font_shadow_color", Color.BLACK)
 	label.add_theme_constant_override("shadow_offset_x", 2)
 	label.add_theme_constant_override("shadow_offset_y", 2)
+	# Texto dentro do painel quebra linha: sem isto a frase longa empurra a
+	# largura e o painel vaza para fora da tela em resolucao menor.
+	if parent == column:
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	parent.add_child(label)
 	return label
 
 func update_objective(stage: int, text: String) -> void:
-	chapter_label.text = "CAPÍTULO 1  /  %02d — %s" % [mini(stage + 1, 8), preload("res://scripts/chapter_data.gd").TITLES[stage].to_upper()]
+	var second := stage >= 9
+	var scene := stage - 9 if second else stage
+	var titles: Array = preload("res://scripts/chapter_two_data.gd").TITLES if second else preload("res://scripts/chapter_data.gd").TITLES
+	chapter_label.text = "CAPÍTULO %d  /  %02d — %s" % [2 if second else 1, mini(scene + 1, 9 if second else 8), titles[scene].to_upper()]
 	objective_label.text = text
 	for index in range(progress_segments.size()):
-		progress_segments[index].color = Style.ACCENT if index <= stage else Color(0.14, 0.2, 0.18)
+		progress_segments[index].visible = second or index < 8
+		progress_segments[index].color = Style.ACCENT if index <= scene else Color(0.14, 0.2, 0.18)
 
 func say(text: String) -> void:
 	subtitle.text = text
@@ -205,12 +270,13 @@ func clear_panel() -> void:
 func title(text: String) -> void:
 	label_at(column, Vector2.ZERO, text, 26)
 
-func button(text: String, callback: Callable) -> Button:
+func button(text: String, callback: Callable, parent: Node = null) -> Button:
 	var control := Button.new()
 	control.text = text
 	control.custom_minimum_size.y = 36
 	control.pressed.connect(callback)
-	column.add_child(control)
+	if parent == null: parent = column
+	parent.add_child(control)
 	return control
 
 func text_body(text: String) -> void:
@@ -226,6 +292,8 @@ func text_body(text: String) -> void:
 
 func open_modal() -> void:
 	modal = true
+	# CCTV hides the HUD root; showing a child panel alone cannot reveal it.
+	panel.get_parent().show()
 	for child in panel.get_parent().get_children():
 		if child != panel and child is CanvasItem: child.hide()
 	modal_shade.show()
@@ -238,16 +306,44 @@ func document(heading: String, content: String, final: bool = false) -> void:
 	title(heading)
 	text_body(content)
 	final_document = final
-	button("Encerrar capítulo" if final else "Guardar / continuar [E ou Esc]", close_modal)
+	button("Guardar relatório / continuar [E ou Esc]" if final else "Guardar / continuar [E ou Esc]", close_modal)
+	if final:
+		button("Ignorar a ligação e permanecer na segurança", func():
+			game.chapter.flags.phone_ignored = true
+			close_modal())
 	open_modal()
 
-func show_floor_plan(texture: Texture2D) -> void:
+func show_journal() -> void:
+	inventory_open = false
+	clear_panel()
+	title("Daniel Reis — Diário do turno")
+	var entries := document_entries()
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 8)
+	scroll.add_child(list)
+	button("Rever mensagens e diálogos", func(): document("Registro do turno", "\n\n".join(game.chapter.transcript)), list)
+	button("Histórico de ocorrências", func(): document("Ocorrências", "\n".join(game.chapter.history)), list)
+	for id in game.chapter.documents:
+		if entries.has(id):
+			var entry: Array = entries[id]
+			button(entry[0], func(): document(entry[0], entry[1]), list)
+	button("Voltar ao turno [E / Esc]", close_modal)
+	open_modal()
+
+func show_floor_plan(texture: Texture2D, heading: String = "VESPER — Planta do térreo", legend: String = "") -> void:
 	clear_panel()
 	panel.anchor_left = 0.04
 	panel.anchor_right = 0.96
 	panel.anchor_top = 0.02
 	panel.anchor_bottom = 0.98
-	title("VESPER — Planta do térreo")
+	title(heading)
+	if not legend.is_empty():
+		var info := label_at(column, Vector2.ZERO, legend, 18)
+		info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var image := TextureRect.new()
 	image.texture = texture
 	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -259,21 +355,23 @@ func show_floor_plan(texture: Texture2D) -> void:
 
 func close_modal() -> void:
 	if ending: return
+	inventory_open = false
 	modal = false
 	panel.hide()
 	for child in panel.get_parent().get_children():
-		if child != panel and child is CanvasItem: child.show()
+		if child != panel and child is CanvasItem and child.name != "MissionData": child.show()
 	modal_shade.hide()
-	game.set_player_control(true)
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	if final_document:
-		final_document = false
-		game.chapter.complete()
+	game.set_player_control(not game.computer.active)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if game.computer.active else Input.MOUSE_MODE_CAPTURED
+	if game.computer.active: get_child(0).hide()
+	final_document = false
 
 func show_breakers() -> void:
 	clear_panel()
+	panel.anchor_top = 0.05
+	panel.anchor_bottom = 0.95
 	title("Quadro elétrico — Sala técnica")
-	text_body("Diagrama: A/B/C ligados. D desligado.\nO subsolo não deve ser energizado.")
+	text_body("F1: " + ("reposição instalada" if game.chapter.has_flag("fuse_replaced") else "cartucho ausente/queimado") + ".\nA sequência de partida consta na ordem de manutenção arquivada na administração.\nIsole o quadro antes de substituir o cartucho físico ao lado do painel.")
 	breaker_buttons.clear()
 	for index in range(4):
 		var control := button("", func():
@@ -281,8 +379,38 @@ func show_breakers() -> void:
 			update_breakers())
 		breaker_buttons.append(control)
 	update_breakers()
+	button("Isolar todos os circuitos / reiniciar sequência", func():
+		if game.chapter.has_flag("power"): return
+		game.chapter.breakers = [false, false, false, false]
+		game.chapter.flags.power_sequence = []
+		game.chapter.save_game()
+		update_breakers())
 	button("Confirmar circuitos", func(): game.chapter.confirm_breakers())
 	button("Sair [Esc]", close_modal)
+	open_modal()
+
+func show_network_patch() -> void:
+	clear_panel()
+	title("Patch panel — RACK 2B")
+	text_body("Selecione a porta que encaminha a CAM-04 ao gravador. Compare a etiqueta física no corredor com o log da TI.")
+	var grid := GridContainer.new()
+	grid.columns = 4
+	column.add_child(grid)
+	for port in range(1, 9):
+		button("PORTA %02d" % port, func(): game.chapter.act_two.restore_network(port), grid)
+	button("Voltar", close_modal)
+	open_modal()
+
+func show_participants() -> void:
+	clear_panel()
+	title("Reunião — participantes ausentes")
+	text_body("Quem consta na ata, mas não possui registro de entrada? Compare os documentos e a gravação da CAM-05 no diário/terminal.")
+	var grid := GridContainer.new()
+	grid.columns = 2
+	column.add_child(grid)
+	for index in range(6):
+		button(preload("res://scripts/chapter_two_data.gd").NAMES[index], func(): game.chapter.act_two.identify_participant(index), grid)
+	button("Voltar", close_modal)
 	open_modal()
 
 func update_breakers() -> void:
@@ -303,7 +431,7 @@ func toggle_pause() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		return
 	clear_panel()
-	title("PAUSADO — O Primeiro Turno")
+	title("PAUSADO — " + ("Registros Incompletos" if game.chapter.stage >= 9 else "O Primeiro Turno"))
 	for child in panel.get_parent().get_children():
 		if child != panel and child is CanvasItem: child.hide()
 	modal_shade.show()
@@ -316,16 +444,155 @@ func toggle_pause() -> void:
 	button("Nova partida", func():
 		get_tree().paused = false
 		get_tree().reload_current_scene())
+	button("Configurações", show_settings)
 	button("Sair do jogo", func(): get_tree().quit())
 	panel.show()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	game.set_player_control(false)
 
-func show_ending() -> void:
+func toggle_row(text: String, pressed: bool, callback: Callable) -> CheckButton:
+	var control := CheckButton.new()
+	control.text = text
+	control.button_pressed = pressed
+	control.toggled.connect(callback)
+	column.add_child(control)
+	return control
+
+func slider_row(text: String, value: float, minimum: float, maximum: float, step: float, suffix: String, callback: Callable) -> HSlider:
+	var caption := label_at(column, Vector2.ZERO, "%s: %s%s" % [text, snappedf(value, step), suffix], 18)
+	var slider := HSlider.new()
+	slider.min_value = minimum
+	slider.max_value = maximum
+	slider.step = step
+	slider.value = value
+	slider.value_changed.connect(func(changed: float):
+		caption.text = "%s: %s%s" % [text, snappedf(changed, step), suffix]
+		callback.call(changed))
+	column.add_child(slider)
+	return slider
+
+func show_discomfort_settings() -> void:
+	var effect = game.discomfort
+	clear_panel()
+	panel.anchor_top = 0.04
+	panel.anchor_bottom = 0.96
+	title("Dificuldade — desconforto")
+	label_at(column, Vector2.ZERO, "Girar a câmera acima do limiar deixa um rastro curto na tela. Em teste: nenhuma opção está amarrada a um nível ainda.", 16)
+	var presets := HBoxContainer.new()
+	column.add_child(presets)
+	for preset_name in effect.PRESETS:
+		button(preset_name, func():
+			effect.apply_preset(preset_name)
+			show_discomfort_settings(), presets)
+	toggle_row("Sistema de desconforto ativo", effect.enabled, func(on: bool): effect.enabled = on)
+	toggle_row("Rastro temporal (ghosting)", effect.trail_enabled, func(on: bool): effect.trail_enabled = on)
+	toggle_row("Rastro só em vermelho/azul (aberração dinâmica)", effect.chroma_only, func(on: bool): effect.chroma_only = on)
+	toggle_row("Pico de frametime (experimental — atrasa o jogo)", effect.stutter_enabled, func(on: bool): effect.stutter_enabled = on)
+	slider_row("Opacidade do rastro", effect.trail_alpha, 0.0, 0.8, 0.05, "", func(value: float): effect.trail_alpha = value)
+	slider_row("Duração do rastro", effect.trail_ms, 50.0, 400.0, 10.0, " ms", func(value: float): effect.trail_ms = value)
+	slider_row("Limiar de giro", effect.threshold, 120.0, 900.0, 10.0, " °/s", func(value: float): effect.threshold = value)
+	slider_row("Atraso do pico", effect.stutter_ms, 0.0, 25.0, 1.0, " ms", func(value: float): effect.stutter_ms = value)
+	button("Testar agora", func(): effect.test_pulse())
+	button("Voltar", show_settings)
+	button("Continuar", toggle_pause)
+
+func show_light_settings() -> void:
+	clear_panel()
+	panel.anchor_top = 0.04
+	panel.anchor_bottom = 0.96
+	title("QUALIDADE DE LUZ E SOMBRA")
+	var culling = game.world.light_culling
+	var values: Dictionary = game.settings
+	label_at(column, Vector2.ZERO, "Medido nesta máquina: a recepção saiu de 34 para 244 fps com tudo isto ligado.", 16)
+	label_at(column, Vector2.ZERO, "— O QUE SOME DE VISTA", 16).modulate = Style.ACCENT
+	toggle_row("Oclusão de lâmpadas (linha de visão)", bool(values.get("light_culling", true)), func(on: bool): game.update_setting("light_culling", on))
+	toggle_row("Oclusão por parede — experimental, some com móvel visto de porta aberta", bool(values.get("occlusion_culling", false)), func(on: bool): game.update_setting("occlusion_culling", on))
+	toggle_row("Sombra do cenário (visual cheio, metade do FPS)", bool(values.get("static_shadows", false)), func(on: bool): game.update_setting("static_shadows", on))
+
+	label_at(column, Vector2.ZERO, "— ALCANCES", 16).modulate = Style.ACCENT
+	slider_row("Lâmpada projeta sombra até", float(values.get("shadow_range", 14.0)), 4.0, 40.0, 1.0, " m", func(v: float): game.update_setting("shadow_range", v))
+	slider_row("Objetos pequenos somem além de", float(values.get("prop_range", 14.0)), 6.0, 40.0, 1.0, " m", func(v: float): game.update_setting("prop_range", v))
+	slider_row("Folga do campo de visão da luz", float(values.get("light_cone_extra", 40.0)), 0.0, 80.0, 5.0, "°", func(v: float): game.update_setting("light_cone_extra", v))
+	slider_row("Atualização do feed do CCTV", float(values.get("cctv_hz", 6.0)), 1.0, 30.0, 1.0, " Hz", func(v: float): game.update_setting("cctv_hz", v))
+
+	label_at(column, Vector2.ZERO, "— MAPA DE LUZ ASSADO", 16).modulate = Style.ACCENT
+	var assada = game.world.baked_light
+	toggle_row("Usar luz e sombra assadas", bool(values.get("baked_light", false)), func(on: bool): game.update_setting("baked_light", on))
+	label_at(column, Vector2.ZERO, "%s  (%d lâmpadas, %d vidraças mapeadas)" % [assada.estado(), culling.lamps.size(), culling.panes.size()], 16)
+	button("Restaurar padrões", func():
+		for chave in ["light_culling", "occlusion_culling", "static_shadows", "shadow_range", "prop_range", "light_cone_extra", "cctv_hz"]:
+			game.update_setting(chave, Settings.DEFAULTS[chave])
+		show_light_settings())
+	button("Voltar", show_settings)
+	button("Continuar", toggle_pause)
+
+# O bake existe em disco, mas ainda não é aplicável em jogo: o `LightmapGIData`
+# guarda o caminho de cada malha e não devolve a escala de UV nem a fatia do
+# atlas, então não há como reapontá-lo para as malhas criadas em código. Por
+# isso aqui é estado, não botão: botão que não faz nada é pior que nenhum.
+func estado_do_bake() -> String:
+	if not ResourceLoader.exists("res://scenes/bake/predio.lmbake"):
+		return "Nenhum bake encontrado. Gere com: tools/godot.ps1 -Mode export, depois assar no editor."
+	var dados = load("res://scenes/bake/predio.lmbake")
+	if dados == null: return "Bake encontrado, mas não foi possível ler."
+	return "Bake em disco: %d malhas no mapa. Ainda não é usado em jogo — o prédio é montado em código e o mapa está preso à cena exportada." % dados.get_user_count()
+
+func show_settings() -> void:
+	clear_panel()
+	title("CONFIGURAÇÕES")
+	button("Som", show_audio_settings)
+	button("Controles e vídeo", show_control_settings)
+	button("Dificuldade — desconforto", show_discomfort_settings)
+	button("Qualidade de luz", show_light_settings)
+	button("Continuar", toggle_pause)
+
+func show_control_settings() -> void:
+	clear_panel()
+	title("CONTROLES E VÍDEO")
+	var values: Dictionary = game.settings
+	slider_row("Sensibilidade do mouse", float(values.get("mouse_sensitivity", 1.0)), 0.25, 2.5, 0.05, "×", func(value: float): game.update_setting("mouse_sensitivity", value))
+	toggle_row("Inverter eixo vertical", bool(values.get("invert_y", false)), func(on: bool): game.update_setting("invert_y", on))
+	toggle_row("Tela cheia", bool(values.get("fullscreen", false)), func(on: bool): game.update_setting("fullscreen", on))
+	toggle_row("Pausar ao trocar de janela (Alt+Tab)", bool(values.get("pause_on_focus_loss", true)), func(on: bool): game.update_setting("pause_on_focus_loss", on))
+	button("Voltar", show_settings)
+	button("Continuar", toggle_pause)
+
+# Tres controles so: o de efeitos cobre tambem o leito de ambiente, que o
+# jogador ouve como efeito e nao como trilha.
+const VOLUME_ROWS := [["Volume master", "Master"], ["Efeitos sonoros", "Efeitos,Ambiente"], ["Músicas", "Musicas"]]
+
+func show_audio_settings() -> void:
+	clear_panel()
+	title("SOM — legendas sempre ativas")
+	for row in VOLUME_ROWS:
+		var text: String = row[0]
+		var buses: String = row[1]
+		var first: String = buses.split(",")[0]
+		slider_row(text, db_to_linear(AudioServer.get_bus_volume_db(AudioServer.get_bus_index(first))), 0.0, 1.0, 0.01, "", func(value: float): game.sound.set_volume(buses, value))
+	button("Voltar", show_settings)
+	button("Continuar", toggle_pause)
+
+func reset_ending() -> void:
+	ending = false
+	paused = false
+	modal = false
+	get_tree().paused = false
+	for child in get_children():
+		if child.name == "EndingFade": child.queue_free()
+	panel.hide()
+	get_child(0).show()
+	for child in panel.get_parent().get_children():
+		if child != panel and child is CanvasItem: child.show()
+	modal_shade.hide()
+	game.set_player_control(true)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+func show_ending(chapter_number: int = 1) -> void:
 	ending = true
 	modal = false
 	game.set_player_control(false)
 	var fade := ColorRect.new()
+	fade.name = "EndingFade"
 	fade.color = Color(0, 0, 0, 0)
 	add_child(fade)
 	fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -336,9 +603,68 @@ func show_ending() -> void:
 	for child in panel.get_parent().get_children():
 		if child != panel and child is CanvasItem: child.hide()
 	clear_panel()
-	title("CAPÍTULO 1 CONCLUÍDO\nO Primeiro Turno")
-	text_body("01:00\n\nAugusto: 'Primeira hora concluída, Daniel.\nIsso aconteceu da última vez também.'\n\nPróximo capítulo: Registros Incompletos")
+	if chapter_number == 1:
+		title("CAPÍTULO 1 CONCLUÍDO\nO Primeiro Turno")
+		text_body("01:00\n\nAugusto: 'Isso aconteceu da última vez também.'\n\nA noite continua no segundo andar.")
+		button("Continuar — Registros Incompletos", func(): game.chapter.act_two.begin())
+	else:
+		title("CAPÍTULO 2 CONCLUÍDO\nRegistros Incompletos")
+		text_body("02:00\nPERFIL COMPORTAMENTAL: 68%\nREFERÊNCIA: HENRIQUE ALMEIDA\n\nAugusto: 'Estamos apenas observando.'\n\nPróximo capítulo: O Funcionário Ausente")
 	button("Jogar novamente", func(): get_tree().reload_current_scene())
 	button("Sair", func(): get_tree().quit())
 	panel.show()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+func document_entries() -> Dictionary:
+	var data = preload("res://scripts/chapter_data.gd")
+	var entries := {"protocol": ["Protocolo", data.PROTOCOL], "recording": ["Gravação 001", data.SUPERVISOR], "logbook": ["Livro de registros", data.LOGBOOK], "maintenance": ["Manutenção", data.MAINTENANCE], "diagram": ["Diagrama", data.DIAGRAM], "report": ["Relatório", data.REPORT]}
+	var extra = preload("res://scripts/chapter_two_data.gd")
+	entries.merge({"repair_note": ["Ordem de manutenção", extra.REPAIR_NOTE], "admin_notice": ["Aviso administrativo", extra.ADMIN_NOTICE], "network_log": ["Log de rede", extra.NETWORK_LOG], "meeting_minutes": ["Ata da reunião", extra.MINUTES], "access_log": ["Controle de acesso", extra.ACCESS], "henrique_photo": ["Henrique Almeida", extra.PHOTO], "failed_call": ["Ligação não completada", extra.CALL], "cam04_label": ["Etiqueta da CAM-04", "RACK 2B — PORTA 07"], "report2": ["Ocorrência 002", extra.report(game.chapter.has_flag("future_event_resisted"))]})
+	for id in game.chapter.flags.get("document_records", {}):
+		entries[id] = game.chapter.flags.document_records[id]
+	return entries
+
+func show_inventory(selected: String = "") -> void:
+	clear_panel()
+	inventory_open = true
+	title("BOLSA DE SERVIÇO")
+	var summary := label_at(column, Vector2.ZERO, "Daniel Reis  /  Plantão noturno  /  " + game.world.clocks[0].displayed_time, 14)
+	summary.modulate = Style.MUTED
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 28)
+	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(row)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size.x = 250
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(scroll)
+	var items := VBoxContainer.new()
+	items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	items.add_theme_constant_override("separation",8)
+	scroll.add_child(items)
+	var detail := VBoxContainer.new()
+	detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(detail)
+	var contents: Array = preload("res://scripts/inventory.gd").entries(game.chapter)
+	var current: Array = []
+	for item in contents:
+		if current.is_empty() or item[0] == selected: current = item
+		button(item[1],show_inventory.bind(item[0]),items)
+	if current.is_empty():
+		label_at(detail,Vector2.ZERO,"Nenhum objeto guardado.",20)
+	else:
+		var illustration := preload("res://scripts/inventory_illustration.gd").new()
+		illustration.item_id = current[0]
+		detail.add_child(illustration)
+		var kind := label_at(detail,Vector2.ZERO,current[2],12)
+		kind.modulate = Style.ACCENT
+		label_at(detail,Vector2.ZERO,current[1],23)
+		var description := label_at(detail,Vector2.ZERO,current[3],18)
+		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		description.custom_minimum_size = Vector2(270,140)
+	var instructions := label_at(column,Vector2.ZERO,"Chaves e peças são usadas ao interagir com o objeto correspondente. Documentos ficam no diário.",14)
+	instructions.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	instructions.modulate = Style.MUTED
+	button("Consultar documentos",show_journal)
+	button("Guardar bolsa [I / Esc]",close_modal)
+	open_modal()

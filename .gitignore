@@ -5,3 +5,20 @@ builds/
 *.tmp
 .DS_Store
 Thumbs.db
+**/.godot/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.vscode/
+.idea/
+
+# Material de trabalho fora do projeto Godot
+/Rhuan analizes/
+graphify-out/
+
+# Cena intermediaria do bake de luz: 425 MB, regerada por
+# tools/godot.ps1 -Mode export. O resultado do bake ao lado dela
+# (.lmbake e .exr, menos de 600 KB juntos) e versionado.
+game/scenes/bake/predio.scn

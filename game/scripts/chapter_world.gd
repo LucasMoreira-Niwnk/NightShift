@@ -174,13 +174,10 @@ func _ready() -> void:
 	Art.external(self, "drawer_cabinet", Vector3(-4.1, 0, 3.55), Vector3(1.2, 1.25, 0.65), PI)
 	box(self, Vector3(-4.1, 0.625, 3.55), Vector3(1.2, 1.25, 0.65), "metal").hide()
 	Art.external(self, "desk_lamp_arm_01", Vector3(-7.25, 1.08, -1.35), Vector3(0.4, 0.65, 0.35))
-	var task_light := OmniLight3D.new()
-	task_light.position = Vector3(-7.15, 1.65, -1.0)
-	task_light.light_color = Color(1, 0.8, 0.53)
-	task_light.light_energy = 0.55
-	task_light.omni_range = 2.0
-	add_child(task_light)
-	interior_lights.append(task_light)
+	# Luminaria de mesa nao e lampada: so o ponto aceso, para o bloom pegar.
+	# Borda da frente do capuz, medida na caixa do modelo: x -7,45..-7,05,
+	# y 1,08..1,73, z -1,53..-1,17. Fora dela o ponto flutuava solto no ar.
+	desk_glow(Vector3(-7.25, 1.58, -1.21), Color(1, 0.8, 0.53))
 	dressing.plant(self, Vector3(4.8, 0, 10.8), 1.0, 12)
 	box(self, Vector3(4.8, 0.3, 10.8), Vector3(0.5, 0.6, 0.5), "metal").hide()
 	Art.model(self, "trashcan", Vector3(-7.35, 0, 2.9), Vector3(0.38, 0.65, 0.38))
@@ -324,6 +321,31 @@ func box(parent: Node3D, location: Vector3, size: Vector3, kind: String = "wall"
 		parent.add_child(body)
 	if OCCLUDER_KINDS.has(kind): add_occluder(parent, location, size)
 	return mesh
+
+# Abajur de mesa: um ponto emissivo acima do limiar do glow (1.1 no ambiente)
+# acende o bloom e nada mais. Nao ilumina o comodo e nao projeta sombra — uma
+# luz real aqui custava uma passada inteira sobre o predio por um abajur. O
+# material entra no registro de energia junto com as outras superficies
+# emissivas, entao apaga no blecaute como o resto.
+func desk_glow(point: Vector3, color: Color) -> MeshInstance3D:
+	var bulb := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.04
+	sphere.height = 0.08
+	sphere.radial_segments = 8
+	sphere.rings = 4
+	bulb.mesh = sphere
+	bulb.position = point
+	bulb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.emission_enabled = true
+	material.emission = color
+	material.emission_energy_multiplier = 1.8
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	bulb.material_override = material
+	add_child(bulb)
+	return bulb
 
 func add_occluder(parent: Node3D, location: Vector3, size: Vector3) -> void:
 	var medidas := [size.x, size.y, size.z]

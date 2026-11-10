@@ -966,3 +966,44 @@ de ponto em caixa, mais barato que o raio que ele evita.
 
 **Validado:** números acima com o jogo rodando; `check` limpo; as dez suítes
 passam. **Não validado:** em movimento, atravessando a borda do volume.
+
+## 2026-11-09 — Claude — Auditoria das luzes repetidas e abajur sem lâmpada
+
+### Nenhuma das 8 repetições é acidente
+
+Auditadas as 35 luzes pontuais, agrupando por posição (0,3 m de tolerância).
+Há 8 pares no mesmo ponto, e **todos são de propósito**:
+
+| onde | par | veredito |
+|---|---|---|
+| (0, 1, -13) | `memesis.gd` + `memesis_corpo.gd` | dois sistemas do mesmo vulto, cada um com seu brilho |
+| escadaria, 3 pontos | `SpotLight3D` + `OmniLight3D` do `folded_stairs.gd` | facho mais preenchimento; padrão de iluminação, não duplicata |
+| 2º andar, 4 salas | teto (`e=0,9`) + emergência vermelha (`e=0,4`, `visible = false`) | duas luzes diferentes no mesmo lugar |
+
+Nenhuma delas projeta sombra, então nenhuma estava custando passada. Não mexi
+em nada.
+
+**Achado de brinde:** as 4 luzes de emergência do segundo andar **nunca
+acendem** — `apply_state()` as põe em `visible = false` e nenhum outro trecho
+as liga. São cenário para um recurso que não existe ainda. Invisível não
+custa render, então ficam; quem for escrever o blecaute já tem elas prontas.
+
+### Abajur de mesa deixou de ser luz
+
+A luminária articulada da sala de segurança tinha uma `OmniLight3D` real
+(alcance 2 m, energia 0,55). Virou `desk_glow()`: uma esfera de 4 cm,
+emissiva, sem sombra, com energia 1,8 — acima do limiar de glow do ambiente
+(1,1), então o bloom pega. Não ilumina o cômodo.
+
+O ponto foi posicionado pela caixa real do modelo (`x -7,45..-7,05,
+y 1,08..1,73, z -1,53..-1,17`): na primeira tentativa eu chutei e ele ficou
+flutuando 12 cm à frente do abajur, solto no ar.
+
+O material entra no registro de energia junto com as outras superfícies
+emissivas, então apaga no blecaute como o resto. Luzes pontuais: 35 → 34.
+
+**Validado:** a auditoria, a contagem e a captura `.local/abajur.png`, onde o
+ponto está na cabeça do abajur; `check` limpo; as dez suítes passam.
+**Não validado:** se o halo do bloom está do tamanho que você quer — o
+ambiente tem `glow_intensity` baixo de propósito, e o que dá para subir sem
+mexer no global é a energia da emissão.

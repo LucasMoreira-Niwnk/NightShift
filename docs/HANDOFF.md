@@ -1081,3 +1081,44 @@ cenário.
 
 **Validado:** os números acima. **Não validado:** o efeito visual, pelo motivo
 acima.
+
+## 2026-11-09 — Claude — Props importados não pegavam alcance, e 15 texturas sem mipmap
+
+Relato: "objetos como extintor e outros não estão ficando lod negativo nem
+textura reduzindo". São dois defeitos diferentes e ambos eram reais.
+
+### 1. Eu media a malha, não o objeto em cena
+
+`apply_prop_range` usava `mesh.mesh.get_aabb()`, que é a caixa do **recurso**,
+antes da escala do nó. Modelo importado vem com a escala no nó, então a conta
+dava o tamanho errado:
+
+| | malha | em cena |
+|---|---|---|
+| arbusto `shrub_01_a` | 2,63 m | **0,33 m** |
+| extintor | 0,80 m | 0,74 m |
+
+O arbusto ficava de fora por "ser grande", medindo 33 cm no jogo. E o extintor
+caía exatamente no limiar de 0,8 m.
+
+Corrigido: a medida passou a ser `(global_transform * aabb).size`, e o limiar
+subiu para 1,2 m. Malhas com alcance: **1830 → 2359**. A vassoura (1,45 m)
+continua de fora, que é o certo.
+
+### 2. Quinze texturas estavam sem mipmap
+
+Sem mipmap a textura não reduz com a distância — ela faz cintilação em vez de
+suavizar. Do projeto, 168 arquivos tinham mipmap e **15 não**: o conjunto de
+livros, o banco de madeira, os braços do jogador, duas fotos do Mêmesis e dois
+mapas de rugosidade. As do extintor já tinham, então aquele objeto específico
+só sofria do defeito 1.
+
+Ligado `mipmaps/generate=true` nos 15 e reimportado. Agora são 183 de 183.
+
+Vale registrar por que eles ficaram para trás: o Godot só converte textura
+para ajuste 3D quando vê ela usada em 3D, e eu vinha **revertendo** essa
+conversão nas últimas rodadas, achando que era sujeira que o editor fazia.
+Era, em parte, o motor tentando consertar isto.
+
+**Validado:** contagens acima; nenhum `.import` sem mipmap restante; `check`
+limpo; as dez suítes passam. **Não validado:** o efeito em tela, de longe.

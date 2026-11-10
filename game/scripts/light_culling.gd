@@ -40,7 +40,10 @@ var extra_angulo := 40.0
 # nao entram: so o que e miudo o bastante para nao fazer falta de longe. Vale
 # tambem para a escadaria, onde as paredes e as luzes ficam e os objetos so
 # aparecem de perto. O motor corta por distancia sozinho, sem custo por quadro.
-const PROP_MAX := 0.8
+# Medido no mundo, nao na malha: o modelo importado vem com a escala no no, e
+# um arbusto de 0,33 m em cena tem 2,63 m de malha. Media errado, ficava de
+# fora. O limiar tambem subiu: o extintor da 0,80 m e caia bem na borda.
+const PROP_MAX := 1.2
 var prop_range := 14.0: set = set_prop_range
 const PROP_FADE := 2.0
 
@@ -242,7 +245,7 @@ func _process(_delta: float) -> void:
 # Roda junto da coleta: mesma varredura, custo zero a mais.
 func apply_prop_range(mesh: MeshInstance3D) -> void:
 	if mesh.mesh == null: return
-	if mesh.mesh.get_aabb().size.length() > PROP_MAX: return
+	if (mesh.global_transform * mesh.mesh.get_aabb()).size.length() > PROP_MAX: return
 	mesh.visibility_range_end = prop_range
 	mesh.visibility_range_end_margin = PROP_FADE
 

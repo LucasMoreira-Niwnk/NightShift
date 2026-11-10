@@ -58,6 +58,8 @@ var static_meshes: Array = []
 # visao, a fachada e o estacionamento nao tem como aparecer, e sao 4000 draw
 # calls. Medido no corredor do 2o andar olhando para a entrada: 71 -> 200 fps.
 var panes: Array = []
+# Distancia abaixo da qual uma vidraca conta mesmo fora do campo de visao.
+const PERTO_DO_VIDRO := 3.0
 # O cenario termina de nascer depois das preferencias serem aplicadas: no
 # arranque a lista pegava 2796 das 3737 malhas e deixava metade do ganho na
 # mesa. Por isso a revisita nos primeiros segundos. Depois disso so o menu
@@ -131,6 +133,23 @@ func sample_points(index: int) -> Array:
 	for eixo in [Vector3.RIGHT, Vector3.UP, Vector3.BACK]:
 		pontos.append(box.get_center() + eixo * box.size * 0.5)
 		pontos.append(box.get_center() - eixo * box.size * 0.5)
+	# Vao de porta aberta que da para este volume: e por ele que a luz da sala
+	# chega a quem esta do lado de fora. Sem isto a sala so acendia depois de
+	# entrar, porque a lampada e os cantos do volume ficam atras da parede.
+	for id in game.world.doors:
+		var porta = game.world.doors[id]
+		if not is_instance_valid(porta) or not porta.is_open: continue
+		var vao: Vector3 = porta.global_position + Vector3.UP * 1.2
+		if volumes[index].grow(0.6).has_point(vao): pontos.append(vao)
+	# Grade no piso do volume: a poca de luz no chao e o que se enxerga pelo vao
+	# de uma porta aberta, enquanto a lampada e os cantos ficam atras da parede.
+	var chao: float = box.position.y + 0.05
+	for i in range(3):
+		for j in range(3):
+			pontos.append(Vector3(
+				box.position.x + box.size.x * (0.5 + i) / 3.0,
+				chao,
+				box.position.z + box.size.z * (0.5 + j) / 3.0))
 	return pontos
 
 func seen_from(camera: Camera3D, index: int) -> bool:
@@ -142,6 +161,15 @@ func seen_from(camera: Camera3D, index: int) -> bool:
 	if volumes[index].has_point(camera.global_position): return true
 	var space: PhysicsDirectSpaceState3D = game.world.get_world_3d().direct_space_state
 	var eye: Vector3 = camera.global_position
+	# O pedaco do volume mais perto do olho vai primeiro: e o que aparece pelo
+	# vao de uma porta aberta. Sem ele, a lampada no fundo da sala so acendia
+	# depois de entrar, porque os cantos da caixa ficam atras da parede.
+	var box: AABB = volumes[index]
+	var perto_do_olho := Vector3(
+		clampf(eye.x, box.position.x, box.position.x + box.size.x),
+		clampf(eye.y, box.position.y, box.position.y + box.size.y),
+		clampf(eye.z, box.position.z, box.position.z + box.size.z))
+	if no_cone(camera, perto_do_olho) and livre(space, eye, perto_do_olho): return true
 	for point in sample_points(index):
 		if not no_cone(camera, point): continue
 		if livre(space, eye, point): return true
@@ -207,8 +235,11 @@ func update_exterior() -> void:
 	if not mostra:
 		for body in panes:
 			if not is_instance_valid(body): continue
+			var ponto: Vector3 = body.global_position
 			for camera in cameras():
-				if camera.is_position_in_frustum(body.global_position):
+				# Colado no vidro ele sai do campo de visao e o exterior sumia.
+				# Vidraca a menos de PERTO_DO_VIDRO vale independente do angulo.
+				if camera.global_position.distance_to(ponto) < PERTO_DO_VIDRO or no_cone(camera, ponto):
 					mostra = true
 					break
 			if mostra: break
@@ -269,7 +300,16 @@ func collect_static() -> void:
 	classifier.free()
 	panes.clear()
 	for body in game.world.find_children("*", "StaticBody3D", true, false):
-		if body.has_meta("transparente"): panes.append(body)
+		if not body.has_meta("transparente"): continue
+		# O ponto de teste e o centro do colisor, nao a origem do corpo: a porta
+		# de vidro nasce no chao, e um ponto no pe do jogador cai fora do campo
+		# de visao mesmo com a porta inteira na frente dele.
+		var ponto: Node3D = body
+		for filho in body.get_children():
+			if filho is CollisionShape3D:
+				ponto = filho
+				break
+		panes.append(ponto)
 
 func set_static_shadows(value: bool) -> void:
 	static_shadows = value

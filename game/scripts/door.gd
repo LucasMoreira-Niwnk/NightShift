@@ -35,6 +35,10 @@ func _ready() -> void:
 	pivot.add_child(mesh)
 	mesh.material_override = preload("res://scripts/materials.gd").fitting(Color(0.24,0.28,0.22))
 	if glazed:
+		# Porta de vidro e vidraca: sem esta marca ela nao entrava na lista de
+		# vidros, e colado nela o exterior inteiro sumia porque nenhuma vidraca
+		# aparecia no quadro. A marca tambem deixa o raio da oclusao atravessar.
+		set_meta("transparente", true)
 		mesh.material_override = preload("res://scripts/materials.gd").fitting(Color(0.3,0.32,0.28),true)
 		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		for x in [0.04, 1.46]: aged_box(pivot, Vector3(x, 1.25, 0), Vector3(0.08, 2.5, 0.17), Color(0.12, 0.17, 0.15))

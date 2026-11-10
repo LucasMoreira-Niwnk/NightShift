@@ -4,6 +4,24 @@ Entradas mais recentes no topo. Cada uma diz o que mudou, por quê, o que foi va
 
 ---
 
+## 2026-11-10 — Claude — asset zoo e medição de peso dos modelos
+
+**Estado:** aplicado localmente, não commitado, na branch `feat/primeiro-ato-completo`.
+
+**O que mudou:** novo `game/scenes/zoo.tscn` com `game/scripts/asset_zoo.gd` e `game/scripts/zoo_camera.gd`. A cena varre `assets/models` recursivamente, instancia cada `.glb`/`.gltf` em grade em escala real sob um suporte `Node3D` (o prop mantém o transform de raiz do glTF, para a medição bater com o que é desenhado) e põe uma `Label3D` em cada um com peso em fonte, peso no `.pck`, VRAM estimada, triângulos, superfícies e texturas. O ambiente repete os valores de `chapter_world.gd` mais uma `DirectionalLight3D` de apoio: sem ela a grade fica preta no ambiente do prédio. `wrad_arms` e `criatura.glb` ficam fora por terem escala e rig próprios.
+
+**Como o peso é medido:** fonte = o arquivo no repositório mais, no caso de `.gltf`, o `.bin` e as imagens lidas do JSON; `.pck` = os `dest_files` do `.import` do modelo e de cada imagem. São números diferentes e os dois importam. VRAM = soma dos pixels das texturas únicas por material × RGBA8 × 1.33 de mipmap; é teto, não valor exato, porque a compressão do `.ctex` reduz o real. As texturas são achadas varrendo as propriedades do material terminadas em `texture`, em vez de uma lista fixa de slots que envelheceria calada quando o importador de glTF mudasse.
+
+**Novos modos em `tools/godot.ps1`:** `-Mode zoo` abre a cena; `-Mode zoo-report` roda headless e escreve `docs/asset-weights.md`. Ambos passam pelo `Prepare-Imports`, e `zoo-report` falha se a saída não tiver tabela, em vez de gravar um arquivo vazio.
+
+**Números desta rodada:** 47 modelos, 90.5 MB em fonte, 189.9 MB no `.pck`, 748.2 MB de VRAM estimada, 1.254.834 triângulos, 586 superfícies. Os três mais pesados no `.pck` são `pine_sapling_small` (32.6 MB, 398 mil triângulos), `potted_plant_01` (14.4 MB) e `shrub_01` (12.6 MB) — a vegetação Poly Haven, e o sapling sozinho é quase um terço dos triângulos do acervo. `korean_fire_extinguisher_01` lidera a VRAM com 47.9 MB em 9 texturas para 9.913 triângulos. Os modelos Kenney custam de 7 a 19 KB e zero textura (cor por vértice).
+
+**Validado de fato:** `-Mode check` com código 0; `-Mode zoo-report` gerou a tabela sem nenhum erro no log; a cena rodou com `--quit-after 180` no Forward+ sem erro de script, só os avisos conhecidos de shader/RID do FogVolume ao encerrar. Não foi feita inspeção visual da grade: não há captura desta rodada, e a leitura das etiquetas, o espaçamento entre vizinhos e a câmera livre seguem sem conferir na tela. `-Mode test` não foi executado — nada no caminho do jogo foi tocado.
+
+**Próximo trabalho:** olhar a grade na tela e ajustar `ROW_WIDTH`/`SPACING` se os props grandes se encostarem. A medição já serve de base para decidir se a vegetação Poly Haven entra como é ou precisa de uma versão reduzida, e se o extintor justifica 9 texturas.
+
+---
+
 ## 2026-11-05 (4) — Codex — integração para PR e regressões de colaboração
 
 **Estado:** integração preparada na branch `codex/integracao-codex-claude`, com destino `feat/primeiro-ato-completo`. Preservados os commits locais, as edições manuais do cenário e as alterações documentadas pelo Claude. Não foi feita a refatoração ampla dos capítulos.
@@ -1122,3 +1140,58 @@ Era, em parte, o motor tentando consertar isto.
 
 **Validado:** contagens acima; nenhum `.import` sem mipmap restante; `check`
 limpo; as dez suítes passam. **Não validado:** o efeito em tela, de longe.
+
+## 2026-11-10 — Claude — Exterior preto na entrada, e sala preta vista da porta
+
+Dois relatos, três causas, todas reproduzidas antes de mexer.
+
+### 1. O exterior sumia colado na porta da recepção
+
+A porta de entrada é a **única envidraçada** do prédio
+(`chapter_world.gd:420`), e o vidro dela é a própria folha da porta, não um
+`box(..., "glass")`. Então ela nunca entrou na lista de vidraças, e o gatilho
+do exterior — "sem vidraça no quadro, esconde a fachada" — escondia tudo
+exatamente onde o jogador estava olhando para fora.
+
+Duas correções:
+- a porta envidraçada passou a se marcar como `transparente`: vira vidraça e
+  deixa o raio da oclusão atravessar, que é o certo para vidro;
+- o ponto de teste da vidraça passou a ser o **centro do colisor**, não a
+  origem do corpo. A porta nasce no chão, e um ponto no pé do jogador cai fora
+  do campo de visão mesmo com a porta inteira à frente dele;
+- vidraça a menos de 3 m conta independente do ângulo: colado no vidro ele sai
+  do cone de visão, e era por isso que o defeito aparecia num ponto tão
+  específico.
+
+| jogador a | antes | depois |
+|---|---|---|
+| 2,0 m da porta | exterior escondido | visível |
+| 1,0 m | escondido | visível |
+| 0,4 m | escondido | visível |
+
+### 2. A sala ficava preta até eu entrar
+
+Também duas causas distintas.
+
+**A lâmpada:** o volume iluminado é recortado pelas paredes, então, de fora,
+a lâmpada e todos os cantos da caixa ficam atrás da parede — nenhum ponto de
+amostra passava. Agora entram como amostra o ponto do volume mais próximo do
+olho, uma grade no piso (a poça de luz é o que se vê pelo vão) e **o próprio
+vão de cada porta aberta que dá para aquele volume**. Verificado: a lâmpada do
+arquivo passou de apagada para acesa com a porta aberta, sem entrar na sala.
+
+**Os objetos:** não é defeito. `prop_range` estava em **6 m**, o mínimo do
+controle, e da porta quase tudo da sala está além disso. Da mesma posição:
+2054 objetos fora de alcance com 6 m contra 1064 com os 14 m do padrão.
+
+Custo do teste de lâmpada subiu de 0,029 para **0,050 ms** por lâmpada, 0,35 ms
+por quadro com a fatia de 7 — cerca de 5% de um quadro de 7 ms.
+
+**Validado:** as três distâncias na entrada, o estado da lâmpada do arquivo e
+as duas contagens de objetos, tudo com o jogo rodando; `check` limpo; as dez
+suítes passam. **Não validado:** em tela, andando — a captura que tirei do vão
+pegou o corredor, não o interior da sala.
+
+**Limite conhecido:** lâmpada muito fora do eixo da porta (a do arquivo em
+x=5, com a porta em x=2) continua dependendo de o vão estar no volume dela.
+Se não estiver, ela só acende ao entrar.

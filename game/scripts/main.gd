@@ -80,11 +80,16 @@ func _ready() -> void:
 	chapter.refresh()
 	ui.say("14 de novembro de 2008 — 23h57\nEdifício Vesper. Daniel Reis, seu primeiro turno começa agora.\n[Tab] Tablet  |  [I] Bolsa de serviço  |  [J] Diário")
 	call_deferred("apply_authored_scenery")
-	if OS.get_cmdline_user_args().has("--fps-bench"):
-		var bench := preload("res://scripts/fps_bench.gd").new()
-		bench.game = self
-		add_child(bench)
-		bench.call_deferred("run")
+	if OS.get_cmdline_user_args().has("--export-scene"):
+		var exportador := preload("res://scripts/scene_export.gd").new()
+		exportador.game = self
+		add_child(exportador)
+		exportador.call_deferred("run")
+	if OS.get_cmdline_user_args().has("--map-shadows"):
+		var shadow_map := preload("res://scripts/shadow_map.gd").new()
+		shadow_map.game = self
+		add_child(shadow_map)
+		shadow_map.call_deferred("run")
 	if OS.get_cmdline_user_args().has("--smoke-test"):
 		var tests := preload("res://scripts/chapter_tests.gd").new()
 		tests.game = self

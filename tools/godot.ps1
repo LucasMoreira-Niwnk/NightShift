@@ -1,5 +1,5 @@
 ﻿param(
-    [ValidateSet('editor', 'run', 'check', 'test', 'prepare')]
+    [ValidateSet('editor', 'run', 'check', 'test', 'prepare', 'shadows', 'export')]
     [string]$Mode = 'editor',
     [switch]$Offline
 )
@@ -119,7 +119,7 @@ function Prepare-Imports {
         if ($null -ne $lock) { $lock.Dispose() }
     }
 }
-if ($Mode -in @('run', 'prepare', 'check', 'test')) { Prepare-Imports }
+if ($Mode -in @('run', 'prepare', 'check', 'test', 'shadows', 'export')) { Prepare-Imports }
 switch ($Mode) {
     'editor' { & $godotExecutable --path $projectDirectory --editor }
     'run' { & $godotExecutable --path $projectDirectory }
@@ -134,6 +134,10 @@ switch ($Mode) {
     }
     # Captures explicitly draw frames; background/minimized windows must not stall physics tests.
     'test' { & $godotExecutable --disable-render-loop --path $projectDirectory -- --smoke-test }
+    # Classifica o cenario em sombra fixa x dinamica; escreve docs/shadow-map.md.
+    'shadows' { & $godotExecutable --disable-render-loop --path $projectDirectory -- --map-shadows }
+    # Grava o predio estatico como cena, para assar o lightmap no editor.
+    'export' { & $godotExecutable --disable-render-loop --path $projectDirectory -- --export-scene }
     'prepare' { exit 0 }
 }
 exit $LASTEXITCODE
